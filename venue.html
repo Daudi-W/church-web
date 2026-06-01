@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>旌旗教會 - 場地申請系統</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      background: #fff;
+      padding: 28px 20px 56px;
+      min-height: 100vh;
+    }
+
+    .header { text-align: center; margin-bottom: 20px; }
+    .header .church-name { font-size: 11px; color: #8fa3b1; letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase; }
+    .header h1 { font-size: 22px; color: #1a2940; font-weight: 800; }
+    .header .subtitle { font-size: 13px; color: #8fa3b1; margin-top: 6px; line-height: 1.5; }
+    .divider { height: 1px; background: #edf2f7; margin: 0 0 22px; }
+
+    /* ── 分堂切換(桃園 / 林口) ── */
+    .branch-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+    }
+    .branch-tab {
+      padding: 12px 8px;
+      border: none;
+      border-radius: 9px;
+      background: transparent;
+      font-size: 15px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .branch-tab.active {
+      background: #fff;
+      color: #1a2940;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .form-group { margin-bottom: 20px; }
+    label {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 14px; font-weight: 700; color: #4a5568; margin-bottom: 8px;
+    }
+    label .required { color: #e53e3e; }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="time"],
+    input[type="number"],
+    input[type="email"],
+    select {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 16px;
+      color: #1a2940;
+      background: #f8fafc;
+      transition: border-color 0.2s, background 0.2s;
+      outline: none;
+      -webkit-appearance: none;
+      min-height: 52px;
+    }
+    input:focus, select:focus { border-color: #48bb78; background: #fff; box-shadow: 0 0 0 3px rgba(72,187,120,0.12); }
+    input.input-ok    { border-color: #48bb78; background: #f0fff4; }
+    input.input-error { border-color: #fc8181; background: #fff5f5; }
+
+    .time-row { display: flex; gap: 8px; align-items: center; }
+    .time-row input { flex: 1; min-width: 0; text-align: center; padding: 14px 8px; }
+    .time-sep { color: #a0aec0; font-size: 20px; flex-shrink: 0; }
+
+    .venue-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .venue-btn {
+      padding: 14px 6px;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      background: #f8fafc;
+      cursor: pointer;
+      text-align: center;
+      font-size: 14px;
+      color: #4a5568;
+      font-weight: 600;
+      transition: all 0.15s;
+      user-select: none;
+      min-height: 76px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      word-break: keep-all;
+    }
+    .venue-btn:active { transform: scale(0.96); }
+    .venue-btn.selected {
+      border-color: #48bb78;
+      background: #f0fff4;
+      color: #276749;
+      box-shadow: 0 0 0 3px rgba(72,187,120,0.15);
+    }
+    .venue-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+
+    .email-hint { font-size: 12px; color: #a0aec0; margin-top: 7px; line-height: 1.5; }
+    .email-status {
+      margin-top: 8px; font-size: 13px; line-height: 1.5;
+      display: none; padding: 8px 12px; border-radius: 8px;
+    }
+    .email-status.checking { background: #ebf8ff; color: #2b6cb0; display: block; }
+    .email-status.ok       { background: #f0fff4; color: #276749;  display: block; }
+    .email-status.error    { background: #fff5f5; color: #c53030;  display: block; }
+
+    .submit-btn {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #48bb78, #38a169);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-height: 58px;
+      margin-top: 8px;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 4px 20px rgba(56,161,105,0.30);
+    }
+    .submit-btn:active:not(:disabled) { transform: scale(0.98); opacity: 0.9; }
+    .submit-btn:disabled { background: #a0aec0; cursor: not-allowed; box-shadow: none; }
+
+    .loading { display: none; text-align: center; color: #718096; font-size: 14px; margin-top: 14px; }
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid #e2e8f0; border-top-color: #48bb78;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .result {
+      margin-top: 20px; padding: 16px 18px;
+      border-radius: 14px; font-size: 14px;
+      line-height: 1.8; white-space: pre-line; display: none;
+    }
+    .result.success { background: #f0fff4; border: 1.5px solid #9ae6b4; color: #22543d; }
+    .result.error   { background: #fff5f5; border: 1.5px solid #feb2b2; color: #742a2a; }
+
+    /* ════════════════════════════════════════════
+       借用情形檢視
+       ════════════════════════════════════════════ */
+    .calendar-section {
+      margin-top: 40px;
+      padding-top: 28px;
+      border-top: 4px solid #f1f5f9;
+    }
+    .calendar-section h2 {
+      font-size: 18px;
+      color: #1a2940;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .calendar-section .cal-subtitle {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    /* 桃園 / 林口 分頁 */
+    .cal-branch-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+    }
+    .cal-branch-tab {
+      padding: 9px 8px;
+      border: none;
+      border-radius: 7px;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cal-branch-tab.active { background: #fff; color: #1a2940; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+    /* 控制列:年月選擇 + 上下月 + 月/週切換 */
+    .cal-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .cal-controls-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .cal-controls-row.row-nav { flex: 1; }
+    .cal-controls-row.row-tools { justify-content: space-between; }
+    .cal-nav-btn {
+      width: 36px; height: 36px;
+      border: 1.5px solid #e2e8f0;
+      background: #fff;
+      border-radius: 9px;
+      font-size: 16px;
+      color: #4a5568;
+      cursor: pointer;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cal-nav-btn:active { background: #edf2f7; }
+    .cal-controls select {
+      padding: 8px 10px;
+      min-height: 36px;
+      font-size: 14px;
+      flex: 1;
+      min-width: 0;
+    }
+    .cal-today-btn {
+      padding: 8px 14px;
+      min-height: 36px;
+      border: 1.5px solid #e2e8f0;
+      background: #fff;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #4a5568;
+      cursor: pointer;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cal-today-btn:active { background: #edf2f7; }
+    .cal-view-toggle {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 9px;
+      padding: 3px;
+      flex-shrink: 0;
+    }
+    .cal-view-toggle button {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cal-view-toggle button.active { background: #fff; color: #1a2940; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+    .cal-loading {
+      text-align: center;
+      padding: 30px 10px;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+    .cal-error {
+      padding: 14px;
+      background: #fff5f5;
+      border: 1px solid #feb2b2;
+      color: #c53030;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    /* ── 月檢視 ── */
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+      background: #e2e8f0;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 11px;
+    }
+    .month-weekday {
+      background: #f8fafc;
+      text-align: center;
+      padding: 8px 2px;
+      font-weight: 700;
+      color: #64748b;
+      font-size: 12px;
+    }
+    .month-cell {
+      background: #fff;
+      min-height: 70px;
+      padding: 4px 3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .month-cell.other-month { background: #f8fafc; }
+    .month-cell.today .day-num {
+      background: #48bb78;
+      color: #fff;
+      border-radius: 50%;
+      width: 20px; height: 20px;
+      line-height: 20px;
+      text-align: center;
+      padding: 0;
+    }
+    .month-cell.holiday { background: #fefce8; }
+    .month-cell.holiday::before {
+      content: '休';
+      position: absolute;
+      top: 2px; right: 3px;
+      font-size: 9px;
+      color: #a16207;
+      font-weight: 700;
+      background: #fef9c3;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .day-num {
+      font-size: 12px;
+      color: #1a2940;
+      font-weight: 600;
+      margin-bottom: 2px;
+      display: inline-block;
+      width: 20px; height: 20px;
+      line-height: 20px;
+      text-align: center;
+    }
+    .month-cell.other-month .day-num { color: #cbd5e0; }
+    .booking-pill {
+      font-size: 9px;
+      line-height: 1.3;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-bottom: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #fff;
+    }
+    .booking-more {
+      font-size: 9px;
+      color: #64748b;
+      padding: 0 3px;
+    }
+
+    /* ── 週檢視(資源欄位) ── */
+    .week-wrap {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .week-header-row {
+      display: grid;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+    }
+    .week-header-row > div {
+      padding: 6px 4px 8px;
+      text-align: center;
+      border-right: 1px solid #e2e8f0;
+    }
+    .week-header-row > div:last-child { border-right: none; }
+    .wd-cell {
+      cursor: pointer;
+      transition: background 0.12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wd-cell:active { background: #edf2f7; }
+    .wd-name {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+    .week-header-row .wd-num {
+      font-size: 16px;
+      color: #1a2940;
+      display: inline-block;
+      width: 26px; height: 26px;
+      line-height: 26px;
+      text-align: center;
+      border-radius: 50%;
+    }
+    .week-header-row .wd-today .wd-num {
+      background: #48bb78;
+      color: #fff;
+    }
+    .week-header-row .wd-holiday { background: #fefce8; color: #a16207; }
+
+    .week-body {
+      display: grid;
+      position: relative;
+      background: #fff;
+    }
+    .week-col {
+      border-right: 1px solid #edf2f7;
+      position: relative;
+      min-height: 480px;
+    }
+    .week-col:last-child { border-right: none; }
+    .week-hour-line {
+      position: absolute;
+      left: 0; right: 0;
+      border-top: 1px dashed #f1f5f9;
+      font-size: 9px;
+      color: #cbd5e0;
+      padding-left: 3px;
+    }
+    .week-time-col {
+      border-right: 1px solid #e2e8f0;
+      background: #fafbfc;
+      position: relative;
+    }
+    .week-time-label {
+      position: absolute;
+      right: 4px;
+      font-size: 10px;
+      color: #94a3b8;
+      transform: translateY(-50%);
+    }
+    .week-event {
+      position: absolute;
+      left: 2px; right: 2px;
+      border-radius: 4px;
+      padding: 3px 4px;
+      font-size: 10px;
+      line-height: 1.25;
+      color: #fff;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .week-event .we-venue { font-weight: 700; }
+    .week-event .we-time  { opacity: 0.9; font-size: 9px; }
+    .week-holiday-banner {
+      position: absolute;
+      left: 0; right: 0;
+      top: 0;
+      background: #fef9c3;
+      color: #854d0e;
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      padding: 3px 0;
+      border-bottom: 1px solid #fde68a;
+      z-index: 2;
+    }
+
+    /* ── 月檢視:點日展開的彈窗 ── */
+    .month-cell { cursor: pointer; transition: background 0.12s; }
+    .month-cell:active { background: #f1f5f9; }
+    .month-cell.other-month:active { background: #edf2f7; }
+    .month-cell.holiday:active { background: #fef9c3; }
+
+    .day-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      z-index: 1000;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      animation: fadeIn 0.18s ease-out;
+    }
+    .day-modal-overlay.show { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .day-modal {
+      background: #fff;
+      width: 100%;
+      max-height: 80vh;
+      border-radius: 18px 18px 0 0;
+      padding: 8px 0 24px;
+      animation: slideUp 0.22s ease-out;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .day-modal-handle {
+      width: 40px; height: 4px;
+      background: #cbd5e0;
+      border-radius: 2px;
+      margin: 0 auto 10px;
+      flex-shrink: 0;
+    }
+    .day-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px 12px;
+      border-bottom: 1px solid #edf2f7;
+      flex-shrink: 0;
+    }
+    .day-modal-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #1a2940;
+    }
+    .day-modal-title .dm-weekday {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .day-modal-close {
+      width: 32px; height: 32px;
+      border: none;
+      background: #f1f5f9;
+      border-radius: 50%;
+      font-size: 18px;
+      color: #64748b;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .day-modal-close:active { background: #e2e8f0; }
+    .day-modal-body {
+      padding: 14px 20px 4px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .day-holiday-tag {
+      display: inline-block;
+      background: #fef9c3;
+      color: #854d0e;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+    .day-empty {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 14px;
+      padding: 24px 0;
+    }
+    .day-event-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .day-event-item:last-child { border-bottom: none; }
+    .day-event-bar {
+      width: 4px;
+      align-self: stretch;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .day-event-info { flex: 1; min-width: 0; }
+    .day-event-time {
+      font-size: 15px;
+      color: #1a2940;
+      font-weight: 700;
+    }
+    .day-event-venue {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* ── 天檢視(彈窗內) ── */
+    .day-view {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .day-view-header {
+      display: grid;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+    }
+    .day-view-header > div {
+      padding: 8px 4px;
+      text-align: center;
+      border-right: 1px solid #e2e8f0;
+    }
+    .day-view-header > div:last-child { border-right: none; }
+    .day-view-body {
+      display: grid;
+      position: relative;
+      background: #fff;
+    }
+    .dv-time-col {
+      border-right: 1px solid #e2e8f0;
+      background: #fafbfc;
+      position: relative;
+    }
+    .dv-time-label {
+      position: absolute;
+      right: 4px;
+      font-size: 10px;
+      color: #94a3b8;
+      transform: translateY(-50%);
+    }
+    .dv-col {
+      border-right: 1px solid #edf2f7;
+      position: relative;
+    }
+    .dv-col:last-child { border-right: none; }
+    .dv-hour-line {
+      position: absolute;
+      left: 0; right: 0;
+      border-top: 1px dashed #f1f5f9;
+    }
+    .dv-event {
+      position: absolute;
+      left: 2px; right: 2px;
+      border-radius: 4px;
+      padding: 4px 5px;
+      font-size: 10px;
+      line-height: 1.3;
+      color: #fff;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .dv-event .dv-venue { font-weight: 700; font-size: 11px; }
+    .dv-event .dv-time { opacity: 0.95; font-size: 10px; }
+    .dv-holiday-banner {
+      position: absolute;
+      left: 0; right: 0;
+      top: 0;
+      background: #fef9c3;
+      color: #854d0e;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+      padding: 4px 0;
+      border-bottom: 1px solid #fde68a;
+      z-index: 2;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+      font-size: 11px;
+      color: #64748b;
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 4px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+    /* 桌機版 */
+    @media (min-width: 601px) {
+      body { padding: 40px 16px 60px; }
+      .container {
+        max-width: 720px;
+        margin: 0 auto;
+        border-radius: 18px;
+        padding: 40px 36px 36px;
+        box-shadow: 0 4px 28px rgba(0,0,0,0.09);
+        min-height: unset;
+      }
+      .time-row input { padding: 14px 16px; }
+      .venue-btn { font-size: 15px; padding: 16px 8px; min-height: 80px; }
+      .venue-icon { font-size: 24px; margin-bottom: 5px; }
+      .month-grid { font-size: 12px; }
+      .month-cell { min-height: 90px; padding: 6px 5px; }
+      .day-num { font-size: 13px; }
+      .booking-pill { font-size: 10px; padding: 2px 5px; }
+      .week-header-row { font-size: 12px; }
+      .week-event { font-size: 11px; }
+
+      .day-modal-overlay { align-items: center; }
+      .day-modal {
+        max-width: 460px;
+        max-height: 70vh;
+        border-radius: 16px;
+        padding: 8px 0 20px;
+      }
+      .day-modal-handle { display: none; }
+
+      /* 桌機上控制列回到單行 */
+      .cal-controls { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 12px; }
+      .cal-controls-row.row-nav { flex: 1 1 auto; min-width: 0; }
+      .cal-controls-row.row-tools { flex: 0 0 auto; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<!-- Google Identity Services（使用 Google 登入）-->
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+  #loginOverlay { position: fixed; inset: 0; background: #f0f4f8; z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", sans-serif; }
+  #loginOverlay .church-name { color:#2c5282; font-weight:600; letter-spacing:1px; }
+  #loginOverlay h2 { color:#2c5282; margin:8px 0; font-size:1.5rem; }
+  #loginOverlay p { color:#555; margin-bottom:24px; max-width:330px; line-height:1.7; }
+  #gBtn { display:flex; justify-content:center; }
+  #loginStatus { margin-top:18px; color:#c0392b; min-height:22px; font-size:.95rem; line-height:1.5; }
+  #userBar { display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:#e8f0fe; color:#2c5282; padding:9px 14px; border-radius:10px; margin-bottom:14px;
+    font-size:.9rem; }
+  #userBar button { background:#fff; border:1px solid #b3c7e6; color:#2c5282; border-radius:8px;
+    padding:5px 12px; cursor:pointer; font-size:.85rem; }
+  #userBar button:hover { background:#f0f6ff; }
+</style>
+<div id="loginOverlay">
+  <div class="church-name">Taoyuan Banner Church</div>
+  <h2>場地申請系統</h2>
+  <p>請用教會登記的 Google 帳號登入。<br>系統會自動帶入並驗證你的身分,不需手動填 Email。</p>
+  <div id="gBtn"></div>
+  <div id="loginStatus"></div>
+</div>
+<div class="container">
+  <div id="userBar" style="display:none;">
+    <span id="userInfo"></span>
+    <button type="button" onclick="logout()">登出</button>
+  </div>
+  <div class="header">
+    <div class="church-name">Taoyuan Banner Church</div>
+    <h1>場地使用申請</h1>
+    <div class="subtitle">請填寫以下資料，系統將確認場地是否可用，最下方可查看各場地使用情形</div>
+    <div class="subtitle">❗️如遇教會活動場地衝突，將由全職同工協調場地使用，若教會已無場地時，則需自行另尋教會以外的場地❗️</div>
+  </div>
+  <div class="divider"></div>
+
+  <!-- ── 分堂切換 ── -->
+  <div class="branch-tabs" role="tablist">
+    <button type="button" class="branch-tab active" data-branch="桃園" onclick="selectBranch('桃園')">🏛 桃園</button>
+    <button type="button" class="branch-tab" data-branch="林口" onclick="selectBranch('林口')">🏛 林口</button>
+  </div>
+
+  <form id="bookingForm">
+    <div class="form-group">
+      <label>申請人姓名 <span class="required">*</span></label>
+      <input type="text" id="name" placeholder="請輸入您的姓名" required autocomplete="name">
+    </div>
+
+    <div class="form-group">
+      <label>使用日期 <span class="required">*</span></label>
+      <input type="date" id="date" required>
+    </div>
+
+    <div class="form-group">
+      <label>使用時間 <span class="required">*</span></label>
+      <div class="time-row">
+        <input type="time" id="startTime" required>
+        <span class="time-sep">—</span>
+        <input type="time" id="endTime" required>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>選擇場地 <span class="required">*</span></label>
+      <div class="venue-grid" id="venueGrid"></div>
+      <input type="hidden" id="venue">
+    </div>
+
+    <div class="form-group">
+      <label>活動用途 <span class="required">*</span></label>
+      <input type="text" id="purpose" placeholder="例:小組聚會、團契、禱告會…" required>
+    </div>
+
+    <div class="form-group">
+      <label>預估人數 <span class="required">*</span></label>
+      <input type="number" id="people" placeholder="請輸入人數" min="1" required inputmode="numeric">
+    </div>
+
+    <div class="form-group">
+      <label>登記人 Email（Google 登入自動帶入）</label>
+      <input type="email" id="emailInput" readonly tabindex="-1"
+             style="background:#f1f3f5;color:#555;cursor:not-allowed;">
+      <div class="email-hint">已由 Google 登入驗證身分,無法手動修改。登記成功後寄送確認信與行事曆邀請。</div>
+      <div class="email-status" id="emailStatus" style="display:none;"></div>
+    </div>
+
+    <button type="button" class="submit-btn" id="submitBtn" onclick="submitForm()">
+      確認送出申請
+    </button>
+
+    <div class="loading" id="loading"><span class="spinner"></span>正在確認場地可用性…</div>
+    <div class="result" id="result"></div>
+  </form>
+
+  <!-- ════ 借用情形檢視 ════ -->
+  <div class="calendar-section">
+    <h2>📅 場地借用情形</h2>
+    <div class="cal-subtitle">為保護同工隱私,僅顯示時段與場地。標示「休」的日期為教會休假日(仍可借用)。</div>
+
+    <div class="cal-branch-tabs">
+      <button type="button" class="cal-branch-tab active" data-cal-branch="桃園" onclick="selectCalBranch('桃園')">桃園</button>
+      <button type="button" class="cal-branch-tab" data-cal-branch="林口" onclick="selectCalBranch('林口')">林口</button>
+    </div>
+
+    <div class="cal-controls">
+      <div class="cal-controls-row row-nav">
+        <button type="button" class="cal-nav-btn" onclick="navCal(-1)" title="上一個">‹</button>
+        <select id="calYear" onchange="onYearMonthChange()"></select>
+        <select id="calMonth" onchange="onYearMonthChange()"></select>
+        <button type="button" class="cal-nav-btn" onclick="navCal(1)" title="下一個">›</button>
+      </div>
+      <div class="cal-controls-row row-tools">
+        <button type="button" class="cal-today-btn" onclick="goToday()">今天</button>
+        <div class="cal-view-toggle">
+          <button type="button" id="viewMonthBtn" class="active" onclick="setCalView('month')">月</button>
+          <button type="button" id="viewWeekBtn" onclick="setCalView('week')">週</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="calContent">
+      <div class="cal-loading">載入中…</div>
+    </div>
+
+    <div class="legend" id="calLegend"></div>
+  </div>
+</div>
+
+<!-- 月檢視點日後的彈窗 -->
+<div class="day-modal-overlay" id="dayModal" onclick="closeDayModalIfBg(event)">
+  <div class="day-modal" onclick="event.stopPropagation()">
+    <div class="day-modal-handle"></div>
+    <div class="day-modal-header">
+      <div class="day-modal-title">
+        <span id="dmDate"></span>
+        <span class="dm-weekday" id="dmWeekday"></span>
+      </div>
+      <button type="button" class="day-modal-close" onclick="closeDayModal()" aria-label="關閉">×</button>
+    </div>
+    <div class="day-modal-body" id="dmBody"></div>
+  </div>
+</div>
+
+<script>
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqvS2gLPqkXOgCWV-130JO9cC6Oi9pvCkVf28jRMynqW1mdWyP_00J8HGu0VY3HXDT2A/exec';
+
+  // ════════════════════════════════════════════
+  // Google 登入（零信任）
+  // ════════════════════════════════════════════
+  var CLIENT_ID  = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
+  var ID_TOKEN   = null;   // Google 簽發的身分票（JWT）
+  var USER_EMAIL = null;   // 驗證過的 email
+
+  function initGoogleLogin() {
+    if (!(window.google && google.accounts && google.accounts.id)) {
+      return setTimeout(initGoogleLogin, 100);  // 等 GIS 函式庫載入
+    }
+    google.accounts.id.initialize({
+      client_id: CLIENT_ID,
+      callback: onGoogleLogin,
+      auto_select: false
+    });
+    google.accounts.id.renderButton(document.getElementById('gBtn'),
+      { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
+  }
+  window.addEventListener('load', initGoogleLogin);
+
+  function onGoogleLogin(response) {
+    ID_TOKEN = response.credential;
+    document.getElementById('loginStatus').style.color = '#555';
+    document.getElementById('loginStatus').textContent = '⏳ 驗證中…';
+    fetch(SCRIPT_URL, {
+      method: 'POST', redirect: 'follow',
+      body: JSON.stringify({ action: 'session', idToken: ID_TOKEN })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (!res.success) { showLoginError(res.message || '登入失敗,請重試'); return; }
+      USER_EMAIL = res.email;
+      emailVerified = !!res.allowed;
+      document.getElementById('emailInput').value = res.email;
+      if (!res.allowed) {
+        showLoginError((res.name ? res.name + '，' : '') + (res.message || '此帳號沒有借用權限'));
+        return;  // 沒權限不放行
+      }
+      // ✅ 放行進主畫面
+      document.getElementById('loginOverlay').style.display = 'none';
+      var bar = document.getElementById('userBar');
+      bar.style.display = 'flex';
+      document.getElementById('userInfo').textContent =
+        '已登入：' + (res.name ? res.name + '（' + res.email + '）' : res.email);
+      loadAndRenderCalendar();  // 登入後才載入借用情形
+    })
+    .catch(function() { showLoginError('連線失敗,請稍後再試'); });
+  }
+
+  function showLoginError(msg) {
+    var el = document.getElementById('loginStatus');
+    el.style.color = '#c0392b';
+    el.textContent = '⚠️ ' + msg;
+  }
+
+  function requireRelogin() {
+    USER_EMAIL = null; ID_TOKEN = null; emailVerified = false;
+    document.getElementById('userBar').style.display = 'none';
+    var ov = document.getElementById('loginOverlay');
+    ov.style.display = 'flex';
+    showLoginError('登入逾時,請重新登入。');
+  }
+
+  function logout() {
+    if (window.google && google.accounts && google.accounts.id) {
+      google.accounts.id.disableAutoSelect();
+    }
+    location.reload();
+  }
+
+  // ── 場地清單(必須與後端 VENUES 一致) ──
+  var VENUES_BY_BRANCH = {
+    '桃園': [
+      { name: '501教室', icon: '🏫' },
+      { name: '502教室', icon: '🏫' },
+      { name: '副堂',    icon: '⛪' },
+      { name: '主堂',    icon: '✝️' }
+    ],
+    '林口': [
+      { name: '201教室', icon: '🏫' },
+      { name: '202教室', icon: '🏫' },
+      { name: '203教室', icon: '🏫' },
+      { name: '主堂',    icon: '✝️' }
+    ]
+  };
+
+  // 場地→顏色(每個場地配一個顏色,讓檢視更清楚)
+  var VENUE_COLORS = {
+    '桃園': {
+      '501教室': '#3b82f6',
+      '502教室': '#0ea5e9',
+      '副堂':    '#8b5cf6',
+      '主堂':    '#ec4899'
+    },
+    '林口': {
+      '201教室': '#10b981',
+      '202教室': '#14b8a6',
+      '203教室': '#06b6d4',
+      '主堂':    '#f59e0b'
+    }
+  };
+
+  // ── 表單狀態 ──
+  var currentBranch = '桃園';
+  var emailVerified = false;
+
+  // ── 檢視狀態 ──
+  var calBranch = '桃園';
+  var calView = 'month';        // 'month' | 'week'
+  var calCursor = new Date();   // 月檢視:該月任一天;週檢視:該週任一天
+  var calCache = {};            // key=branch+'-'+yyyy+'-'+mm, value=資料
+  var lastViewData = null;      // 最近一次載入的資料(月或週),給點日彈窗用
+
+  (function init() {
+    // 日期最小值 = 今天
+    var t = new Date();
+    var yyyy = t.getFullYear();
+    var mm = String(t.getMonth() + 1).padStart(2, '0');
+    var dd = String(t.getDate()).padStart(2, '0');
+    document.getElementById('date').min = yyyy + '-' + mm + '-' + dd;
+
+    // 初始化年月下拉
+    var yearSel = document.getElementById('calYear');
+    for (var y = yyyy - 2; y <= yyyy + 2; y++) {
+      var op = document.createElement('option');
+      op.value = y; op.textContent = y + ' 年';
+      yearSel.appendChild(op);
+    }
+    var monthSel = document.getElementById('calMonth');
+    for (var m = 1; m <= 12; m++) {
+      var op2 = document.createElement('option');
+      op2.value = m; op2.textContent = m + ' 月';
+      monthSel.appendChild(op2);
+    }
+
+    renderVenues();
+    syncCalSelectors();
+    renderLegend();
+    // 借用情形改在「登入成功後」才載入（見 onGoogleLogin）
+  })();
+
+  // ════════════════════════════════════════════
+  // 表單部分
+  // ════════════════════════════════════════════
+  function selectBranch(branch) {
+    currentBranch = branch;
+    document.querySelectorAll('.branch-tab').forEach(function(t) {
+      t.classList.toggle('active', t.dataset.branch === branch);
+    });
+    // 清掉已選場地(因為換堂了)
+    document.getElementById('venue').value = '';
+    renderVenues();
+  }
+
+  function renderVenues() {
+    var grid = document.getElementById('venueGrid');
+    grid.innerHTML = '';
+    VENUES_BY_BRANCH[currentBranch].forEach(function(v) {
+      var btn = document.createElement('div');
+      btn.className = 'venue-btn';
+      btn.innerHTML = '<span class="venue-icon">' + v.icon + '</span>' + v.name;
+      btn.onclick = function() { selectVenue(v.name, btn); };
+      grid.appendChild(btn);
+    });
+  }
+
+  function selectVenue(venue, el) {
+    document.getElementById('venue').value = venue;
+    document.querySelectorAll('.venue-btn').forEach(function(b) { b.classList.remove('selected'); });
+    el.classList.add('selected');
+  }
+
+  // 身分驗證已改由 Google 登入處理（見 onGoogleLogin），此函式保留為空殼
+  function verifyEmail(val) { /* deprecated: 改用 Google 登入 */ }
+
+  function setSubmitting(on) {
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = on;
+    btn.textContent = on ? '處理中…' : '確認送出申請';
+    document.getElementById('loading').style.display = on ? 'block' : 'none';
+  }
+
+  function submitForm() {
+    var name    = document.getElementById('name').value.trim();
+    var date    = document.getElementById('date').value;
+    var start   = document.getElementById('startTime').value;
+    var end     = document.getElementById('endTime').value;
+    var venue   = document.getElementById('venue').value;
+    var purpose = document.getElementById('purpose').value.trim();
+    var people  = document.getElementById('people').value;
+    var email   = USER_EMAIL;  // 用 Google 登入驗證過的 email
+
+    if (!ID_TOKEN || !email) { requireRelogin(); return; }
+    if (!name)         { showResult(false, '請填寫申請人姓名。'); return; }
+    if (!date)         { showResult(false, '請選擇使用日期。'); return; }
+    if (!start || !end){ showResult(false, '請填寫使用時間。'); return; }
+    if (!venue)        { showResult(false, '請點選要申請的場地!'); return; }
+    if (!purpose)      { showResult(false, '請填寫活動用途。'); return; }
+    if (!people)       { showResult(false, '請填寫預估人數。'); return; }
+
+    var formData = {
+      action: 'book',
+      idToken: ID_TOKEN,
+      branch: currentBranch,
+      name: name, date: date,
+      startTime: start, endTime: end,
+      venue: venue, purpose: purpose,
+      people: people, email: email
+    };
+
+    setSubmitting(true);
+    document.getElementById('result').style.display = 'none';
+
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(formData),
+      redirect: 'follow'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      setSubmitting(false);
+      if (res.code === 'NO_AUTH') { requireRelogin(); return; }
+      showResult(res.success, res.message);
+      if (res.success) {
+        document.getElementById('bookingForm').reset();
+        document.querySelectorAll('.venue-btn').forEach(function(b) { b.classList.remove('selected'); });
+        document.getElementById('emailInput').value = USER_EMAIL || '';  // reset 後補回登入身分
+        // 申請成功後,刷新該堂的檢視快取
+        invalidateCacheForBranch(currentBranch);
+        if (calBranch === currentBranch) loadAndRenderCalendar();
+      }
+    })
+    .catch(function() {
+      setSubmitting(false);
+      showResult(false, '系統錯誤,請稍後再試或聯繫管理員。');
+    });
+  }
+
+  function showResult(success, msg) {
+    var el = document.getElementById('result');
+    el.style.display = 'block';
+    el.className = 'result ' + (success ? 'success' : 'error');
+    el.textContent = msg;
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ════════════════════════════════════════════
+  // 借用情形檢視
+  // ════════════════════════════════════════════
+  function selectCalBranch(branch) {
+    calBranch = branch;
+    document.querySelectorAll('.cal-branch-tab').forEach(function(t) {
+      t.classList.toggle('active', t.dataset.calBranch === branch);
+    });
+    renderLegend();
+    loadAndRenderCalendar();
+  }
+
+  function setCalView(v) {
+    calView = v;
+    document.getElementById('viewMonthBtn').classList.toggle('active', v === 'month');
+    document.getElementById('viewWeekBtn').classList.toggle('active', v === 'week');
+    loadAndRenderCalendar();
+  }
+
+  function navCal(delta) {
+    if (calView === 'month') {
+      calCursor.setDate(1);
+      calCursor.setMonth(calCursor.getMonth() + delta);
+    } else {
+      calCursor.setDate(calCursor.getDate() + delta * 7);
+    }
+    syncCalSelectors();
+    loadAndRenderCalendar();
+  }
+
+  function goToday() {
+    calCursor = new Date();
+    syncCalSelectors();
+    loadAndRenderCalendar();
+  }
+
+  function onYearMonthChange() {
+    var y = parseInt(document.getElementById('calYear').value, 10);
+    var m = parseInt(document.getElementById('calMonth').value, 10) - 1;
+    calCursor = new Date(y, m, 1);
+    loadAndRenderCalendar();
+  }
+
+  function syncCalSelectors() {
+    var y = calCursor.getFullYear();
+    var m = calCursor.getMonth() + 1;
+    var yearSel = document.getElementById('calYear');
+    // 確保下拉裡有這年(超出範圍時動態加)
+    var hasYear = false;
+    for (var i = 0; i < yearSel.options.length; i++) {
+      if (parseInt(yearSel.options[i].value, 10) === y) { hasYear = true; break; }
+    }
+    if (!hasYear) {
+      var op = document.createElement('option');
+      op.value = y; op.textContent = y + ' 年';
+      yearSel.appendChild(op);
+      // 重排序
+      var opts = Array.prototype.slice.call(yearSel.options);
+      opts.sort(function(a, b) { return parseInt(a.value, 10) - parseInt(b.value, 10); });
+      yearSel.innerHTML = '';
+      opts.forEach(function(o) { yearSel.appendChild(o); });
+    }
+    yearSel.value = y;
+    document.getElementById('calMonth').value = m;
+  }
+
+  function invalidateCacheForBranch(branch) {
+    Object.keys(calCache).forEach(function(k) {
+      if (k.indexOf(branch + '-') === 0) delete calCache[k];
+    });
+  }
+
+  // 取得目前需要載入的月份範圍
+  // 月檢視:這個月;週檢視:這週(可能跨月,簡化成這週所在的那個月)
+  function getRangeForCurrentView() {
+    var y, m;
+    if (calView === 'month') {
+      y = calCursor.getFullYear();
+      m = calCursor.getMonth();
+    } else {
+      // 週檢視:用週日所在的那一刻決定範圍,但抓事件範圍要涵蓋整週
+      var weekStart = getWeekStart(calCursor);
+      y = weekStart.getFullYear();
+      m = weekStart.getMonth();
+    }
+    return { year: y, month: m };
+  }
+
+  function getWeekStart(d) {
+    var x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    // 週一當作一週的起點:週日(0)往前推 6 天,其他往前推 (day-1) 天
+    var day = x.getDay();
+    var diff = (day === 0) ? 6 : (day - 1);
+    x.setDate(x.getDate() - diff);
+    return x;
+  }
+
+  function loadAndRenderCalendar() {
+    var content = document.getElementById('calContent');
+    content.innerHTML = '<div class="cal-loading">載入中…</div>';
+
+    // 為了月檢視畫面完整(包含上下月補格),抓 6 週的範圍;週檢視抓那一週前後共 2 週緩衝
+    var rangeStart, rangeEnd;
+    if (calView === 'month') {
+      var first = new Date(calCursor.getFullYear(), calCursor.getMonth(), 1);
+      rangeStart = getWeekStart(first);
+      rangeEnd = new Date(rangeStart);
+      rangeEnd.setDate(rangeEnd.getDate() + 42); // 6 週
+    } else {
+      rangeStart = getWeekStart(calCursor);
+      rangeEnd = new Date(rangeStart);
+      rangeEnd.setDate(rangeEnd.getDate() + 7);
+    }
+
+    var cacheKey = calBranch + '-' + rangeStart.toISOString() + '-' + rangeEnd.toISOString() + '-' + calView;
+    if (calCache[cacheKey]) {
+      doRender(calCache[cacheKey], rangeStart, rangeEnd);
+      return;
+    }
+
+    if (!ID_TOKEN) {
+      content.innerHTML = '<div class="cal-error">請先登入後再查看借用情形。</div>';
+      return;
+    }
+    fetch(SCRIPT_URL, {
+      method: 'POST', redirect: 'follow',
+      body: JSON.stringify({
+        action: 'getBookings', idToken: ID_TOKEN,
+        branch: calBranch,
+        start: rangeStart.toISOString(), end: rangeEnd.toISOString()
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res && res.code === 'NO_AUTH') { requireRelogin(); return; }
+      if (!res || !res.success) {
+        content.innerHTML = '<div class="cal-error">' + ((res && res.message) || '載入失敗') + '</div>';
+        return;
+      }
+      calCache[cacheKey] = res;
+      doRender(res, rangeStart, rangeEnd);
+    })
+    .catch(function() {
+      content.innerHTML = '<div class="cal-error">⚠️ 載入失敗,請稍後再試</div>';
+    });
+  }
+
+  function doRender(data, rangeStart, rangeEnd) {
+    if (calView === 'month') {
+      renderMonth(data, rangeStart);
+    } else {
+      renderWeek(data, rangeStart);
+    }
+  }
+
+  // ── 月檢視 ──
+  function renderMonth(data, gridStart) {
+    lastViewData = data;
+    var content = document.getElementById('calContent');
+    var year = calCursor.getFullYear();
+    var month = calCursor.getMonth();
+    var today = new Date(); today.setHours(0,0,0,0);
+
+    var html = '<div class="month-grid">';
+    ['一','二','三','四','五','六','日'].forEach(function(w) {
+      html += '<div class="month-weekday">' + w + '</div>';
+    });
+
+    // 預先把休假日排出來(以日期字串為 key)
+    var holidayDays = {};
+    (data.holidays || []).forEach(function(h) {
+      var s = new Date(h.start);
+      var e = new Date(h.end);
+      // 整天事件 end 通常是隔天 00:00,要往前一秒
+      var cur = new Date(s); cur.setHours(0,0,0,0);
+      var endDay = new Date(e);
+      if (h.allDay) endDay.setSeconds(endDay.getSeconds() - 1);
+      while (cur <= endDay) {
+        holidayDays[dateKey(cur)] = true;
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+
+    // 把 booking 按日期分組
+    var bookingsByDay = {};
+    (data.bookings || []).forEach(function(b) {
+      var s = new Date(b.start);
+      var key = dateKey(s);
+      if (!bookingsByDay[key]) bookingsByDay[key] = [];
+      bookingsByDay[key].push(b);
+    });
+
+    for (var i = 0; i < 42; i++) {
+      var d = new Date(gridStart);
+      d.setDate(d.getDate() + i);
+      var inMonth = d.getMonth() === month;
+      var isToday = d.getTime() === today.getTime();
+      var key = dateKey(d);
+      var isHoliday = holidayDays[key];
+
+      var classes = ['month-cell'];
+      if (!inMonth) classes.push('other-month');
+      if (isToday) classes.push('today');
+      if (isHoliday) classes.push('holiday');
+
+      html += '<div class="' + classes.join(' ') + '" onclick="openDayModal(\'' + key + '\')">';
+      html += '<span class="day-num">' + d.getDate() + '</span>';
+
+      var dayBookings = bookingsByDay[key] || [];
+      // 按時間排序
+      dayBookings.sort(function(a, b) { return new Date(a.start) - new Date(b.start); });
+
+      var maxShow = 3;
+      var shown = dayBookings.slice(0, maxShow);
+      shown.forEach(function(b) {
+        var color = (VENUE_COLORS[calBranch] && VENUE_COLORS[calBranch][b.venue]) || '#64748b';
+        var s = new Date(b.start);
+        var label = pad2(s.getHours()) + ':' + pad2(s.getMinutes()) + ' ' + b.venue;
+        html += '<div class="booking-pill" style="background:' + color + '">' + escapeHtml(label) + '</div>';
+      });
+      if (dayBookings.length > maxShow) {
+        html += '<div class="booking-more">+' + (dayBookings.length - maxShow) + ' 筆</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    content.innerHTML = html;
+  }
+
+  // ── 週檢視(按場地分欄) ──
+  function renderWeek(data, weekStart) {
+    lastViewData = data;
+    var content = document.getElementById('calContent');
+    var venues = data.venues || [];
+    var today = new Date(); today.setHours(0,0,0,0);
+
+    // 休假日 set
+    var holidayDays = {};
+    (data.holidays || []).forEach(function(h) {
+      var s = new Date(h.start);
+      var e = new Date(h.end);
+      var cur = new Date(s); cur.setHours(0,0,0,0);
+      var endDay = new Date(e);
+      if (h.allDay) endDay.setSeconds(endDay.getSeconds() - 1);
+      while (cur <= endDay) {
+        holidayDays[dateKey(cur)] = true;
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+
+    // 標題列:7 天
+    var html = '<div class="week-wrap">';
+    html += '<div class="week-header-row" style="grid-template-columns: 36px repeat(7, 1fr);">';
+    html += '<div></div>';
+    var weekdayNames = ['日','一','二','三','四','五','六'];
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      var isToday = d.getTime() === today.getTime();
+      var key = dateKey(d);
+      var isHol = holidayDays[key];
+      var cls = [];
+      cls.push('wd-cell');
+      if (isToday) cls.push('wd-today');
+      if (isHol) cls.push('wd-holiday');
+      html += '<div class="' + cls.join(' ') + '" onclick="openDayModal(\'' + key + '\')">';
+      html += '<div class="wd-name">' + weekdayNames[d.getDay()] + '</div>';
+      html += '<div class="wd-num">' + d.getDate() + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // 內容區:時間軸 + 7 天每天再依場地堆疊事件
+    // 時間範圍:每天 7:00 ~ 23:00,每小時 30px
+    var hourStart = 7, hourEnd = 23;
+    var hourPx = 30;
+    var totalH = (hourEnd - hourStart) * hourPx;
+
+    html += '<div class="week-body" style="grid-template-columns: 36px repeat(7, 1fr); height:' + totalH + 'px;">';
+
+    // 時間欄
+    html += '<div class="week-time-col" style="height:' + totalH + 'px;">';
+    for (var hr = hourStart; hr <= hourEnd; hr++) {
+      var topPx = (hr - hourStart) * hourPx;
+      html += '<div class="week-time-label" style="top:' + topPx + 'px;">' + pad2(hr) + ':00</div>';
+    }
+    html += '</div>';
+
+    // 7 天欄
+    for (var di = 0; di < 7; di++) {
+      var dd = new Date(weekStart);
+      dd.setDate(dd.getDate() + di);
+      var keyD = dateKey(dd);
+      var dayBookings = (data.bookings || []).filter(function(b) {
+        return dateKey(new Date(b.start)) === keyD;
+      });
+      var isHolDay = holidayDays[keyD];
+
+      html += '<div class="week-col" style="height:' + totalH + 'px;">';
+      // 整點橫線
+      for (var hr2 = hourStart + 1; hr2 < hourEnd; hr2++) {
+        var topPx2 = (hr2 - hourStart) * hourPx;
+        html += '<div class="week-hour-line" style="top:' + topPx2 + 'px;"></div>';
+      }
+      // 休假日 banner(輕度視覺提示,不擋事件)
+      if (isHolDay) {
+        html += '<div class="week-holiday-banner">教會休假</div>';
+      }
+      // 事件 — 同一欄裡若多個場地時段重疊,簡化成均分寬度
+      var laidOut = layoutDayEvents(dayBookings, hourStart, hourEnd, hourPx);
+      laidOut.forEach(function(item) {
+        var color = (VENUE_COLORS[calBranch] && VENUE_COLORS[calBranch][item.b.venue]) || '#64748b';
+        var s2 = new Date(item.b.start);
+        var e2 = new Date(item.b.end);
+        var timeLbl = pad2(s2.getHours()) + ':' + pad2(s2.getMinutes()) + '–' + pad2(e2.getHours()) + ':' + pad2(e2.getMinutes());
+        var leftPct = (item.col / item.cols) * 100;
+        var widthPct = (1 / item.cols) * 100;
+        html += '<div class="week-event" style="' +
+                'top:' + item.top + 'px;' +
+                'height:' + Math.max(item.height, 16) + 'px;' +
+                'left: calc(' + leftPct + '% + 2px);' +
+                'width: calc(' + widthPct + '% - 4px);' +
+                'background:' + color + ';">' +
+                '<div class="we-venue">' + escapeHtml(item.b.venue) + '</div>' +
+                '<div class="we-time">' + timeLbl + '</div>' +
+                '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>'; // week-body
+    html += '</div>'; // week-wrap
+    content.innerHTML = html;
+  }
+
+  // 簡單的事件排版:重疊就分欄
+  function layoutDayEvents(bookings, hourStart, hourEnd, hourPx) {
+    var items = bookings.map(function(b) {
+      var s = new Date(b.start);
+      var e = new Date(b.end);
+      var startMin = s.getHours() * 60 + s.getMinutes();
+      var endMin   = e.getHours() * 60 + e.getMinutes();
+      var startBound = hourStart * 60;
+      var endBound   = hourEnd * 60;
+      startMin = Math.max(startMin, startBound);
+      endMin   = Math.min(endMin, endBound);
+      if (endMin <= startMin) return null;
+      return {
+        b: b,
+        startMin: startMin,
+        endMin: endMin,
+        top: (startMin - startBound) / 60 * hourPx,
+        height: (endMin - startMin) / 60 * hourPx,
+        col: 0,
+        cols: 1
+      };
+    }).filter(Boolean);
+
+    items.sort(function(a, b) { return a.startMin - b.startMin; });
+
+    // 找重疊群組
+    var groups = [];
+    items.forEach(function(it) {
+      var placed = false;
+      for (var gi = 0; gi < groups.length; gi++) {
+        var g = groups[gi];
+        var overlaps = g.some(function(x) {
+          return it.startMin < x.endMin && it.endMin > x.startMin;
+        });
+        if (overlaps) { g.push(it); placed = true; break; }
+      }
+      if (!placed) groups.push([it]);
+    });
+    groups.forEach(function(g) {
+      g.forEach(function(it, idx) { it.col = idx; it.cols = g.length; });
+    });
+    return items;
+  }
+
+  function renderLegend() {
+    var legend = document.getElementById('calLegend');
+    var venues = VENUES_BY_BRANCH[calBranch];
+    var html = '';
+    venues.forEach(function(v) {
+      var color = VENUE_COLORS[calBranch][v.name];
+      html += '<span class="legend-item"><span class="legend-dot" style="background:' + color + '"></span>' + v.name + '</span>';
+    });
+    html += '<span class="legend-item"><span class="legend-dot" style="background:#fef9c3;border:1px solid #fde68a"></span>教會休假</span>';
+    legend.innerHTML = html;
+  }
+
+  // ── 工具 ──
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function dateKey(d) {
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  // ── 月檢視:點日彈窗(天檢視) ──
+  function openDayModal(dateStr) {
+    if (!lastViewData) return;
+    var parts = dateStr.split('-');
+    var d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+    var weekdayNames = ['週日','週一','週二','週三','週四','週五','週六'];
+
+    document.getElementById('dmDate').textContent =
+      d.getFullYear() + '/' + pad2(d.getMonth()+1) + '/' + pad2(d.getDate());
+    document.getElementById('dmWeekday').textContent = weekdayNames[d.getDay()];
+
+    // 找該天所有事件
+    var dayBookings = (lastViewData.bookings || []).filter(function(b) {
+      return dateKey(new Date(b.start)) === dateStr;
+    });
+
+    // 該天是否為休假
+    var isHoliday = false;
+    (lastViewData.holidays || []).forEach(function(h) {
+      var hs = new Date(h.start);
+      var he = new Date(h.end);
+      var cur = new Date(hs); cur.setHours(0,0,0,0);
+      var endDay = new Date(he);
+      if (h.allDay) endDay.setSeconds(endDay.getSeconds() - 1);
+      while (cur <= endDay) {
+        if (dateKey(cur) === dateStr) isHoliday = true;
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+
+    // 渲染天檢視:每個場地一欄
+    var venues = (lastViewData.venues || VENUES_BY_BRANCH[calBranch].map(function(v){return v.name;}));
+    var hourStart = 7, hourEnd = 23;
+    var hourPx = 32;
+    var totalH = (hourEnd - hourStart) * hourPx;
+    var timeColPx = 40;
+
+    var bodyHtml = '';
+
+    // 標題列:時間欄 + N 個場地欄
+    bodyHtml += '<div class="day-view">';
+    bodyHtml += '<div class="day-view-header" style="grid-template-columns:' +
+                timeColPx + 'px repeat(' + venues.length + ', 1fr);">';
+    bodyHtml += '<div></div>';
+    venues.forEach(function(v) {
+      var color = (VENUE_COLORS[calBranch] && VENUE_COLORS[calBranch][v]) || '#64748b';
+      bodyHtml += '<div><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' +
+                  color + ';margin-right:4px;vertical-align:middle;"></span>' +
+                  escapeHtml(v) + '</div>';
+    });
+    bodyHtml += '</div>';
+
+    // body 的外層包一個 relative 容器,讓休假 banner 可以蓋場地欄(不蓋時間欄)
+    bodyHtml += '<div style="position:relative;">';
+
+    // 休假橫條(只蓋場地欄,從時間欄之後開始)
+    if (isHoliday) {
+      bodyHtml += '<div class="dv-holiday-banner" style="left:' + timeColPx + 'px;">教會休假(仍可借用)</div>';
+    }
+
+    // body
+    bodyHtml += '<div class="day-view-body" style="grid-template-columns:' +
+                timeColPx + 'px repeat(' + venues.length + ', 1fr); height:' + totalH + 'px;">';
+
+    // 時間欄
+    bodyHtml += '<div class="dv-time-col" style="height:' + totalH + 'px;">';
+    for (var hr = hourStart; hr <= hourEnd; hr++) {
+      var topPx = (hr - hourStart) * hourPx;
+      bodyHtml += '<div class="dv-time-label" style="top:' + topPx + 'px;">' + pad2(hr) + ':00</div>';
+    }
+    bodyHtml += '</div>';
+
+    // 每個場地一欄
+    venues.forEach(function(v) {
+      var color = (VENUE_COLORS[calBranch] && VENUE_COLORS[calBranch][v]) || '#64748b';
+      bodyHtml += '<div class="dv-col" style="height:' + totalH + 'px;">';
+
+      // 整點橫線
+      for (var hr2 = hourStart + 1; hr2 < hourEnd; hr2++) {
+        var topPx2 = (hr2 - hourStart) * hourPx;
+        bodyHtml += '<div class="dv-hour-line" style="top:' + topPx2 + 'px;"></div>';
+      }
+
+      // 該場地的事件
+      var venueBookings = dayBookings.filter(function(b) { return b.venue === v; });
+      venueBookings.forEach(function(b) {
+        var s = new Date(b.start);
+        var e = new Date(b.end);
+        var startMin = s.getHours() * 60 + s.getMinutes();
+        var endMin   = e.getHours() * 60 + e.getMinutes();
+        var sb = hourStart * 60, eb = hourEnd * 60;
+        startMin = Math.max(startMin, sb);
+        endMin   = Math.min(endMin, eb);
+        if (endMin <= startMin) return;
+        var top = (startMin - sb) / 60 * hourPx;
+        var h = Math.max((endMin - startMin) / 60 * hourPx, 18);
+        var timeLbl = pad2(s.getHours()) + ':' + pad2(s.getMinutes()) + '–' +
+                      pad2(e.getHours()) + ':' + pad2(e.getMinutes());
+        bodyHtml += '<div class="dv-event" style="' +
+                    'top:' + top + 'px; height:' + h + 'px; background:' + color + ';">' +
+                    '<div class="dv-venue">' + escapeHtml(v) + '</div>' +
+                    '<div class="dv-time">' + timeLbl + '</div>' +
+                    '</div>';
+      });
+
+      bodyHtml += '</div>';
+    });
+
+    bodyHtml += '</div>'; // day-view-body
+    bodyHtml += '</div>'; // relative wrapper
+    bodyHtml += '</div>'; // day-view
+
+    // 底下若無借用,補一行提示
+    if (dayBookings.length === 0) {
+      bodyHtml += '<div class="day-empty">這天沒有借用紀錄</div>';
+    }
+
+    document.getElementById('dmBody').innerHTML = bodyHtml;
+    document.getElementById('dayModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDayModal() {
+    document.getElementById('dayModal').classList.remove('show');
+    document.body.style.overflow = '';
+  }
+  function closeDayModalIfBg(ev) {
+    if (ev.target.id === 'dayModal') closeDayModal();
+  }
+  // ESC 關閉
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeDayModal();
+  });
+</script>
+</body>
+</html>
