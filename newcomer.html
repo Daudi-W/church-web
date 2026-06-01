@@ -1,0 +1,3125 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>新人跟進系統</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #1a5276;
+  --primary-light: #2e86c1;
+  --green: #22c55e;
+  --yellow: #f59e0b;
+  --red: #ef4444;
+  --gray: #94a3b8;
+  --bg: #f0f4f8;
+  --card: #ffffff;
+  --radius: 14px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: #1a202c;
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hidden { display: none !important; }
+
+button {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s, transform 0.1s;
+}
+button:active { opacity: 0.75; transform: scale(0.97); }
+
+.topbar {
+  background: var(--primary);
+  color: white;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.topbar-title { font-size: 16px; font-weight: 700; }
+.topbar-sub { font-size: 12px; opacity: 0.8; margin-top: 1px; }
+.topbar-buttons { display: flex; gap: 6px; align-items: center; }
+#btn-back, #btn-font {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+body.large-font #btn-font { background: #fbbf24; color: #1a202c; }
+
+#screen-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  gap: 16px;
+  color: #64748b;
+  font-size: 14px;
+}
+.big-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+#screen-main { padding: 14px; }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.stat-chip {
+  background: white;
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.stat-num { font-size: 24px; font-weight: 800; color: var(--primary); }
+.stat-lbl { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.filter-row::-webkit-scrollbar { display: none; }
+.filter-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: white;
+  color: #64748b;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.filter-btn.active { background: var(--primary); color: white; }
+
+.sort-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #64748b;
+}
+.sort-label { font-size: 12px; color: #94a3b8; }
+.btn-sort {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--primary);
+  color: white;
+}
+
+#screen-district { padding: 14px; }
+
+.district-header {
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+}
+.district-header h2 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+.district-header p  { font-size: 12px; color: #94a3b8; }
+
+.district-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.district-stats .stat-chip .stat-num { font-size: 20px; }
+
+.leader-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  border-left: 5px solid var(--primary);
+}
+.leader-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.leader-name { font-size: 16px; font-weight: 700; }
+.leader-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px;
+}
+.badge-total { background: #e0e7ff; color: #3730a3; }
+.badge-done  { background: #dcfce7; color: #14532d; }
+
+.btn-expand {
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #1a5276;
+  text-align: center;
+}
+
+.leader-members { margin-top: 10px; }
+.mini-member {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.mini-member-left .mini-name { font-size: 14px; font-weight: 700; }
+.mini-member-left .mini-sub  { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.mini-dots { display: flex; gap: 4px; }
+.mini-dot {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+}
+.dot-empty    { background: #f1f5f9; color: #cbd5e0; border: 1.5px dashed #e2e8f0; }
+.dot-跟進中   { background: #fef9c3; color: #92400e; border: 1.5px solid #fbbf24; }
+.dot-聯絡不上 { background: #fee2e2; color: #991b1b; border: 1.5px solid #f87171; }
+.dot-加入小組 { background: #dcfce7; color: #14532d; border: 1.5px solid #4ade80; }
+.dot-沒興趣   { background: #f1f5f9; color: #64748b; border: 1.5px solid #cbd5e0; }
+.dot-其他     { background: #ede9fe; color: #6b21a8; border: 1.5px solid #c4b5fd; }
+
+/* ── 區牧選區畫面 ── */
+#screen-pastor { padding: 14px; }
+
+.pastor-summary {
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+}
+.pastor-summary h2 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 12px; }
+
+.pastor-total-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.pastor-total-stats .stat-chip .stat-num { font-size: 20px; }
+
+/* 未分配新人警示卡片 */
+.unassigned-card {
+  background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%);
+  border: 2px solid #f97316;
+  border-left: 6px solid #ef4444;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: transform 0.1s;
+}
+.unassigned-card:active { transform: scale(0.99); }
+.unassigned-card-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+.unassigned-icon { font-size: 28px; line-height: 1; }
+.unassigned-text-title { font-size: 15px; font-weight: 700; color: #991b1b; }
+.unassigned-text-sub   { font-size: 12px; color: #b45309; margin-top: 2px; }
+.unassigned-count {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ef4444;
+  min-width: 36px;
+  text-align: right;
+}
+.unassigned-arrow { font-size: 22px; color: #ef4444; font-weight: 700; }
+body.large-font .unassigned-text-title { font-size: 19px; }
+body.large-font .unassigned-text-sub   { font-size: 15px; }
+body.large-font .unassigned-count      { font-size: 32px; }
+body.large-font .unassigned-icon       { font-size: 36px; }
+
+/* View 切換 tabs (區長/區牧畫面用) */
+.view-tabs {
+  display: flex;
+  gap: 6px;
+  background: white;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.view-tab {
+  flex: 1;
+  padding: 9px 8px;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.view-tab.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 1px 3px rgba(26,82,118,0.3);
+}
+body.large-font .view-tab { font-size: 17px; padding: 12px 10px; }
+
+/* 「依新人」清單的分群標題(區長視角的小組長橫條) */
+.flat-group {
+  margin-bottom: 20px;
+}
+.flat-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ede9fe;
+  color: #5b21b6;
+  border-radius: 6px;
+  padding: 7px 12px;
+  margin-bottom: 8px;
+  border-left: 3px solid #a78bfa;
+  cursor: pointer;
+}
+.flat-group-header:active { background: #ddd6fe; }
+.flat-group-title { font-size: 12px; font-weight: 700; color: #5b21b6; }
+.flat-group-badges { display: flex; gap: 5px; align-items: center; }
+.flat-group-badges .badge {
+  background: rgba(255,255,255,0.7);
+  color: #5b21b6;
+  font-weight: 700;
+  font-size: 10px;
+  padding: 2px 7px;
+}
+.flat-group-toggle { font-size: 12px; color: #7c3aed; margin-left: 2px; font-weight: 700; }
+body.large-font .flat-group-title { font-size: 15px; }
+body.large-font .flat-group-badges .badge { font-size: 13px; padding: 3px 9px; }
+
+/* 「我的小組長」標示 — 用一個小金徽章 */
+.flat-group-self-tag {
+  background: #fbbf24;
+  color: #78350f;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+body.large-font .flat-group-self-tag { font-size: 13px; padding: 3px 10px; }
+
+/* 區的分界(區牧依新人視圖)— 顯眼的橫條樣式 */
+.district-group {
+  margin-bottom: 22px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #cbd5e0;
+}
+.district-group:last-child { border-bottom: none; }
+
+.district-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #dbeafe;
+  color: var(--primary);
+  border-radius: 8px;
+  padding: 9px 14px;
+  margin-bottom: 10px;
+  border-left: 4px solid var(--primary-light);
+  cursor: pointer;
+}
+.district-group-header:active { background: #bfdbfe; }
+.district-group-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: 0.3px;
+}
+.district-group-badges { display: flex; gap: 5px; align-items: center; }
+.district-group-badges .badge {
+  background: rgba(255,255,255,0.75);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+.district-group-toggle { font-size: 13px; color: var(--primary-light); margin-left: 2px; font-weight: 700; }
+
+/* 區內的小組長子分節 */
+.district-leader-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 2px 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  color: #5b21b6;
+  font-weight: 700;
+  background: #ede9fe;
+  border-left: 3px solid #a78bfa;
+  border-radius: 6px;
+}
+.district-leader-sub-name { color: #5b21b6; }
+.district-leader-sub-count { color: #7c3aed; font-weight: 700; margin-left: auto; font-size: 11px; background: rgba(255,255,255,0.6); padding: 2px 8px; border-radius: 10px; }
+
+body.large-font .district-group-title { font-size: 17px; }
+body.large-font .district-group-badges .badge { font-size: 13px; padding: 3px 10px; }
+body.large-font .district-group-toggle { font-size: 16px; }
+body.large-font .district-leader-sub { font-size: 15px; }
+body.large-font .district-leader-sub-count { font-size: 14px; }
+
+/* 進入此區按鈕 */
+.btn-enter-district {
+  background: #1a5276;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.btn-enter-district:active { opacity: 0.8; }
+body.large-font .btn-enter-district { font-size: 14px; padding: 8px 14px; }
+
+/* 「進入 ›」按鈕(嵌在藍色區標題列中,白色半透明風格) */
+.btn-enter-district-inline {
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-enter-district-inline:hover { background: var(--primary-light); }
+.btn-enter-district-inline:active { transform: scale(0.97); }
+body.large-font .btn-enter-district-inline { font-size: 14px; padding: 6px 11px; }
+
+/* 在依新人卡片上顯示「所屬小組長 / 區」的小標籤 */
+.member-belongs {
+  display: inline-block;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
+
+/* 「依新人」精簡列卡片 */
+.flat-row {
+  background: white;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-left: 4px solid #e2e8f0;
+}
+.flat-row[data-last="跟進中"]   { border-left-color: var(--yellow); }
+.flat-row[data-last="聯絡不上"] { border-left-color: var(--red); }
+.flat-row[data-last="加入小組"] { border-left-color: var(--green); }
+.flat-row[data-last="沒興趣"]   { border-left-color: var(--gray); }
+.flat-row[data-last="未開始"]   { border-left-color: #93c5fd; }
+.flat-row.concluded             { border-left-color: var(--green); }
+.flat-row.new-this-week {
+  border-left-color: #f97316 !important;
+  background: linear-gradient(to right, #fff7ed 0%, white 60px);
+}
+
+.flat-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.flat-row-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a202c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
+}
+.flat-row-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.flat-row-mini-dots { display: flex; gap: 3px; }
+.flat-row-mini-dot {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+  flex-shrink: 0;
+}
+.flat-row-mini-dot.dot-empty    { background: #f1f5f9; color: #cbd5e0; border: 1.5px dashed #e2e8f0; }
+.flat-row-mini-dot.dot-跟進中   { background: #fef9c3; color: #92400e; border: 1.5px solid #fbbf24; }
+.flat-row-mini-dot.dot-聯絡不上 { background: #fee2e2; color: #991b1b; border: 1.5px solid #f87171; }
+.flat-row-mini-dot.dot-加入小組 { background: #dcfce7; color: #14532d; border: 1.5px solid #4ade80; }
+.flat-row-mini-dot.dot-沒興趣   { background: #f1f5f9; color: #64748b; border: 1.5px solid #cbd5e0; }
+.flat-row-mini-dot.dot-其他     { background: #ede9fe; color: #6b21a8; border: 1.5px solid #c4b5fd; }
+.flat-row-status-mini {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.flat-row-icon-btn {
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.flat-row-icon-btn.btn-write { background: #e0e7ff; }
+.flat-row-icon-btn:active { opacity: 0.7; }
+.flat-row-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.flat-row-sub a { color: #1a5276; font-weight: 600; text-decoration: none; }
+
+/* ─── 新增:flat 卡片底部最新一週備註預覽 ─── */
+.flat-row-latest {
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  border-left: 3px solid;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.flat-row-latest .latest-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+.flat-row-latest .latest-text {
+  color: #374151;
+  flex: 1;
+  word-break: break-word;
+}
+/* 顏色:跟進中=黃,聯絡不上=紅,加入小組=綠,沒興趣=灰,其他=紫 */
+.flat-row-latest[data-st="跟進中"]   { background: #fffbeb; border-left-color: #fbbf24; }
+.flat-row-latest[data-st="跟進中"]   .latest-tag { background: #fef3c7; color: #92400e; }
+.flat-row-latest[data-st="聯絡不上"] { background: #fef2f2; border-left-color: #f87171; }
+.flat-row-latest[data-st="聯絡不上"] .latest-tag { background: #fee2e2; color: #991b1b; }
+.flat-row-latest[data-st="加入小組"] { background: #f0fdf4; border-left-color: #4ade80; }
+.flat-row-latest[data-st="加入小組"] .latest-tag { background: #dcfce7; color: #14532d; }
+.flat-row-latest[data-st="沒興趣"]   { background: #f8fafc; border-left-color: #cbd5e0; }
+.flat-row-latest[data-st="沒興趣"]   .latest-tag { background: #e2e8f0; color: #475569; }
+.flat-row-latest[data-st="其他"]     { background: #faf5ff; border-left-color: #c4b5fd; }
+.flat-row-latest[data-st="其他"]     .latest-tag { background: #ede9fe; color: #6b21a8; }
+
+body.large-font .flat-row-latest { font-size: 16px; padding: 9px 12px; }
+body.large-font .flat-row-latest .latest-tag { font-size: 13px; padding: 2px 8px; }
+/* 讓 flat 卡片的最新備註框可點擊跳詳細 */
+.flat-row-latest.clickable { cursor: pointer; transition: filter 0.15s; }
+.flat-row-latest.clickable:active { filter: brightness(0.95); }
+.flat-row-latest.clickable:hover { filter: brightness(0.98); }
+
+/* 小組長 main view 的週備註框可點 */
+.note-box.clickable { cursor: pointer; transition: filter 0.15s; }
+.note-box.clickable:active { filter: brightness(0.95); }
+
+/* 未分配新人 — 指派按鈕 */
+.btn-assign {
+  width: 100%; background: #f97316; color: white;
+  padding: 11px; border-radius: 10px;
+  font-size: 14px; font-weight: 700; margin-top: 10px;
+  border: none; cursor: pointer;
+}
+.btn-assign:active { opacity: 0.85; }
+body.large-font .btn-assign { font-size: 17px; padding: 14px; }
+
+/* 指派 modal 內的選項列 */
+.assign-section { margin-bottom: 14px; }
+.assign-district-list {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  max-height: 140px; overflow-y: auto;
+  padding: 4px; background: #f8fafc; border-radius: 10px;
+}
+.assign-chip {
+  padding: 7px 13px; border-radius: 18px;
+  border: 2px solid #e2e8f0; background: white;
+  font-size: 13px; font-weight: 600; color: #475569;
+  cursor: pointer;
+}
+.assign-chip.selected {
+  border-color: var(--primary); background: var(--primary); color: white;
+}
+.assign-leader-list {
+  max-height: 240px; overflow-y: auto;
+  background: #f8fafc; border-radius: 10px; padding: 6px;
+}
+.assign-leader-row {
+  padding: 10px 14px; border-radius: 8px;
+  background: white; margin-bottom: 5px;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.assign-leader-row.selected {
+  border-color: var(--primary); background: #eff6ff;
+}
+.assign-leader-row .lname { font-size: 14px; font-weight: 700; color: #1a202c; }
+.assign-leader-row .lgroup { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+body.large-font .assign-chip { font-size: 16px; padding: 9px 16px; }
+body.large-font .assign-leader-row .lname { font-size: 18px; }
+body.large-font .assign-leader-row .lgroup { font-size: 14px; }
+
+.assign-empty {
+  text-align: center; padding: 20px;
+  color: #94a3b8; font-size: 13px;
+}
+body.large-font .flat-row-name { font-size: 19px; }
+body.large-font .flat-row-sub { font-size: 14px; }
+body.large-font .flat-row-mini-dot { width: 28px; height: 28px; font-size: 12px; }
+body.large-font .flat-row-status-mini { font-size: 13px; padding: 3px 10px; }
+body.large-font .flat-row-icon-btn { font-size: 18px; padding: 7px 11px; }
+
+/* 大字模式下:把姓名獨佔一行,進度點/狀態/按鈕換到下一行,避免擠壓 */
+body.large-font .flat-row-top {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+body.large-font .flat-row-name {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+body.large-font .flat-row-right {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pastor-district-block {
+  background: white;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  overflow: hidden;
+  border-left: 5px solid var(--primary);
+}
+.pastor-district-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+.pastor-district-header:active { background: #f8fafc; }
+.pastor-district-name { font-size: 16px; font-weight: 700; color: var(--primary); }
+.pastor-district-badges { display: flex; gap: 6px; align-items: center; }
+.pastor-district-body { padding: 0 16px 14px; border-top: 1px solid #f1f5f9; }
+
+.pastor-leader-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.pastor-leader-row:last-child { border-bottom: none; }
+.pastor-leader-name { font-size: 14px; font-weight: 700; }
+.pastor-leader-sub  { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+/* 新人卡片 */
+.member-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  border-left: 5px solid #e2e8f0;
+}
+.member-card[data-last="跟進中"]   { border-left-color: var(--yellow); }
+.member-card[data-last="聯絡不上"] { border-left-color: var(--red); }
+.member-card[data-last="加入小組"] { border-left-color: var(--green); }
+.member-card[data-last="沒興趣"]   { border-left-color: var(--gray); }
+.member-card[data-last="未開始"]   { border-left-color: #93c5fd; }
+.member-card.concluded             { border-left-color: var(--green); opacity: 0.7; }
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.card-name { font-size: 20px; font-weight: 700; }
+.card-sub  { font-size: 13px; color: #64748b; margin-top: 4px; line-height: 1.6; }
+
+.status-pill {
+  font-size: 13px; font-weight: 700;
+  padding: 6px 14px; border-radius: 20px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.pill-跟進中   { background: #fef9c3; color: #92400e; }
+.pill-聯絡不上 { background: #fee2e2; color: #991b1b; }
+.pill-加入小組 { background: #dcfce7; color: #14532d; }
+.pill-沒興趣   { background: #f1f5f9; color: #64748b; }
+.pill-未開始   { background: #dbeafe; color: #1e40af; }
+.pill-已結案   { background: #dcfce7; color: #14532d; }
+
+.progress-row {
+  display: flex; align-items: center;
+  gap: 8px; margin: 10px 0;
+}
+.prog-label { font-size: 11px; color: #94a3b8; width: 32px; flex-shrink: 0; }
+.dots { display: flex; gap: 6px; }
+.dot {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+
+.note-box {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #374151;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.note-tag { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 6px; }
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px; margin: 10px 0;
+}
+.info-item { background: #f8fafc; border-radius: 8px; padding: 8px 10px; }
+.info-item .lbl { font-size: 10px; color: #94a3b8; font-weight: 700; margin-bottom: 2px; }
+.info-item .val { font-size: 13px; font-weight: 600; color: #1a202c; }
+.note-warn  { background: #fff7ed; border-left: 3px solid #f97316; }
+.note-alert { background: #fff1f2; border-left: 3px solid #f43f5e; }
+
+.btn-contact {
+  flex: 1; min-width: 120px;
+  padding: 9px 12px; border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.btn-tel { background: #1a5276; color: white; font-size: 14px; font-weight: 700; }
+
+.btn-report {
+  width: 100%; background: var(--primary); color: white;
+  padding: 10px 8px; border-radius: 10px;
+  font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.btn-conclude {
+  width: 100%; background: white; color: var(--primary);
+  border: 2px solid var(--primary);
+  padding: 9px 8px; border-radius: 10px;
+  font-size: 13px; font-weight: 700;
+}
+
+.detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-bottom: 12px;
+}
+.detail-item { background: #f8fafc; border-radius: 8px; padding: 10px 12px; }
+.detail-item.full { grid-column: 1 / -1; }
+.detail-item .lbl { font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 3px; }
+.detail-item .val { font-size: 14px; font-weight: 600; color: #1a202c; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+.detail-section-title {
+  font-size: 11px; font-weight: 700; color: #64748b;
+  letter-spacing: 0.5px; margin: 14px 0 6px;
+}
+
+/* ─── 新增:詳細 Modal 內的四週紀錄區塊 ─── */
+.detail-weeks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.detail-week-row {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid #cbd5e0;
+}
+.detail-week-row[data-st="跟進中"]   { background: #fffbeb; border-left-color: #fbbf24; }
+.detail-week-row[data-st="聯絡不上"] { background: #fef2f2; border-left-color: #f87171; }
+.detail-week-row[data-st="加入小組"] { background: #f0fdf4; border-left-color: #4ade80; }
+.detail-week-row[data-st="沒興趣"]   { background: #f8fafc; border-left-color: #cbd5e0; }
+.detail-week-row[data-st="其他"]     { background: #faf5ff; border-left-color: #c4b5fd; }
+.detail-week-row[data-st=""]         { background: #f8fafc; border-left-color: #e2e8f0; border-left-style: dashed; }
+.detail-week-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.detail-week-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+.detail-week-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.detail-week-row[data-st="跟進中"]   .detail-week-status { background: #fef3c7; color: #92400e; }
+.detail-week-row[data-st="聯絡不上"] .detail-week-status { background: #fee2e2; color: #991b1b; }
+.detail-week-row[data-st="加入小組"] .detail-week-status { background: #dcfce7; color: #14532d; }
+.detail-week-row[data-st="沒興趣"]   .detail-week-status { background: #e2e8f0; color: #475569; }
+.detail-week-row[data-st="其他"]     .detail-week-status { background: #ede9fe; color: #6b21a8; }
+.detail-week-row[data-st=""]         .detail-week-status { background: #f1f5f9; color: #94a3b8; font-style: italic; }
+.detail-week-note {
+  font-size: 14px;
+  color: #1a202c;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin-top: 4px;
+}
+.detail-week-note.empty {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 12px;
+}
+body.large-font .detail-week-label { font-size: 15px; }
+body.large-font .detail-week-status { font-size: 14px; padding: 3px 10px; }
+body.large-font .detail-week-note { font-size: 17px; }
+body.large-font .detail-week-note.empty { font-size: 15px; }
+
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.modal {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px 36px;
+  width: 100%; max-width: 480px;
+  max-height: 90vh; overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.modal-handle {
+  width: 40px; height: 4px;
+  background: #e2e8f0; border-radius: 2px;
+  margin: 0 auto 16px;
+}
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.modal-sub   { font-size: 12px; color: #94a3b8; margin-bottom: 20px; }
+
+.modal.compact .modal-title  { font-size: 15px; }
+.modal.compact .section-label { font-size: 11px; }
+.modal.compact .status-option { font-size: 12px; padding: 9px; }
+.modal.compact textarea       { font-size: 13px; min-height: 60px; margin-bottom: 10px; }
+.modal.compact .btn-submit    { font-size: 14px; padding: 11px; margin-bottom: 8px; }
+.modal.compact .btn-cancel    { font-size: 12px; padding: 9px; }
+.modal.compact .week-pill     { font-size: 12px; padding: 6px 12px; }
+
+.section-label {
+  font-size: 12px; font-weight: 700; color: #64748b;
+  margin-bottom: 8px; letter-spacing: 0.5px;
+}
+.status-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-bottom: 16px;
+}
+.status-option {
+  padding: 12px; border-radius: 10px;
+  border: 2px solid #e2e8f0; background: white;
+  font-size: 14px; font-weight: 600; text-align: center;
+  cursor: pointer; transition: all 0.15s;
+}
+.status-option.selected { border-width: 3px; }
+.status-option[data-val="跟進中"].selected   { border-color: #f59e0b; background: #fef9c3; color: #92400e; }
+.status-option[data-val="加入小組"].selected { border-color: #22c55e; background: #dcfce7; color: #14532d; }
+.status-option[data-val="聯絡不上"].selected { border-color: #ef4444; background: #fee2e2; color: #991b1b; }
+.status-option[data-val="沒興趣"].selected   { border-color: #94a3b8; background: #f1f5f9; color: #64748b; }
+.status-option[data-val="其他"].selected     { border-color: #8b5cf6; background: #ede9fe; color: #6b21a8; }
+.status-option[data-val="不跟進"].selected       { border-color: #94a3b8; background: #f1f5f9; color: #475569; }
+.status-option[data-val="轉介其他分堂"].selected { border-color: #3b82f6; background: #dbeafe; color: #1e40af; }
+
+.week-pills { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.week-pill {
+  padding: 8px 16px; border-radius: 20px;
+  border: 2px solid #e2e8f0; background: white;
+  font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer;
+}
+.week-pill.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+textarea {
+  width: 100%; padding: 12px;
+  border: 2px solid #e2e8f0; border-radius: 10px;
+  font-size: 14px; font-family: inherit;
+  resize: none; min-height: 80px;
+  transition: border-color 0.2s; margin-bottom: 16px;
+}
+textarea:focus { outline: none; border-color: var(--primary); }
+
+input[type="text"] {
+  width: 100%; padding: 12px 14px;
+  border: 2px solid #e2e8f0; border-radius: 10px;
+  font-size: 15px; font-family: inherit;
+  transition: border-color 0.2s; margin-bottom: 16px;
+}
+input[type="text"]:focus { outline: none; border-color: var(--primary); }
+
+.btn-submit {
+  width: 100%; background: var(--primary); color: white;
+  padding: 14px; border-radius: 10px;
+  font-size: 16px; font-weight: 700; margin-bottom: 10px;
+}
+.btn-cancel {
+  width: 100%; background: #f1f5f9; color: #64748b;
+  padding: 12px; border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+}
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  background: #1a202c; color: white;
+  padding: 12px 20px; border-radius: 24px;
+  font-size: 14px; font-weight: 600;
+  z-index: 999; white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  animation: fadeInUp 0.3s ease;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle; margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-hint {
+  text-align: center; padding: 40px 20px;
+  color: #94a3b8; font-size: 14px;
+}
+.empty-hint .icon { font-size: 36px; margin-bottom: 10px; }
+
+.badge-new {
+  display: inline-block;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: white; font-size: 10px; font-weight: 800;
+  padding: 2px 7px; border-radius: 20px;
+  margin-left: 6px; vertical-align: middle;
+  animation: pulse-badge 1.8s ease-in-out infinite;
+}
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.65; }
+}
+.member-card.new-this-week {
+  border-left-color: #f97316 !important;
+  background: linear-gradient(to right, #fff7ed 0%, white 60px);
+}
+
+@media (min-width: 480px) {
+  #screen-main, #screen-district, #screen-pastor { max-width: 520px; margin: 0 auto; }
+}
+
+/* 大字模式 */
+body.large-font .info-item { padding: 14px 16px; }
+body.large-font .info-item .lbl { font-size: 15px; margin-bottom: 6px; }
+body.large-font .info-item .val { font-size: 19px; }
+body.large-font .card-name { font-size: 26px; }
+body.large-font .card-sub { font-size: 17px; }
+body.large-font .status-pill { font-size: 16px; padding: 8px 18px; }
+body.large-font .note-box { font-size: 19px; padding: 16px 18px; line-height: 1.6; }
+body.large-font .note-tag { font-size: 14px; }
+body.large-font .btn-contact { font-size: 17px; padding: 12px 16px; }
+body.large-font .btn-tel { font-size: 18px; font-weight: bold; }
+body.large-font .btn-report, body.large-font .btn-conclude { font-size: 17px; padding: 14px 12px; }
+body.large-font .filter-btn { font-size: 16px; padding: 10px 20px; }
+body.large-font .stat-num { font-size: 32px; }
+body.large-font .stat-lbl { font-size: 15px; }
+body.large-font .detail-item .lbl { font-size: 15px; margin-bottom: 6px; }
+body.large-font .detail-item .val { font-size: 18px; }
+body.large-font .detail-section-title { font-size: 15px; }
+body.large-font .modal-title { font-size: 22px; }
+body.large-font .section-label { font-size: 16px; }
+body.large-font .status-option { font-size: 18px; padding: 16px; }
+body.large-font .week-pill { font-size: 17px; padding: 12px 20px; }
+body.large-font .district-header h2 { font-size: 22px; }
+body.large-font .district-header p { font-size: 16px; }
+body.large-font .district-stats .stat-chip .stat-num { font-size: 28px; }
+body.large-font .leader-name { font-size: 22px; }
+body.large-font .badge { font-size: 14px; padding: 5px 12px; }
+body.large-font .btn-expand { font-size: 17px; padding: 13px; }
+body.large-font .mini-member { padding: 14px 16px; }
+body.large-font .mini-member-left .mini-name { font-size: 19px; }
+body.large-font .mini-member-left .mini-sub { font-size: 15px; margin-top: 4px; }
+body.large-font .mini-dot { width: 30px; height: 30px; font-size: 13px; }
+body.large-font .pastor-district-name { font-size: 22px; }
+body.large-font .pastor-leader-name { font-size: 19px; }
+body.large-font .pastor-summary h2 { font-size: 22px; }
+body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
+
+
+</style>
+</head>
+<body>
+
+<!-- Google Identity Services（使用 Google 登入）-->
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+  #loginOverlay { position: fixed; inset: 0; background: #f0f4f8; z-index: 99999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", sans-serif; }
+  #loginOverlay h2 { color:#2c5282; margin:8px 0; font-size:1.5rem; }
+  #loginOverlay p { color:#555; margin-bottom:24px; max-width:330px; line-height:1.7; }
+  #gBtn { display:flex; justify-content:center; }
+  #loginStatus { margin-top:18px; color:#c0392b; min-height:22px; font-size:.95rem; line-height:1.5; }
+  #logoutChip { position: fixed; right: 12px; bottom: 12px; z-index: 9000;
+    background:#fff; border:1px solid #b3c7e6; color:#2c5282; border-radius:20px;
+    padding:6px 14px; cursor:pointer; font-size:.8rem; box-shadow:0 1px 4px rgba(0,0,0,.12); }
+  #logoutChip:hover { background:#f0f6ff; }
+</style>
+<div id="loginOverlay">
+  <div style="color:#2c5282;font-weight:600;letter-spacing:1px;">旌旗教會桃園分堂</div>
+  <h2>📋 新人跟進系統</h2>
+  <p>請用教會登記的 Google 帳號登入。<br>系統會依你的身分自動帶出對應的跟進清單。</p>
+  <div id="gBtn"></div>
+  <div id="loginStatus"></div>
+</div>
+<button id="logoutChip" onclick="logout()" style="display:none;">登出</button>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">📋 新人跟進系統</div>
+    <div class="topbar-sub" id="topbar-sub">旌旗教會桃園分堂</div>
+  </div>
+  <div class="topbar-buttons">
+    <button id="btn-font" onclick="toggleFontSize()" style="font-size: 20px; padding: 10px 20px; cursor: pointer;">🔍 大字</button>
+    <button id="btn-back" class="hidden" onclick="goBack()" style="font-size: 20px; padding: 10px 20px; cursor: pointer;">← 返回</button>
+  </div>
+</div>
+
+<!-- 載入畫面 -->
+<div id="screen-loading">
+  <div class="big-spinner"></div>
+  <span>正在確認身份⋯</span>
+</div>
+
+<!-- 小組長主畫面 -->
+<div id="screen-main" class="hidden">
+  <div class="stats-row" id="main-stats-row">
+    <div class="stat-chip">
+      <div class="stat-num" id="stat-total">—</div>
+      <div class="stat-lbl">我的新人</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num" id="stat-active" style="color:#f59e0b">—</div>
+      <div class="stat-lbl">跟進中</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num" id="stat-done" style="color:#22c55e">—</div>
+      <div class="stat-lbl">已結案</div>
+    </div>
+  </div>
+
+  <div id="unassigned-banner" class="hidden" style="background:linear-gradient(135deg,#fff7ed 0%,#fef2f2 100%);border:2px solid #f97316;border-left:6px solid #ef4444;border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(239,68,68,0.12)">
+    <div style="font-size:24px">⚠️</div>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:700;color:#991b1b">未分配新人</div>
+      <div style="font-size:12px;color:#b45309;margin-top:2px" id="unassigned-banner-sub">尚未指派跟進小組長</div>
+    </div>
+    <div style="font-size:22px;font-weight:800;color:#ef4444" id="unassigned-banner-count">—</div>
+  </div>
+
+  <div class="filter-row" id="main-filter-row">
+    <button class="filter-btn"        onclick="setFilter(this,'all')">全部</button>
+    <button class="filter-btn active" onclick="setFilter(this,'active')">跟進中</button>
+    <button class="filter-btn"        onclick="setFilter(this,'done')">✅ 已結案</button>
+  </div>
+  <div class="sort-row" id="main-sort-row">
+    <span class="sort-label">排序：</span>
+    <button class="btn-sort" onclick="toggleSort()">
+      <span id="sort-icon">↓</span>
+      <span id="sort-text">最新優先</span>
+    </button>
+  </div>
+  <div id="member-list"></div>
+</div>
+
+<!-- 區長後台 -->
+<div id="screen-district" class="hidden">
+  <div class="district-header">
+    <h2 id="district-title">我的區</h2>
+    <p id="district-sub">載入中⋯</p>
+    <button id="btn-my-members" onclick="switchToMyMembers()" style="margin-top:10px;width:100%;padding:10px;border-radius:10px;background:var(--primary);color:white;font-size:14px;font-weight:700;border:none;cursor:pointer">👤 查看我的新人</button>
+  </div>
+  <div class="district-stats">
+    <div class="stat-chip"><div class="stat-num" id="d-stat-leaders" style="color:#1a5276">—</div><div class="stat-lbl">小組長</div></div>
+    <div class="stat-chip"><div class="stat-num" id="d-stat-total">—</div><div class="stat-lbl">總新人</div></div>
+    <div class="stat-chip"><div class="stat-num" id="d-stat-active" style="color:#f59e0b">—</div><div class="stat-lbl">跟進中</div></div>
+    <div class="stat-chip"><div class="stat-num" id="d-stat-done" style="color:#22c55e">—</div><div class="stat-lbl">已結案</div></div>
+  </div>
+
+  <!-- View tab 切換 -->
+  <div class="view-tabs">
+    <button class="view-tab"        data-view="byLeader" onclick="setDistrictListView('byLeader')">👥 各小組新人</button>
+    <button class="view-tab active" data-view="allFlat"  onclick="setDistrictListView('allFlat')">📋 全部新人</button>
+  </div>
+
+  <!-- 收合全部小組長(只在 byLeader 時顯示) -->
+  <button id="btn-d-toggle-all" onclick="toggleAllDistrictGroups()" style="display:none;width:100%;margin-top:10px;margin-bottom:12px;padding:9px;border-radius:8px;background:white;color:var(--primary);font-size:13px;font-weight:700;border:2px solid var(--primary)">▲ 收合全部小組長</button>
+
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="setFlatFilter(this,'all','district')">全部</button>
+    <button class="filter-btn"        onclick="setFlatFilter(this,'active','district')">跟進中</button>
+    <button class="filter-btn"        onclick="setFlatFilter(this,'done','district')">✅ 已結案</button>
+  </div>
+
+  <!-- 各小組新人(分群) -->
+  <div id="d-byLeader-view" class="hidden">
+    <div id="d-flat-list"></div>
+  </div>
+
+  <!-- 全部新人(攤平,日期排序) -->
+  <div id="d-allFlat-view">
+    <div id="d-allflat-list"></div>
+  </div>
+</div>
+
+<!-- 區牧總覽畫面 -->
+<div id="screen-pastor" class="hidden">
+  <div style="padding:14px 14px 0">
+    <!-- 未分配新人警示卡片(staff 才看得到) -->
+    <div id="unassigned-card" class="unassigned-card hidden" onclick="openUnassignedList()">
+      <div class="unassigned-card-left">
+        <div class="unassigned-icon">⚠️</div>
+        <div>
+          <div class="unassigned-text-title">未分配新人</div>
+          <div class="unassigned-text-sub">尚未指派跟進小組長</div>
+        </div>
+      </div>
+      <div class="unassigned-count" id="unassigned-count">—</div>
+      <div class="unassigned-arrow">›</div>
+    </div>
+
+    <!-- 全區加總 -->
+    <div class="pastor-summary">
+      <h2>📊 全教會統計</h2>
+      <div class="pastor-total-stats">
+        <div class="stat-chip"><div class="stat-num" id="p-stat-districts" style="color:#1a5276">—</div><div class="stat-lbl">區數</div></div>
+        <div class="stat-chip"><div class="stat-num" id="p-stat-total">—</div><div class="stat-lbl">總新人</div></div>
+        <div class="stat-chip"><div class="stat-num" id="p-stat-active" style="color:#f59e0b">—</div><div class="stat-lbl">跟進中</div></div>
+        <div class="stat-chip"><div class="stat-num" id="p-stat-done" style="color:#22c55e">—</div><div class="stat-lbl">已結案</div></div>
+      </div>
+      <button id="btn-pastor-my-members" onclick="switchToMyMembersAsPastor()" style="width:100%;margin-bottom:8px;padding:10px;border-radius:10px;background:var(--primary);color:white;font-size:14px;font-weight:700;border:none;cursor:pointer">👤 查看我的新人 <span id="p-my-count" style="opacity:0.85"></span></button>
+    </div>
+
+    <!-- View tab 切換 -->
+    <div class="view-tabs">
+      <button class="view-tab"        data-view="byDistrict" onclick="setPastorListView('byDistrict')">🏘 各區新人</button>
+      <button class="view-tab active" data-view="allFlat"    onclick="setPastorListView('allFlat')">📋 全部新人</button>
+    </div>
+
+    <!-- 收合全部(只在 byDistrict 時顯示) -->
+    <button onclick="pastorToggleAll()" id="btn-pastor-toggle" style="display:none;width:100%;margin-top:10px;padding:9px;border-radius:8px;background:#f1f5f9;color:var(--primary);font-size:13px;font-weight:700;border:2px solid var(--primary)">▲ 收合全部區</button>
+  </div>
+
+  <!-- 篩選列(共用) -->
+  <div style="padding:0 14px">
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setFlatFilter(this,'all','pastor')">全部</button>
+      <button class="filter-btn"        onclick="setFlatFilter(this,'active','pastor')">跟進中</button>
+      <button class="filter-btn"        onclick="setFlatFilter(this,'done','pastor')">✅ 已結案</button>
+    </div>
+  </div>
+
+  <!-- 各區新人(分群) -->
+  <div id="p-byDistrict-view" class="hidden" style="padding:0 14px 14px">
+    <div id="p-flat-list"></div>
+  </div>
+
+  <!-- 全部新人(攤平,日期排序) -->
+  <div id="p-allFlat-view" style="padding:0 14px 14px">
+    <div id="p-allflat-list"></div>
+  </div>
+</div>
+
+<!-- 跟進回報 Modal -->
+<div id="modal-report" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-name"></div>
+    <div class="modal-sub"   id="modal-sub"></div>
+    <div class="section-label">選擇週次</div>
+    <div class="week-pills" id="week-pills"></div>
+    <div class="section-label">本週狀況</div>
+    <div class="status-grid">
+      <button class="status-option" data-val="跟進中"   onclick="selectStatus(this)">🟡 跟進中</button>
+      <button class="status-option" data-val="加入小組" onclick="selectStatus(this)">✅ 加入小組</button>
+      <button class="status-option" data-val="聯絡不上" onclick="selectStatus(this)">🔴 聯絡不上</button>
+      <button class="status-option" data-val="沒興趣"   onclick="selectStatus(this)">⬜ 沒興趣</button>
+      <button class="status-option" data-val="其他"     onclick="selectStatus(this)" style="grid-column:1/-1">📝 其他</button>
+    </div>
+    <div class="section-label">備註（選填）</div>
+    <textarea id="report-note" placeholder="例：有接電話但說這週很忙，下週再約⋯"></textarea>
+    <button class="btn-submit" onclick="submitReport()">✍️ 送出本週回報</button>
+    <button class="btn-cancel" onclick="closeModal('modal-report')">取消</button>
+  </div>
+</div>
+
+<!-- 結案 Modal -->
+<div id="modal-conclude" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="conclude-name"></div>
+    <div class="modal-sub">請選擇結案原因</div>
+    <div class="section-label">結案狀況</div>
+    <div class="status-grid" id="conclude-grid">
+      <button class="status-option" data-val="加入小組"     onclick="selectConclude(this)">✅ 加入小組</button>
+      <button class="status-option" data-val="不跟進"       onclick="selectConclude(this)">⬜ 不跟進</button>
+      <button class="status-option" data-val="轉介其他分堂" onclick="selectConclude(this)">🔀 轉介其他分堂</button>
+      <button class="status-option" data-val="聯絡不上"     onclick="selectConclude(this)">🔴 聯絡不上</button>
+      <button class="status-option" data-val="其他"         onclick="selectConclude(this)" style="grid-column:1/-1">📝 其他</button>
+    </div>
+    <div id="conclude-note-section" class="hidden">
+      <div class="section-label" id="conclude-note-label">補充說明</div>
+      <input type="text" id="conclude-note-input" placeholder="">
+    </div>
+    <button class="btn-submit" onclick="submitConclusion()">確認結案</button>
+    <button class="btn-cancel" onclick="closeModal('modal-conclude')">取消</button>
+  </div>
+</div>
+
+<!-- 詳細資訊 Modal -->
+<div id="modal-detail" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="detail-name"></div>
+    <div class="modal-sub"   id="detail-sub"></div>
+    <div id="detail-content"></div>
+    <div id="detail-actions" style="display:flex;gap:8px;margin:14px 0 10px"></div>
+    <button class="btn-cancel" onclick="closeModal('modal-detail')">關閉</button>
+  </div>
+</div>
+<!-- 指派小組長 Modal -->
+<div id="modal-assign" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="assign-name"></div>
+    <div class="modal-sub">為這位新人指派跟進小組長,或直接結案</div>
+
+    <!-- A:指派小組長 -->
+    <div class="assign-section">
+      <div class="section-label">A. 指派小組長</div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:6px">① 選擇區</div>
+      <div class="assign-district-list" id="assign-district-list">
+        <div class="assign-empty">載入中⋯</div>
+      </div>
+      <div style="font-size:11px;color:#94a3b8;margin:10px 0 6px">② 選擇小組長</div>
+      <div class="assign-leader-list" id="assign-leader-list">
+        <div class="assign-empty">請先選擇區</div>
+      </div>
+    </div>
+
+    <!-- 中間分隔 -->
+    <div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:#94a3b8;font-size:12px;font-weight:700">
+      <div style="flex:1;height:1px;background:#e2e8f0"></div>
+      <span>或</span>
+      <div style="flex:1;height:1px;background:#e2e8f0"></div>
+    </div>
+
+    <!-- B:直接結案 -->
+    <div class="assign-section">
+      <div class="section-label">B. 直接結案(不跟進)</div>
+      <div class="status-grid" id="assign-conclude-grid">
+        <button class="status-option" data-val="不跟進"       onclick="selectAssignConclude(this)">⬜ 不跟進</button>
+        <button class="status-option" data-val="聯絡不上"     onclick="selectAssignConclude(this)">🔴 聯絡不上</button>
+        <button class="status-option" data-val="轉介其他分堂" onclick="selectAssignConclude(this)" style="grid-column:1/-1">🔀 轉介其他分堂</button>
+        <button class="status-option" data-val="其他"         onclick="selectAssignConclude(this)" style="grid-column:1/-1">📝 其他</button>
+      </div>
+      <div id="assign-conclude-note-section" class="hidden">
+        <div class="section-label" id="assign-conclude-note-label" style="margin-top:8px">補充說明</div>
+        <input type="text" id="assign-conclude-note-input" placeholder="">
+      </div>
+    </div>
+
+    <button class="btn-submit" onclick="submitAssign()">✅ 確認</button>
+    <button class="btn-cancel" onclick="closeModal('modal-assign')">取消</button>
+  </div>
+</div>
+<script>
+// ================================================================
+// Google 登入（零信任）+ google.script.run 替身（改走 fetch）
+// ================================================================
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAc05-vf-HfZ0VcaPaFeVo3a3nGoyZT4lgkg-7hFFEXa3J09JDHnnGVIty9eXXSaNa/exec';
+var CLIENT_ID  = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
+var ID_TOKEN   = null;   // Google 簽發的身分票
+var USER_EMAIL = null;   // 驗證過的 email
+
+// 核心：把一個後端函式呼叫轉成帶 token 的 fetch，回傳 Promise
+function callBackend(action, args) {
+  if (!ID_TOKEN) { requireRelogin(); return Promise.reject('NO_AUTH'); }
+  return fetch(SCRIPT_URL, {
+    method: 'POST', redirect: 'follow',
+    body: JSON.stringify({ action: action, idToken: ID_TOKEN, args: args || [] })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    if (res && res.__noauth) { requireRelogin(); throw 'NO_AUTH'; }
+    return res;
+  });
+}
+
+// google.script.run 替身：讓既有的鏈式呼叫不用改寫，自動轉成 callBackend
+(function installGsRunShim(){
+  function makeRunner(){
+    var onSuccess = null, onFailure = null;
+    var proxy = new Proxy({}, {
+      get: function(target, prop){
+        if (prop === 'withSuccessHandler') return function(fn){ onSuccess = fn; return proxy; };
+        if (prop === 'withFailureHandler') return function(fn){ onFailure = fn; return proxy; };
+        if (prop === 'withUserObject')     return function(){ return proxy; };
+        return function(){
+          var args = Array.prototype.slice.call(arguments);
+          callBackend(String(prop), args)
+            .then(function(res){ if (onSuccess) onSuccess(res); })
+            .catch(function(err){ if (onFailure) onFailure(typeof err === 'string' ? { message: err } : err); });
+          return undefined;
+        };
+      }
+    });
+    return proxy;
+  }
+  window.google = window.google || {};
+  window.google.script = window.google.script || {};
+  Object.defineProperty(window.google.script, 'run', { configurable: true, get: function(){ return makeRunner(); } });
+})();
+
+function initGoogleLogin() {
+  if (!(window.google && window.google.accounts && window.google.accounts.id)) {
+    return setTimeout(initGoogleLogin, 100);  // 等 GIS 函式庫載入
+  }
+  google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onGoogleLogin, auto_select: false });
+  google.accounts.id.renderButton(document.getElementById('gBtn'),
+    { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
+}
+window.addEventListener('load', initGoogleLogin);
+
+function onGoogleLogin(response) {
+  ID_TOKEN = response.credential;
+  var st = document.getElementById('loginStatus');
+  st.style.color = '#555'; st.textContent = '⏳ 驗證中…';
+  // 登入後第一個請求：getMyDataForFrontend（同時驗票 + 取使用者資料）
+  callBackend('getMyDataForFrontend', [])
+    .then(function(data){
+      if (!data || data.success === false) {
+        showLoginError((data && data.error) || '登入失敗,請重試');
+        return;
+      }
+      USER_EMAIL = data.email;
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('logoutChip').style.display = 'block';
+      bootWithData(data);   // 用已取得的資料直接初始化,免再打一次後端
+    })
+    .catch(function(err){
+      if (err === 'NO_AUTH') { showLoginError('登入逾時,請重新登入'); return; }
+      showLoginError('連線失敗,請稍後再試');
+    });
+}
+
+function showLoginError(msg) {
+  var el = document.getElementById('loginStatus');
+  el.style.color = '#c0392b'; el.textContent = '⚠️ ' + msg;
+}
+function requireRelogin() {
+  ID_TOKEN = null; USER_EMAIL = null;
+  var chip = document.getElementById('logoutChip'); if (chip) chip.style.display = 'none';
+  var ov = document.getElementById('loginOverlay'); if (ov) ov.style.display = 'flex';
+  showLoginError('登入逾時,請重新登入。');
+}
+function logout() {
+  if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+  location.reload();
+}
+
+// ================================================================
+// 大字模式
+// ================================================================
+function toggleFontSize() {
+  const isLarge = document.body.classList.toggle('large-font');
+  document.getElementById('btn-font').textContent = isLarge ? '✓ 大字' : '🔍 大字';
+  try { localStorage.setItem('largeFont', isLarge ? '1' : '0'); } catch(e) {}
+}
+(function() {
+  try {
+    // 預設大字:除非使用者主動切換成一般模式(存了 '0'),否則都套用大字
+    if (localStorage.getItem('largeFont') !== '0') {
+      document.body.classList.add('large-font');
+      document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('btn-font');
+        if (btn) btn.textContent = '✓ 大字';
+      });
+    }
+  } catch(e) {}
+})();
+
+// ================================================================
+// 全域狀態
+// ================================================================
+let currentUser     = null;
+let allMembers      = [];
+let districtData    = null;
+let leaderSummary   = [];
+let expandedLeaders = new Set();
+
+// staff (區牧/全職同工/勾選 staff) 專用
+let allDistricts      = [];
+let pastorBlocks      = {};
+let pastorAllExpanded = true;
+let pastorMyMembers   = [];
+let unassignedMembers = [];   // 新增:未分配新人快取
+
+// 'self' | 'leader' (唯讀) | 'unassigned' (唯讀)
+let viewMode = 'self';
+
+let currentFilter  = 'active';
+let sortOrder      = 'desc';
+let reportTarget   = null;
+let concludeTarget = null;
+let pastorStack    = [];
+// 指派 modal 用
+let assignOptions   = null;   // 後端回傳的 { districts: [...] }
+let assignTarget    = null;   // 目前要指派的 member
+let assignSelected  = { district: null, leader: null, group: null, conclusion: null, concludeNote: '' };
+// 「依新人」清單的篩選狀態
+let districtFlatFilter = 'all';
+let pastorFlatFilter   = 'all';
+let collapsedFlatGroups = new Set();   // 記錄使用者收合的分群 key
+
+// ================================================================
+// 初始化
+// ================================================================
+// 改由「Google 登入成功後」呼叫（見 onGoogleLogin），資料已取得直接初始化
+function bootWithData(data) {
+  if (!data.success) { showError(data.error || '載入失敗'); return; }
+  currentUser = { name: data.name, role: data.role, email: data.email, isStaff: !!data.isStaff };
+
+  // staff 等級(含區牧/全職同工/勾選 staff):進入區牧總覽
+  if (data.isStaff) {
+    allDistricts       = data.allDistricts || [];
+    pastorMyMembers    = data.members || [];
+    // 未分配新人的數量已從後端帶回
+    unassignedMembers  = [];   // 內容延後再載入(點擊時)
+    initPastorView(data.unassignedCount || 0);
+  } else if (data.role === '區長') {
+    districtData = data.district;
+    initDistrictView();
+  } else {
+    allMembers = data.members;
+    initLeaderView();
+  }
+}
+
+function showError(msg) {
+  document.getElementById('screen-loading').innerHTML =
+    '<div style="text-align:center;padding:40px 24px;color:#c0392b;font-size:14px">❌ ' + msg + '</div>';
+}
+
+// ================================================================
+// 小組長視角
+// ================================================================
+function initLeaderView() {
+  document.getElementById('screen-loading').classList.add('hidden');
+  document.getElementById('screen-main').classList.remove('hidden');
+  document.getElementById('topbar-sub').textContent = currentUser.name + ' 的跟進清單';
+  viewMode = 'self';
+  renderStats();
+  renderMembers();
+}
+
+// ================================================================
+// 區長視角
+// ================================================================
+function initDistrictView() {
+  document.getElementById('screen-loading').classList.add('hidden');
+  document.getElementById('screen-district').classList.remove('hidden');
+
+  if (!districtData) {
+    document.getElementById('district-title').textContent = '找不到區長設定';
+    document.getElementById('district-sub').textContent = '請確認白名單已正確設定';
+    return;
+  }
+
+  document.getElementById('topbar-sub').textContent = currentUser.name + '・' + districtData.districtName;
+  document.getElementById('district-title').textContent = districtData.districtName;
+  document.getElementById('district-sub').textContent =
+    '區長：' + districtData.districtLeader + '・共 ' + districtData.leaders.length + ' 位小組長';
+
+  loadAllLeaderData();
+}
+
+function loadAllLeaderData() {
+  const allNames = [currentUser.name, ...districtData.leaders.filter(function(n) { return n !== currentUser.name; })];
+  let loaded = 0;
+  leaderSummary = allNames.map(function(n) {
+    return { leaderName: n, isSelf: n === currentUser.name, total: 0, done: 0, members: null };
+  });
+  _refreshDistrictList();
+
+  allNames.forEach(function(name, idx) {
+    google.script.run
+      .withSuccessHandler(function(members) {
+        leaderSummary[idx] = {
+          leaderName: name, isSelf: name === currentUser.name,
+          total: members.length,
+          done: members.filter(function(m) { return m.conclusion; }).length,
+          members: members
+        };
+        if (name === currentUser.name) allMembers = members;
+        loaded++;
+        _refreshDistrictList();
+        if (loaded === allNames.length) updateDistrictStats();
+      })
+      .withFailureHandler(function() { loaded++; })
+      .getLeaderMembersForFrontend(name);
+  });
+}
+
+function updateDistrictStats() {
+  document.getElementById('d-stat-leaders').textContent = leaderSummary.length;
+  document.getElementById('d-stat-total').textContent   = leaderSummary.reduce(function(s,l) { return s + l.total; }, 0);
+  document.getElementById('d-stat-active').textContent  = leaderSummary.reduce(function(s,l) { return s + (l.total - l.done); }, 0);
+  document.getElementById('d-stat-done').textContent    = leaderSummary.reduce(function(s,l) { return s + l.done; }, 0);
+}
+
+// ================================================================
+// 區牧/全職同工/staff 視角
+// ================================================================
+function initPastorView(unassignedCount) {
+  document.getElementById('screen-loading').classList.add('hidden');
+  document.getElementById('screen-pastor').classList.remove('hidden');
+
+  // 標題顯示原職分,讓使用者知道自己角色
+  var roleTag = currentUser.role === '區牧' ? '區牧總覽' : (currentUser.role + '・總覽');
+  document.getElementById('topbar-sub').textContent = currentUser.name + '・' + roleTag;
+  pastorStack = ['pastor'];
+
+  // 顯示「我的新人」按鈕上的人數
+  var myCount = pastorMyMembers.length;
+  if (myCount > 0) {
+    document.getElementById('p-my-count').textContent = '（' + myCount + ' 人）';
+    document.getElementById('btn-pastor-my-members').style.display = '';
+  } else {
+    document.getElementById('btn-pastor-my-members').style.display = 'none';
+  }
+
+  // 未分配新人卡片(只在有未分配時顯示)
+  var unassignedCard = document.getElementById('unassigned-card');
+  if (unassignedCount > 0) {
+    document.getElementById('unassigned-count').textContent = unassignedCount;
+    unassignedCard.classList.remove('hidden');
+    unassignedCard.style.opacity = '';
+  } else {
+    unassignedCard.classList.add('hidden');
+  }
+
+  // 初始化每個區的狀態
+  allDistricts.forEach(function(d) {
+    pastorBlocks[d] = { expanded: true, leaderRows: null, loaded: false,
+      total: 0, done: 0, leaderCount: 0 };
+  });
+
+  document.getElementById('p-stat-districts').textContent = allDistricts.length;
+
+  _refreshPastorList();
+  loadAllPastorDistricts();
+}
+
+function loadAllPastorDistricts() {
+  allDistricts.forEach(function(districtName) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (!res.success) { _refreshPastorList(); return; }
+        var district = res.district;
+        var names = district.leaders;
+
+        var block = pastorBlocks[districtName];
+        block.leaderCount = names.length;
+        block.leaderRows = names.map(function(n) {
+          return { leaderName: n, total: 0, done: 0, loaded: false };
+        });
+
+        names.forEach(function(name, idx) {
+          google.script.run
+            .withSuccessHandler(function(members) {
+              block.leaderRows[idx].total   = members.length;
+              block.leaderRows[idx].done    = members.filter(function(m) { return m.conclusion; }).length;
+              block.leaderRows[idx].members = members;
+              block.leaderRows[idx].loaded  = true;
+              block.total = block.leaderRows.reduce(function(s,r) { return s + r.total; }, 0);
+              block.done  = block.leaderRows.reduce(function(s,r) { return s + r.done;  }, 0);
+              updatePastorTotalStats();
+              _refreshPastorList();
+            })
+            .withFailureHandler(function() {})
+            .getLeaderMembersForFrontend(name);
+        });
+
+        _refreshPastorList();
+      })
+      .withFailureHandler(function() {})
+      .getDistrictDataForFrontend(districtName);
+  });
+}
+
+function updatePastorTotalStats() {
+  var total  = 0, done = 0;
+  allDistricts.forEach(function(d) {
+    total += pastorBlocks[d].total;
+    done  += pastorBlocks[d].done;
+  });
+  document.getElementById('p-stat-total').textContent  = total;
+  document.getElementById('p-stat-active').textContent = total - done;
+  document.getElementById('p-stat-done').textContent   = done;
+}
+
+function pastorToggleAll() {
+  // 改成切換所有區的 flat group 收合狀態
+  pastorAllExpanded = !pastorAllExpanded;
+  if (pastorAllExpanded) {
+    // 展開全部:把所有 'p:XXX' 鍵從 collapsedFlatGroups 移除
+    allDistricts.forEach(function(d) { collapsedFlatGroups.delete('p:' + d); });
+  } else {
+    // 收合全部
+    allDistricts.forEach(function(d) { collapsedFlatGroups.add('p:' + d); });
+  }
+  document.getElementById('btn-pastor-toggle').textContent = pastorAllExpanded ? '▲ 收合全部區' : '▼ 展開全部區';
+  renderPastorFlatList();
+}
+
+// 區牧:依當前 view 重新渲染
+function _refreshPastorList() {
+  if (pastorListView === 'allFlat') renderPastorAllFlat();
+  else                              renderPastorFlatList();
+}
+
+// 區牧:View tab 切換(各區新人 vs 全部新人)
+let pastorListView = 'allFlat';   // 'byDistrict' | 'allFlat'
+function setPastorListView(view) {
+  pastorListView = view;
+  document.querySelectorAll('#screen-pastor .view-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.view === view);
+  });
+  document.getElementById('p-byDistrict-view').classList.toggle('hidden', view !== 'byDistrict');
+  document.getElementById('p-allFlat-view').classList.toggle('hidden', view !== 'allFlat');
+  // 「收合全部區」按鈕只在 byDistrict 顯示
+  document.getElementById('btn-pastor-toggle').style.display = view === 'byDistrict' ? '' : 'none';
+
+  // 切換時務必渲染對應清單
+  if (view === 'byDistrict') renderPastorFlatList();
+  else                       renderPastorAllFlat();
+}
+
+// 區牧:全部新人(完全攤平,日期排序)
+function renderPastorAllFlat() {
+  var container = document.getElementById('p-allflat-list');
+  var anyPending = false;
+  var all = [];
+
+  // 收集所有區所有新人,記錄 leaderName 和 district
+  allDistricts.forEach(function(d) {
+    var block = pastorBlocks[d];
+    if (!block || !block.leaderRows) { anyPending = true; return; }
+    block.leaderRows.forEach(function(r) {
+      if (!r.members) { anyPending = true; return; }
+      r.members.forEach(function(m) {
+        all.push({ member: m, leaderName: r.leaderName, district: d });
+      });
+    });
+  });
+
+  // 篩選
+  var filtered = all.filter(function(o) {
+    if (pastorFlatFilter === 'all')    return true;
+    if (pastorFlatFilter === 'done')   return !!o.member.conclusion;
+    if (pastorFlatFilter === 'active') return !o.member.conclusion;
+    return true;
+  });
+
+  // 日期倒序
+  filtered.sort(function(a, b) {
+    var da = a.member.fillDate ? new Date(a.member.fillDate.replace(/\//g, '-')).getTime() : 0;
+    var db = b.member.fillDate ? new Date(b.member.fillDate.replace(/\//g, '-')).getTime() : 0;
+    return db - da;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-hint"><div class="icon">' + (anyPending ? '⏳' : '🎉') + '</div><p>' + (anyPending ? '資料載入中⋯' : '此分類目前沒有資料') + '</p></div>';
+    return;
+  }
+
+  var topHint = anyPending ? '<div style="font-size:12px;color:#94a3b8;text-align:center;padding:6px 0 10px">⏳ 部分區資料仍在載入中⋯</div>' : '';
+  var headerInfo = '<div style="font-size:12px;color:#64748b;padding:4px 4px 10px;font-weight:600">共 ' + filtered.length + ' 人</div>';
+
+  container.innerHTML = topHint + headerInfo + filtered.map(function(o) {
+    return _renderFlatMemberCard(o.member, o.leaderName, o.district);
+  }).join('');
+}
+
+// 區長:切換所有小組長子分節的收合
+let districtAllLeadersExpanded = true;
+function toggleAllDistrictGroups() {
+  districtAllLeadersExpanded = !districtAllLeadersExpanded;
+  if (districtAllLeadersExpanded) {
+    leaderSummary.forEach(function(l) { collapsedFlatGroups.delete('d:' + l.leaderName); });
+  } else {
+    leaderSummary.forEach(function(l) { collapsedFlatGroups.add('d:' + l.leaderName); });
+  }
+  document.getElementById('btn-d-toggle-all').textContent = districtAllLeadersExpanded ? '▲ 收合全部小組長' : '▼ 展開全部小組長';
+  renderDistrictFlatList();
+}
+
+// 區長:View tab 切換(各小組新人 vs 全部新人)
+let districtListView = 'allFlat';   // 'byLeader' | 'allFlat'
+function setDistrictListView(view) {
+  districtListView = view;
+  document.querySelectorAll('#screen-district .view-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.view === view);
+  });
+  document.getElementById('d-byLeader-view').classList.toggle('hidden', view !== 'byLeader');
+  document.getElementById('d-allFlat-view').classList.toggle('hidden', view !== 'allFlat');
+  document.getElementById('btn-d-toggle-all').style.display = view === 'byLeader' ? '' : 'none';
+
+  if (view === 'allFlat') renderDistrictAllFlat();
+  else                    renderDistrictFlatList();
+}
+
+// 區長:依當前 view 重新渲染
+function _refreshDistrictList() {
+  if (districtListView === 'allFlat') renderDistrictAllFlat();
+  else                                renderDistrictFlatList();
+}
+
+// 區長:全部新人(該區所有新人攤平,日期排序)
+function renderDistrictAllFlat() {
+  var container = document.getElementById('d-allflat-list');
+  var anyPending = false;
+  var all = [];
+
+  leaderSummary.forEach(function(l) {
+    if (!l.members) { anyPending = true; return; }
+    l.members.forEach(function(m) {
+      all.push({ member: m, leaderName: l.leaderName });
+    });
+  });
+
+  // 篩選
+  var filtered = all.filter(function(o) {
+    if (districtFlatFilter === 'all')    return true;
+    if (districtFlatFilter === 'done')   return !!o.member.conclusion;
+    if (districtFlatFilter === 'active') return !o.member.conclusion;
+    return true;
+  });
+
+  // 日期倒序
+  filtered.sort(function(a, b) {
+    var da = a.member.fillDate ? new Date(a.member.fillDate.replace(/\//g, '-')).getTime() : 0;
+    var db = b.member.fillDate ? new Date(b.member.fillDate.replace(/\//g, '-')).getTime() : 0;
+    return db - da;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-hint"><div class="icon">' + (anyPending ? '⏳' : '🎉') + '</div><p>' + (anyPending ? '資料載入中⋯' : '此分類目前沒有資料') + '</p></div>';
+    return;
+  }
+
+  var topHint = anyPending ? '<div style="font-size:12px;color:#94a3b8;text-align:center;padding:6px 0 10px">⏳ 部分小組資料仍在載入中⋯</div>' : '';
+  var headerInfo = '<div style="font-size:12px;color:#64748b;padding:4px 4px 10px;font-weight:600">共 ' + filtered.length + ' 人</div>';
+
+  container.innerHTML = topHint + headerInfo + filtered.map(function(o) {
+    return _renderFlatMemberCard(o.member, o.leaderName);
+  }).join('');
+}
+
+// ================================================================
+// 「依新人」清單
+// ================================================================
+
+function setFlatFilter(btn, filter, scope) {
+  var selector = scope === 'pastor' ? '#screen-pastor .filter-btn' : '#screen-district .filter-btn';
+  document.querySelectorAll(selector).forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  if (scope === 'pastor') {
+    pastorFlatFilter = filter;
+    if (pastorListView === 'allFlat') renderPastorAllFlat();
+    else                              renderPastorFlatList();
+  } else {
+    districtFlatFilter = filter;
+    _refreshDistrictList();
+  }
+}
+
+function toggleFlatGroup(key) {
+  if (collapsedFlatGroups.has(key)) collapsedFlatGroups.delete(key);
+  else                              collapsedFlatGroups.add(key);
+  // 重渲染:看現在在哪個畫面
+  if (!document.getElementById('screen-pastor').classList.contains('hidden')) {
+    _refreshPastorList();
+  }
+  if (!document.getElementById('screen-district').classList.contains('hidden')) {
+    _refreshDistrictList();
+  }
+}
+
+// 把 member 陣列依 filter 過濾並依 fillDate 倒序
+function _filterAndSort(members, filter) {
+  return members.filter(function(m) {
+    if (filter === 'all')    return true;
+    if (filter === 'done')   return !!m.conclusion;
+    if (filter === 'active') return !m.conclusion;
+    return true;
+  }).sort(function(a, b) {
+    var da = a.fillDate ? new Date(a.fillDate.replace(/\//g, '-')).getTime() : 0;
+    var db = b.fillDate ? new Date(b.fillDate.replace(/\//g, '-')).getTime() : 0;
+    return db - da;
+  });
+}
+
+// 區長:依新人清單(按小組長分群)
+function renderDistrictFlatList() {
+  var container = document.getElementById('d-flat-list');
+
+  if (leaderSummary.length === 0) {
+    container.innerHTML = '<div class="empty-hint"><div class="icon">📋</div><p>此區尚無小組長資料</p></div>';
+    return;
+  }
+
+  // 載入中的小組長保留顯示,已載入的依篩選後是否有資料決定是否顯示
+  var groupsHtml = leaderSummary.map(function(l) {
+    if (!l.members) {
+      // 載入中
+      return '<div class="flat-group">' +
+        '<div class="flat-group-header">' +
+          '<div class="flat-group-title">👤 ' + esc(l.leaderName) + '</div>' +
+          '<div style="font-size:12px;color:rgba(255,255,255,0.85);font-weight:600">載入中⋯</div>' +
+        '</div>' +
+      '</div>';
+    }
+    var filtered = _filterAndSort(l.members, districtFlatFilter);
+    if (filtered.length === 0) return '';   // 已載入但篩選後無人 → 不顯示
+
+    var groupKey = 'd:' + l.leaderName;
+    var collapsed = collapsedFlatGroups.has(groupKey);
+
+    var cardsHtml = collapsed ? '' : filtered.map(function(m) {
+      return _renderFlatMemberCard(m, l.leaderName);
+    }).join('');
+
+    var doneCnt = filtered.filter(function(m) { return m.conclusion; }).length;
+    var selfTag = l.isSelf ? '<span class="flat-group-self-tag">👑 我的</span>' : '';
+    return '<div class="flat-group">' +
+      '<div class="flat-group-header" onclick="toggleFlatGroup(\'' + groupKey + '\')">' +
+        '<div class="flat-group-title">👤 ' + esc(l.leaderName) + selfTag + '</div>' +
+        '<div class="flat-group-badges">' +
+          '<span class="badge">' + filtered.length + ' 人</span>' +
+          (doneCnt > 0 ? '<span class="badge">✅ ' + doneCnt + '</span>' : '') +
+          '<span class="flat-group-toggle">' + (collapsed ? '▼' : '▲') + '</span>' +
+        '</div>' +
+      '</div>' +
+      cardsHtml +
+    '</div>';
+  }).join('');
+
+  // 全部都是空字串 → 顯示提示
+  if (!groupsHtml.trim()) {
+    var pending = leaderSummary.some(function(l) { return l.members === null; });
+    container.innerHTML = '<div class="empty-hint"><div class="icon">' + (pending ? '⏳' : '🎉') + '</div><p>' + (pending ? '載入中⋯' : '此分類目前沒有資料') + '</p></div>';
+  } else {
+    container.innerHTML = groupsHtml;
+  }
+}
+
+// 區牧:依新人清單(按區→小組長分群,先按區分群)
+function renderPastorFlatList() {
+  var container = document.getElementById('p-flat-list');
+  var anyPending = false;
+
+  if (allDistricts.length === 0) {
+    container.innerHTML = '<div class="empty-hint"><div class="icon">📋</div><p>白名單中找不到任何區</p></div>';
+    return;
+  }
+
+  var totalShown = 0;
+  var anyRendered = false;
+  var districtHtml = allDistricts.map(function(d) {
+    var block = pastorBlocks[d];
+    if (!block.leaderRows) {
+      anyPending = true;
+      return '<div class="district-group">' +
+        '<div class="district-group-header" style="background:#f1f5f9;border-left-color:#94a3b8;color:#64748b">' +
+          '<div class="district-group-title" style="color:#64748b">🏘 ' + esc(d) + '</div>' +
+          '<div style="font-size:12px;color:#94a3b8">載入中⋯</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // 把該區所有新人攤平,並依小組長分組
+    // 注意:某些小組長的 members 可能還沒載入完成,要分別處理「載入中」與「無人」
+    var districtMembers = 0;
+    var districtDone    = 0;
+    var leaderGroups = block.leaderRows.map(function(r) {
+      if (!r.members) {
+        anyPending = true;
+        return { leaderName: r.leaderName, members: [], loading: true };
+      }
+      var filtered = _filterAndSort(r.members, pastorFlatFilter);
+      districtMembers += filtered.length;
+      districtDone    += filtered.filter(function(mm) { return mm.conclusion; }).length;
+      return { leaderName: r.leaderName, members: filtered, loading: false };
+    });
+
+    // 過濾掉「已載入完成 + 無人」的小組長(避免空組;載入中的保留)
+    var visibleGroups = leaderGroups.filter(function(g) {
+      return g.loading || g.members.length > 0;
+    });
+
+    totalShown += districtMembers;
+    anyRendered = true;
+
+    var districtKey = 'p:' + d;
+    var collapsed = collapsedFlatGroups.has(districtKey);
+
+    var innerHtml = '';
+    if (!collapsed) {
+      if (visibleGroups.length === 0) {
+        innerHtml = '<div style="font-size:13px;color:#94a3b8;padding:12px;text-align:center">此分類目前沒有資料</div>';
+      } else {
+        innerHtml = visibleGroups.map(function(g) {
+          if (g.loading) {
+            return '<div class="district-leader-sub">' +
+              '<span>👤</span>' +
+              '<span class="district-leader-sub-name">' + esc(g.leaderName) + '</span>' +
+              '<span class="district-leader-sub-count">載入中⋯</span>' +
+            '</div>';
+          }
+          var doneInGroup = g.members.filter(function(mm) { return mm.conclusion; }).length;
+          var countTxt = g.members.length + ' 人' + (doneInGroup > 0 ? '・✅ ' + doneInGroup : '');
+          return '<div class="district-leader-sub">' +
+            '<span>👤</span>' +
+            '<span class="district-leader-sub-name">' + esc(g.leaderName) + '</span>' +
+            '<span class="district-leader-sub-count">' + countTxt + '</span>' +
+          '</div>' +
+          g.members.map(function(m) { return _renderFlatMemberCard(m, g.leaderName, d); }).join('');
+        }).join('');
+      }
+    }
+
+    var doneBadge = districtDone > 0 ? '<span class="badge">✅ ' + districtDone + '</span>' : '';
+    var diIdx = allDistricts.indexOf(d);
+
+    return '<div class="district-group">' +
+      '<div class="district-group-header" onclick="toggleFlatGroup(\'' + districtKey + '\')">' +
+        '<div class="district-group-title">🏘 ' + esc(d) + '</div>' +
+        '<div class="district-group-badges">' +
+          '<span class="badge">' + districtMembers + ' 人</span>' +
+          doneBadge +
+          '<button class="btn-enter-district-inline" data-di="' + diIdx + '" onclick="event.stopPropagation();pastorEnterDistrict(this)">進入 ›</button>' +
+          '<span class="district-group-toggle">' + (collapsed ? '▼' : '▲') + '</span>' +
+        '</div>' +
+      '</div>' +
+      innerHtml +
+    '</div>';
+  }).join('');
+
+  container.innerHTML = districtHtml;
+}
+
+// 取得「最新一週有紀錄」的週次(回傳 week 物件 + index;沒有則 null)
+function _getLatestWeekWithRecord(m) {
+  if (!m || !m.weeks) return null;
+  for (var w = 3; w >= 0; w--) {
+    if (m.weeks[w] && m.weeks[w].status) {
+      return { week: m.weeks[w], index: w };
+    }
+  }
+  return null;
+}
+
+// 截斷文字到 maxLen 字,超過加 ⋯
+function _truncate(text, maxLen) {
+  if (!text) return '';
+  var s = String(text).trim();
+  if (s.length <= maxLen) return s;
+  return s.slice(0, maxLen) + '⋯';
+}
+
+// 渲染一張「依新人」清單中的新人卡片
+// 因為事件處理需要 idx,而 idx 在這個情境下沒有單一 allMembers,所以用 rowIndex + leaderName 定位
+function _renderFlatMemberCard(m, leaderName, districtName) {
+  var ls          = lastStatus(m);
+  var isConcluded = !!m.conclusion;
+
+  var dotsHtml = m.weeks.map(function(w) {
+    var cls = w.status ? ('dot-' + w.status) : 'dot-empty';
+    return '<div class="flat-row-mini-dot ' + cls + '" title="' + (w.status || '未填') + '">W' + w.week + '</div>';
+  }).join('');
+
+  var newBadge = isThisWeek(m.fillDate) ? '<span class="badge-new">本週新人</span>' : '';
+  var newClass = isThisWeek(m.fillDate) ? ' new-this-week' : '';
+
+  // 狀態小標(結案 vs 一般狀態)
+  var statusBadge = isConcluded
+    ? '<span class="flat-row-status-mini" style="background:#dcfce7;color:#14532d">結案</span>'
+    : '<span class="flat-row-status-mini pill-' + ls + '">' + ls + '</span>';
+
+  // 按鈕:結案的只有 🔍,未結案的有 ✍️ + 🔍
+  var actionBtns = '';
+  if (!isConcluded) {
+    actionBtns += '<button class="flat-row-icon-btn btn-write" onclick="openReportFromFlat(' + m.rowIndex + ')" title="填寫跟進">✍️</button>';
+  }
+  actionBtns += '<button class="flat-row-icon-btn" onclick="openDetailFromFlat(' + m.rowIndex + ')" title="詳細資訊">🔍</button>';
+
+  // 屬於誰 + 日期 + 電話
+  var subParts = [];
+  if (m.fillDate)   subParts.push('📅 ' + esc(m.fillDate));
+  if (m.phone)      subParts.push('<a href="tel:' + m.phone + '">📞 ' + esc(m.phone) + '</a>');
+  var belongsTag = '<span class="member-belongs">👤 ' + esc(leaderName) + (districtName ? '・' + esc(districtName) : '') + '</span>';
+
+  // ─── 新增:最新一週備註預覽(只在未結案 + 有任何週紀錄時顯示) ───
+  var latestHtml = '';
+  if (!isConcluded) {
+    var latest = _getLatestWeekWithRecord(m);
+    if (latest) {
+      var st = latest.week.status;
+      var noteText = latest.week.note ? _truncate(latest.week.note, 40) : '（無備註）';
+      var noteClass = latest.week.note ? 'latest-text' : 'latest-text';
+      var noteStyle = latest.week.note ? '' : 'color:#94a3b8;font-style:italic';
+      latestHtml = '<div class="flat-row-latest clickable" data-st="' + st + '" onclick="openDetailFromLatest(' + m.rowIndex + ')">' +
+        '<span class="latest-tag">W' + latest.week.week + '・' + esc(st) + '</span>' +
+        '<span class="' + noteClass + '" style="' + noteStyle + '">' + esc(noteText) + '</span>' +
+      '</div>';
+    }
+  }
+
+  return '<div class="flat-row' + (isConcluded ? ' concluded' : '') + newClass + '" data-last="' + ls + '">' +
+    '<div class="flat-row-top">' +
+      '<div class="flat-row-name">' + esc(m.name) + newBadge + '</div>' +
+      '<div class="flat-row-right">' +
+        '<div class="flat-row-mini-dots">' + dotsHtml + '</div>' +
+        statusBadge +
+        actionBtns +
+      '</div>' +
+    '</div>' +
+    '<div class="flat-row-sub">' + subParts.join(' ｜ ') + belongsTag + '</div>' +
+    latestHtml +
+  '</div>';
+}
+
+// 從 rowIndex 找到 member(掃描所有快取)
+function _findMemberByRowIndex(rowIndex) {
+  // 先找 leaderSummary(區長 + 區牧進入區後)
+  for (var i = 0; i < leaderSummary.length; i++) {
+    if (!leaderSummary[i].members) continue;
+    for (var j = 0; j < leaderSummary[i].members.length; j++) {
+      if (leaderSummary[i].members[j].rowIndex === rowIndex) {
+        return { member: leaderSummary[i].members[j], leaderName: leaderSummary[i].leaderName };
+      }
+    }
+  }
+  // 再找 pastorBlocks
+  for (var dKey in pastorBlocks) {
+    var block = pastorBlocks[dKey];
+    if (!block.leaderRows) continue;
+    for (var r = 0; r < block.leaderRows.length; r++) {
+      if (!block.leaderRows[r].members) continue;
+      for (var k = 0; k < block.leaderRows[r].members.length; k++) {
+        if (block.leaderRows[r].members[k].rowIndex === rowIndex) {
+          return { member: block.leaderRows[r].members[k], leaderName: block.leaderRows[r].leaderName };
+        }
+      }
+    }
+  }
+  // pastorMyMembers
+  for (var p = 0; p < pastorMyMembers.length; p++) {
+    if (pastorMyMembers[p].rowIndex === rowIndex) return { member: pastorMyMembers[p], leaderName: currentUser.name };
+  }
+  return null;
+}
+
+function openReportFromFlat(rowIndex) {
+  var found = _findMemberByRowIndex(rowIndex);
+  if (!found) { showToast('找不到資料'); return; }
+  openReportForMember(found.member);
+}
+
+function openConcludeFromFlat(rowIndex) {
+  var found = _findMemberByRowIndex(rowIndex);
+  if (!found) { showToast('找不到資料'); return; }
+  openConcludeForMember(found.member);
+}
+
+function openDetailFromFlat(rowIndex) {
+  var found = _findMemberByRowIndex(rowIndex);
+  if (!found) { showToast('找不到資料'); return; }
+  openDetailDirect(found.member);
+}
+
+// 區牧:進入某區(切到區長畫面)
+function pastorEnterDistrict(btn) {
+  var di = parseInt(btn.dataset.di);
+  var districtName = allDistricts[di];
+  var block = pastorBlocks[districtName];
+  if (!block || !block.leaderRows) { showToast('資料尚未載入,請稍候'); return; }
+
+  // 把 pastorBlocks 的資料對應到 districtData + leaderSummary 結構
+  districtData = {
+    districtName:   districtName,
+    districtLeader: '（區牧視角）',
+    leaders:        block.leaderRows.map(function(r) { return r.leaderName; }),
+  };
+  leaderSummary = block.leaderRows.map(function(r) {
+    return {
+      leaderName: r.leaderName,
+      isSelf:     r.leaderName === currentUser.name,
+      total:      r.total,
+      done:       r.done,
+      members:    r.members,
+    };
+  });
+  expandedLeaders.clear();
+  leaderSummary.forEach(function(l) { expandedLeaders.add(l.leaderName); });
+
+  pastorStack.push('districtView');
+  document.getElementById('screen-pastor').classList.add('hidden');
+  document.getElementById('screen-district').classList.remove('hidden');
+  document.getElementById('btn-back').classList.remove('hidden');
+  document.getElementById('topbar-sub').textContent = currentUser.name + '・' + districtName;
+
+  // 設定區長畫面標題
+  document.getElementById('district-title').textContent = districtName;
+  document.getElementById('district-sub').textContent = '共 ' + leaderSummary.length + ' 位小組長';
+  // 隱藏「查看我的新人」按鈕(因為這是別的區)
+  var myBtn = document.getElementById('btn-my-members');
+  var isMyDistrict = leaderSummary.some(function(l) { return l.isSelf; });
+  myBtn.style.display = isMyDistrict ? '' : 'none';
+
+  // 預設展開所有小組長分組
+  leaderSummary.forEach(function(l) { collapsedFlatGroups.delete('d:' + l.leaderName); });
+
+  // 區牧進入區後,預設顯示「全部新人」(跟區長畫面預設一致)
+  setDistrictListView('allFlat');
+  updateDistrictStats();
+}
+
+// 切換到「我的新人」(可填寫)
+function switchToMyMembersAsPastor() {
+  allMembers = pastorMyMembers;
+  viewMode = 'self';
+  pastorStack.push('myMembers');
+
+  document.getElementById('screen-pastor').classList.add('hidden');
+  document.getElementById('screen-main').classList.remove('hidden');
+  document.getElementById('btn-back').classList.remove('hidden');
+  document.getElementById('topbar-sub').textContent = currentUser.name + ' 的跟進清單';
+
+  // 確保 main 元素正常顯示(可能殘留 unassigned 樣式)
+  document.getElementById('main-stats-row').classList.remove('hidden');
+  document.getElementById('main-filter-row').classList.remove('hidden');
+  document.getElementById('main-sort-row').classList.remove('hidden');
+  document.getElementById('unassigned-banner').classList.add('hidden');
+
+  currentFilter = 'active';
+  document.querySelectorAll('#main-filter-row .filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('#main-filter-row .filter-btn')[1].classList.add('active');
+
+  renderStats();
+  renderMembers();
+}
+
+// 點開未分配新人清單(唯讀)
+function openUnassignedList() {
+  var card = document.getElementById('unassigned-card');
+  // 顯示載入中狀態
+  card.style.pointerEvents = 'none';
+  var originalCount = document.getElementById('unassigned-count').textContent;
+  document.getElementById('unassigned-count').innerHTML = '<span class="spinner" style="border-color:rgba(239,68,68,0.3);border-top-color:#ef4444"></span>';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      card.style.pointerEvents = '';
+      document.getElementById('unassigned-count').textContent = originalCount;
+      if (!res.success) { showToast(res.error || '載入失敗'); return; }
+
+      unassignedMembers = res.members || [];
+      allMembers = unassignedMembers;
+      viewMode = 'unassigned';
+      pastorStack.push('unassigned');
+
+      document.getElementById('screen-pastor').classList.add('hidden');
+      document.getElementById('btn-back').classList.remove('hidden');
+
+      currentFilter = 'all';
+      document.getElementById('topbar-sub').textContent = '⚠️ 未分配新人';
+      document.getElementById('screen-main').classList.remove('hidden');
+
+      // 隱藏統計列、篩選列、排序列
+      document.getElementById('main-stats-row').classList.add('hidden');
+      document.getElementById('main-filter-row').classList.add('hidden');
+      document.getElementById('main-sort-row').classList.add('hidden');
+
+      // 顯示警示橫條
+      var banner = document.getElementById('unassigned-banner');
+      banner.classList.remove('hidden');
+      document.getElementById('unassigned-banner-count').textContent = unassignedMembers.length;
+      document.getElementById('unassigned-banner-sub').textContent =
+        unassignedMembers.length > 0
+          ? '尚未指派跟進小組長,請至試算表 K 欄填上小組長名稱'
+          : '目前沒有未分配的新人';
+
+      renderMembers();
+    })
+    .withFailureHandler(function() {
+      card.style.pointerEvents = '';
+      document.getElementById('unassigned-count').textContent = originalCount;
+      showToast('網路錯誤,請重試');
+    })
+    .getUnassignedMembersForFrontend();
+}
+
+// 點某小組長的「查看」
+// ================================================================
+// 返回邏輯
+// ================================================================
+function goBack() {
+  // 不論哪種角色,離開 screen-main 時都要把元素還原(防止下次進入殘留 unassigned 樣式)
+  document.getElementById('main-stats-row').classList.remove('hidden');
+  document.getElementById('main-filter-row').classList.remove('hidden');
+  document.getElementById('main-sort-row').classList.remove('hidden');
+  document.getElementById('unassigned-banner').classList.add('hidden');
+
+  if (currentUser.isStaff) {
+    pastorStack.pop();
+
+    // 從區牧→進入某區(screen-district),返回時直接回 screen-pastor
+    document.getElementById('screen-main').classList.add('hidden');
+    document.getElementById('screen-district').classList.add('hidden');
+    document.getElementById('screen-pastor').classList.remove('hidden');
+    document.getElementById('btn-back').classList.add('hidden');
+    var roleTag = currentUser.role === '區牧' ? '區牧總覽' : (currentUser.role + '・總覽');
+    document.getElementById('topbar-sub').textContent = currentUser.name + '・' + roleTag;
+
+    // 還原「查看我的新人」按鈕(被 pastorEnterDistrict 隱藏的話)
+    var myBtn = document.getElementById('btn-my-members');
+    if (myBtn) myBtn.style.display = '';
+
+    viewMode = 'self';
+
+    // 重新整理依新人清單(資料可能有更新)
+    _refreshPastorList();
+    return;
+  }
+
+  document.getElementById('screen-main').classList.add('hidden');
+  document.getElementById('screen-district').classList.remove('hidden');
+  document.getElementById('btn-back').classList.add('hidden');
+  document.getElementById('topbar-sub').textContent =
+    currentUser.name + '・' + (districtData ? districtData.districtName : '');
+
+  _refreshDistrictList();
+}
+
+// ================================================================
+// 區長切換到「我的新人」
+// ================================================================
+function switchToMyMembers() {
+  viewMode = 'self';
+  document.getElementById('screen-district').classList.add('hidden');
+  document.getElementById('screen-main').classList.remove('hidden');
+  document.getElementById('btn-back').classList.remove('hidden');
+  document.getElementById('topbar-sub').textContent = currentUser.name + ' 的跟進清單';
+
+  // 確保 main 元素正常顯示
+  document.getElementById('main-stats-row').classList.remove('hidden');
+  document.getElementById('main-filter-row').classList.remove('hidden');
+  document.getElementById('main-sort-row').classList.remove('hidden');
+  document.getElementById('unassigned-banner').classList.add('hidden');
+
+  currentFilter = 'active';
+  document.querySelectorAll('#main-filter-row .filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('#main-filter-row .filter-btn')[1].classList.add('active');
+  renderStats();
+  renderMembers();
+}
+
+// ================================================================
+// 小組長:統計 / 篩選 / 排序 / 渲染
+// ================================================================
+function renderStats() {
+  var total = allMembers.length;
+  var done  = allMembers.filter(function(m) { return m.conclusion; }).length;
+  document.getElementById('stat-total').textContent  = total;
+  document.getElementById('stat-active').textContent = total - done;
+  document.getElementById('stat-done').textContent   = done;
+}
+
+function setFilter(btn, filter) {
+  document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  currentFilter = filter;
+  renderMembers();
+}
+
+function toggleSort() {
+  sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
+  document.getElementById('sort-icon').textContent = sortOrder === 'desc' ? '↓' : '↑';
+  document.getElementById('sort-text').textContent = sortOrder === 'desc' ? '最新優先' : '最舊優先';
+  renderMembers();
+}
+
+function filterMembers() {
+  var filtered = allMembers.filter(function(m) {
+    if (currentFilter === 'all')    return true;
+    if (currentFilter === 'done')   return !!m.conclusion;
+    if (currentFilter === 'active') return !m.conclusion;
+    return true;
+  });
+  filtered.sort(function(a, b) {
+    var da = a.fillDate ? new Date(a.fillDate.replace(/\//g, '-')).getTime() : 0;
+    var db = b.fillDate ? new Date(b.fillDate.replace(/\//g, '-')).getTime() : 0;
+    return sortOrder === 'desc' ? db - da : da - db;
+  });
+  return filtered;
+}
+
+function lastStatus(m) {
+  if (m.conclusion) return '已結案';
+  for (var w = 3; w >= 0; w--) {
+    if (m.weeks[w] && m.weeks[w].status) return m.weeks[w].status;
+  }
+  return '未開始';
+}
+
+function nextWeekIndex(m) {
+  for (var w = 0; w < 4; w++) {
+    if (!m.weeks[w].status) return w;
+  }
+  return null;
+}
+
+function isThisWeek(dateStr) {
+  if (!dateStr) return false;
+  var d = new Date(dateStr.replace(/\//g, '-'));
+  if (isNaN(d.getTime())) return false;
+  var today = new Date();
+  var weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  var weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+  return d >= weekStart && d <= weekEnd;
+}
+
+function renderMembers() {
+  var list = document.getElementById('member-list');
+  var members = filterMembers();
+  var readOnly = (viewMode === 'leader' || viewMode === 'unassigned');
+
+  if (members.length === 0) {
+    var emptyMsg = '此分類目前沒有資料';
+    if (viewMode === 'unassigned') emptyMsg = '🎉 目前沒有未分配的新人';
+    list.innerHTML = '<div class="empty-hint"><div class="icon">' + (viewMode === 'unassigned' ? '✅' : '🎉') + '</div><p>' + emptyMsg + '</p></div>';
+    return;
+  }
+
+  list.innerHTML = members.map(function(m) {
+    var ls          = lastStatus(m);
+    var isConcluded = !!m.conclusion;
+    var nextW       = nextWeekIndex(m);
+
+    var dotsHtml = m.weeks.map(function(w) {
+      var cls = w.status ? ('dot-' + w.status) : 'dot-empty';
+      return '<div class="dot ' + cls + '" title="' + (w.status || '未填') + '">W' + w.week + '</div>';
+    }).join('');
+
+    var noteHtml = m.interviewNote
+      ? '<div class="note-box"><div class="note-tag">📝 訪談備註</div>' + esc(m.interviewNote) + '</div>'
+      : '';
+
+    var latestNoteHtml = '';
+    for (var w = 3; w >= 0; w--) {
+      if (m.weeks[w].status && m.weeks[w].note) {
+        var cls2 = m.weeks[w].status === '聯絡不上' ? 'note-box note-alert' : 'note-box note-warn';
+        latestNoteHtml = '<div class="' + cls2 + ' clickable" onclick="openDetailFromCard(' + idx + ')"><div class="note-tag">W' + m.weeks[w].week + ' 備註 🔍</div>' + esc(m.weeks[w].note) + '</div>';
+        break;
+      }
+    }
+
+    var tel = m.phone ? '<a href="tel:' + m.phone + '" class="btn-contact btn-tel">📞 ' + esc(m.phone) + '</a>' : '';
+    var idx = allMembers.indexOf(m);
+    var newBadge = isThisWeek(m.fillDate) ? '<span class="badge-new">本週新人</span>' : '';
+    var newClass = isThisWeek(m.fillDate) ? ' new-this-week' : '';
+
+    var age       = m.age        ? m.age + ' 歲' : '—';
+    var inviter   = m.inviter    || '—';
+    var occ       = m.occupation || '—';
+    var ctDisplay = m.contactTime || '未填';
+
+    var infoGrid =
+      '<div class="info-grid">' +
+        '<div class="info-item"><div class="lbl">🎂 年齡</div><div class="val">' + esc(age) + '</div></div>' +
+        '<div class="info-item"><div class="lbl">⚧ 性別</div><div class="val">' + esc(m.gender || '—') + '</div></div>' +
+        '<div class="info-item"><div class="lbl">🪪 身分</div><div class="val">' + esc(m.identity || '—') + '</div></div>' +
+        '<div class="info-item"><div class="lbl">💼 職業</div><div class="val">' + esc(occ) + '</div></div>' +
+        '<div class="info-item"><div class="lbl">🤝 邀請人</div><div class="val">' + esc(inviter) + '</div></div>' +
+        '<div class="info-item"><div class="lbl">🕐 聯絡時間</div><div class="val">' + esc(ctDisplay) + '</div></div>' +
+      '</div>';
+
+    var actionBtns = '';
+    if (readOnly) {
+      if (viewMode === 'unassigned') {
+        actionBtns =
+          '<div class="note-box" style="background:#fff7ed;border-left:3px solid #f97316;text-align:center;color:#9a3412;font-weight:700;margin-top:10px">⚠️ 尚未指派跟進小組長</div>' +
+          '<button class="btn-assign" onclick="openAssign(' + idx + ')">👤 指派小組長</button>';
+      } else if (isConcluded) {
+        actionBtns = '<div class="note-box" style="background:#f0fdf4;text-align:center;color:#15803d;font-weight:700;margin-top:10px">✅ 已結案：' + esc(m.conclusion) + (m.groupJoined ? '（' + esc(m.groupJoined) + '）' : '') + '</div>';
+      }
+    } else {
+      if (!isConcluded) {
+        actionBtns =
+          '<div style="display:flex;gap:8px;margin-top:10px">' +
+            (nextW !== null
+              ? '<button class="btn-report" style="flex:1" onclick="openReport(' + idx + ')">✍️ 填入第 ' + (nextW+1) + ' 週狀況</button>'
+              : '<button class="btn-report" style="flex:1" onclick="openReport(' + idx + ')">✍️ 修改週狀況</button>') +
+            '<button class="btn-conclude" style="flex:1;margin-top:0" onclick="openConclude(' + idx + ')">📋 填寫結案</button>' +
+          '</div>';
+      } else {
+        actionBtns = '<div class="note-box" style="background:#f0fdf4;text-align:center;color:#15803d;font-weight:700;margin-top:10px">✅ 已結案：' + esc(m.conclusion) + (m.groupJoined ? '（' + esc(m.groupJoined) + '）' : '') + '</div>';
+      }
+    }
+
+    var detailBtn = '<button onclick="openDetail(' + idx + ')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 0 0 6px;vertical-align:middle">🔍</button>';
+
+    return '<div class="member-card' + (isConcluded ? ' concluded' : '') + newClass + '" data-last="' + ls + '">' +
+      '<div class="card-top">' +
+        '<div><div class="card-name">' + esc(m.name) + newBadge + detailBtn + '</div>' +
+        '<div class="card-sub">' + (m.fillDate ? '📅 ' + esc(m.fillDate) + (m.service ? '・' + esc(m.service) : '') : '') + '</div></div>' +
+        '<span class="status-pill pill-' + ls + '">' + ls + '</span>' +
+      '</div>' +
+      infoGrid +
+      (tel ? '<div style="margin:8px 0">' + tel + '</div>' : '') +
+      '<div class="progress-row"><div class="prog-label">進度</div><div class="dots">' + dotsHtml + '</div></div>' +
+      noteHtml + latestNoteHtml + actionBtns +
+    '</div>';
+  }).join('');
+}
+
+// ================================================================
+// 跟進回報 Modal
+// ================================================================
+function openReport(idx) {
+  openReportForMember(allMembers[idx]);
+}
+
+function openReportForMember(m) {
+  if (!m) return;
+  reportTarget = { member: m, weekIndex: null };
+  document.getElementById('modal-name').textContent = m.name + ' — 跟進回報';
+  document.getElementById('modal-sub').textContent  = '';
+  document.getElementById('report-note').value = '';
+  document.querySelectorAll('.status-option').forEach(function(b) { b.classList.remove('selected'); });
+
+  var submitBtn = document.querySelector('#modal-report .btn-submit');
+  submitBtn.innerHTML = '✍️ 送出本週回報';
+  submitBtn.disabled = false;
+
+  var pills = document.getElementById('week-pills');
+  pills.innerHTML = m.weeks.map(function(w, i) {
+    return '<button class="week-pill" data-week="' + i +
+      '" onclick="selectWeek(this,' + i + ',' + JSON.stringify(w).replace(/"/g, "'") + ')">' +
+      '第 ' + w.week + ' 週' + (w.status ? '<br><small>' + w.status + '</small>' : '') + '</button>';
+  }).join('');
+
+  var nextW = nextWeekIndex(m);
+  if (nextW !== null) {
+    var btn = pills.querySelectorAll('.week-pill')[nextW];
+    if (btn) selectWeek(btn, nextW, m.weeks[nextW]);
+  }
+
+  var modalEl = document.querySelector('#modal-report .modal');
+  modalEl.classList.toggle('compact', currentUser.role !== '小組長' && viewMode === 'leader');
+  document.getElementById('modal-report').classList.remove('hidden');
+}
+
+function selectWeek(btn, idx, weekData) {
+  reportTarget.weekIndex = idx;
+  document.querySelectorAll('.week-pill').forEach(function(b) { b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  if (weekData.status) {
+    document.querySelectorAll('.status-option').forEach(function(b) {
+      b.classList.toggle('selected', b.dataset.val === weekData.status);
+    });
+    document.getElementById('report-note').value = weekData.note || '';
+  } else {
+    document.querySelectorAll('.status-option').forEach(function(b) { b.classList.remove('selected'); });
+    document.getElementById('report-note').value = '';
+  }
+}
+
+function selectStatus(btn) {
+  document.querySelectorAll('.status-option').forEach(function(b) { b.classList.remove('selected'); });
+  btn.classList.add('selected');
+}
+
+function submitReport() {
+  var selected = document.querySelector('#modal-report .status-option.selected');
+  if (!selected) { showToast('請選擇本週狀況'); return; }
+  if (reportTarget.weekIndex === null) { showToast('請選擇週次'); return; }
+
+  var status    = selected.dataset.val;
+  var note      = document.getElementById('report-note').value.trim();
+  var m         = reportTarget.member;
+  var week      = reportTarget.weekIndex + 1;
+  var submitBtn = document.querySelector('#modal-report .btn-submit');
+  submitBtn.innerHTML = '<span class="spinner"></span>送出中⋯';
+  submitBtn.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.success) {
+        m.weeks[reportTarget.weekIndex].status = status;
+        m.weeks[reportTarget.weekIndex].note   = note;
+        closeModal('modal-report');
+        _refreshAllViews();
+        showToast('✅ 第 ' + week + ' 週狀況已儲存!');
+      } else {
+        showToast('儲存失敗：' + res.error);
+        submitBtn.innerHTML = '✍️ 送出本週回報';
+        submitBtn.disabled = false;
+      }
+    })
+    .withFailureHandler(function() {
+      showToast('網路錯誤,請重試');
+      submitBtn.innerHTML = '✍️ 送出本週回報';
+      submitBtn.disabled = false;
+    })
+    .updateWeekStatusForFrontend(m.rowIndex, week, status, note);
+}
+
+// 重新渲染所有可能正在顯示的 view(同步)
+function _refreshAllViews() {
+  // 1. 小組長/區長/區牧的 main 畫面
+  if (!document.getElementById('screen-main').classList.contains('hidden')) {
+    renderStats();
+    renderMembers();
+  }
+  // 2. 區長畫面 — 依新人 flat view
+  if (!document.getElementById('screen-district').classList.contains('hidden')) {
+    leaderSummary.forEach(function(l) {
+      if (l.members) {
+        l.total = l.members.length;
+        l.done  = l.members.filter(function(mm) { return mm.conclusion; }).length;
+      }
+    });
+    updateDistrictStats();
+    _refreshDistrictList();
+  }
+  // 3. 區牧畫面 — 依新人 flat view
+  if (!document.getElementById('screen-pastor').classList.contains('hidden')) {
+    for (var d in pastorBlocks) {
+      var block = pastorBlocks[d];
+      if (!block.leaderRows) continue;
+      block.leaderRows.forEach(function(r) {
+        if (r.members) {
+          r.total = r.members.length;
+          r.done  = r.members.filter(function(mm) { return mm.conclusion; }).length;
+        }
+      });
+      block.total = block.leaderRows.reduce(function(s,r) { return s + r.total; }, 0);
+      block.done  = block.leaderRows.reduce(function(s,r) { return s + r.done;  }, 0);
+    }
+    updatePastorTotalStats();
+    _refreshPastorList();
+  }
+}
+
+// ================================================================
+// 結案 Modal
+// ================================================================
+function openConclude(idx) {
+  openConcludeForMember(allMembers[idx]);
+}
+
+function openConcludeForMember(m) {
+  if (!m) return;
+  concludeTarget = m;
+  document.getElementById('conclude-name').textContent = m.name + ' — 結案';
+  document.querySelectorAll('#conclude-grid .status-option').forEach(function(b) { b.classList.remove('selected'); });
+  document.getElementById('conclude-note-section').classList.add('hidden');
+  document.getElementById('conclude-note-input').value = '';
+
+  var submitBtn = document.querySelector('#modal-conclude .btn-submit');
+  submitBtn.innerHTML = '確認結案';
+  submitBtn.disabled = false;
+
+  document.getElementById('modal-conclude').classList.remove('hidden');
+}
+
+function selectConclude(btn) {
+  document.querySelectorAll('#conclude-grid .status-option').forEach(function(b) { b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  var val = btn.dataset.val;
+  var labelMap = { '加入小組': '加入的小組名稱', '不跟進': '原因', '轉介其他分堂': '轉介的分堂名稱', '其他': '原因' };
+  var placeholderMap = { '加入小組': '例：喜樂小組', '不跟進': '例:本人表示暫無意願', '轉介其他分堂': '例：台北大安堂', '其他': '請說明原因' };
+  document.getElementById('conclude-note-input').value = '';
+  if (val === '聯絡不上') {
+    document.getElementById('conclude-note-section').classList.add('hidden');
+  } else {
+    document.getElementById('conclude-note-label').textContent = labelMap[val] || '補充說明';
+    document.getElementById('conclude-note-input').placeholder = placeholderMap[val] || '';
+    document.getElementById('conclude-note-section').classList.remove('hidden');
+  }
+}
+
+function submitConclusion() {
+  var selected = document.querySelector('#conclude-grid .status-option.selected');
+  if (!selected) { showToast('請選擇結案狀況'); return; }
+  var conclusion = selected.dataset.val;
+  var note = document.getElementById('conclude-note-input').value.trim();
+  if (conclusion !== '聯絡不上' && !note) { showToast('請填寫補充說明'); return; }
+
+  var submitBtn = document.querySelector('#modal-conclude .btn-submit');
+  submitBtn.innerHTML = '<span class="spinner"></span>送出中⋯';
+  submitBtn.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.success) {
+        concludeTarget.conclusion  = conclusion;
+        concludeTarget.groupJoined = note;
+        closeModal('modal-conclude');
+        _refreshAllViews();
+        showToast('✅ 結案資料已儲存!');
+      } else {
+        showToast('儲存失敗：' + res.error);
+        submitBtn.innerHTML = '確認結案';
+        submitBtn.disabled = false;
+      }
+    })
+    .withFailureHandler(function() {
+      showToast('網路錯誤,請重試');
+      submitBtn.innerHTML = '確認結案';
+      submitBtn.disabled = false;
+    })
+    .submitConclusionForFrontend(concludeTarget.rowIndex, conclusion, note);
+}
+
+// ================================================================
+// 詳細資訊 Modal
+// ================================================================
+function openDetail(idx) { openDetailDirect(allMembers[idx]); }
+
+function openDetailFromDistrict(btn) {
+  var li = parseInt(btn.dataset.li);
+  var mi = parseInt(btn.dataset.mi);
+  var leader = leaderSummary[li];
+  if (!leader || !leader.members) return;
+  openDetailDirect(leader.members[mi]);
+}
+
+function openDetailDirect(m, scrollTo) {
+  if (!m) return;
+  document.getElementById('detail-name').textContent = m.name;
+  document.getElementById('detail-sub').textContent  = (m.fillDate || '') + (m.service ? '・' + m.service : '');
+
+  function row(lbl, val, full) {
+    return '<div class="detail-item' + (full ? ' full' : '') + '"><div class="lbl">' + lbl + '</div><div class="val">' + esc(val || '—') + '</div></div>';
+  }
+  var html = '';
+  html += '<div class="detail-section-title">基本資料</div><div class="detail-grid">';
+  html += row('性別', m.gender) + row('年齡', m.age ? m.age + ' 歲' : '');
+  html += row('身分', m.identity) + row('職業／學校', m.occupation);
+  html += row('邀請人', m.inviter) + row('蒞臨原因', m.reason);
+  html += '</div>';
+  html += '<div class="detail-section-title">聯絡資訊</div><div class="detail-grid">';
+  html += row('手機', m.phone, true) + row('Email', m.email, true);
+  html += row('適合聯絡時間', m.contactTime) + row('地址', m.address, true);
+  html += '</div>';
+  html += '<div class="detail-section-title">信仰背景</div><div class="detail-grid">';
+  html += row('基督徒', m.isChristian) + row('原教會', m.prevChurch);
+  html += '</div>';
+
+  // ─── 新增:四週跟進紀錄(完整 status + note) ───
+  html += '<div class="detail-section-title" id="detail-weeks-anchor">四週跟進紀錄</div><div class="detail-weeks">';
+  for (var w = 0; w < 4; w++) {
+    var weekData = m.weeks && m.weeks[w] ? m.weeks[w] : { week: w + 1, status: '', note: '' };
+    var st = weekData.status || '';
+    var statusText = st || '尚未填寫';
+    var noteText = weekData.note ? esc(weekData.note) : '（無備註）';
+    var noteCls = weekData.note ? 'detail-week-note' : 'detail-week-note empty';
+    html += '<div class="detail-week-row" data-st="' + st + '">' +
+      '<div class="detail-week-top">' +
+        '<span class="detail-week-label">W' + (w + 1) + '</span>' +
+        '<span class="detail-week-status">' + esc(statusText) + '</span>' +
+      '</div>' +
+      '<div class="' + noteCls + '">' + noteText + '</div>' +
+    '</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="detail-section-title">跟進資訊</div><div class="detail-grid">';
+  html += row('指派日期', m.assignDate) + row('訪談人', m.interviewer);
+  html += row('跟進小組長', m.leader || '（未指派）') + row('跟進小組', m.group || '（未指派）');
+  html += row('訪談備註', m.interviewNote, true);
+  html += '</div>';
+  if (m.conclusion) {
+    html += '<div class="detail-section-title">結案</div><div class="detail-grid">';
+    html += row('結案狀況', m.conclusion) + row('補充說明', m.groupJoined);
+    html += '</div>';
+  }
+  document.getElementById('detail-content').innerHTML = html;
+
+  // 動作按鈕區:已結案的只能查看;未結案的有跟進/結案兩顆
+  // 未分配新人不顯示動作(viewMode === 'unassigned')
+  var actionsEl = document.getElementById('detail-actions');
+  if (viewMode === 'unassigned' || !m.leader) {
+    actionsEl.innerHTML = '';
+    actionsEl.style.display = 'none';
+  } else if (m.conclusion) {
+    actionsEl.innerHTML = '';
+    actionsEl.style.display = 'none';
+  } else {
+    actionsEl.style.display = 'flex';
+    actionsEl.innerHTML =
+      '<button class="btn-report" style="flex:1" onclick="_detailJumpReport(' + m.rowIndex + ')">✍️ 填寫跟進</button>' +
+      '<button class="btn-conclude" style="flex:1;margin-top:0" onclick="_detailJumpConclude(' + m.rowIndex + ')">📋 填寫結案</button>';
+  }
+
+  document.getElementById('modal-detail').classList.remove('hidden');
+  if (scrollTo === 'weeks') {
+    setTimeout(function() {
+      var anchor = document.getElementById('detail-weeks-anchor');
+      if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+}
+
+// 從 detail 跳到跟進/結案 modal
+function _detailJumpReport(rowIndex) {
+  closeModal('modal-detail');
+  openReportFromFlat(rowIndex);
+}
+function _detailJumpConclude(rowIndex) {
+  closeModal('modal-detail');
+  openConcludeFromFlat(rowIndex);
+}
+// ================================================================
+// 點 flat 卡片的「最新一週備註」 → 跳到詳細
+// ================================================================
+function openDetailFromLatest(rowIndex) {
+  var found = _findMemberByRowIndex(rowIndex);
+  if (!found) { showToast('找不到資料'); return; }
+  openDetailDirect(found.member,'weeks');
+}
+
+// 點小組長 main view 中的週備註框 → 跳到詳細
+function openDetailFromCard(idx) {
+  openDetailDirect(allMembers[idx],'weeks');
+}
+
+// ================================================================
+// 指派小組長
+// ================================================================
+function openAssign(idx) {
+  assignTarget = allMembers[idx];
+  if (!assignTarget) return;
+  assignSelected = { district: null, leader: null, group: null };
+
+  document.getElementById('assign-name').textContent = assignTarget.name + ' — 指派小組長';
+
+  // 先重置 UI
+  document.getElementById('assign-leader-list').innerHTML =
+    '<div class="assign-empty">請先選擇區</div>';
+  function openAssign(idx) {
+  assignTarget = allMembers[idx];
+  if (!assignTarget) return;
+  assignSelected = { district: null, leader: null, group: null, conclusion: null, concludeNote: '' };
+
+  document.getElementById('assign-name').textContent = assignTarget.name + ' — 指派 / 結案';
+
+  // 先重置 UI
+  document.getElementById('assign-leader-list').innerHTML =
+    '<div class="assign-empty">請先選擇區</div>';
+  document.querySelectorAll('#assign-conclude-grid .status-option').forEach(function(b) {
+    b.classList.remove('selected');
+  });
+  document.getElementById('assign-conclude-note-section').classList.add('hidden');
+  document.getElementById('assign-conclude-note-input').value = '';
+
+  var submitBtn = document.querySelector('#modal-assign .btn-submit');
+  submitBtn.innerHTML = '✅ 確認';
+  submitBtn.disabled = false;
+
+  document.getElementById('modal-assign').classList.remove('hidden');
+
+  // 載入(或重用)選項
+  if (assignOptions) {
+    renderAssignDistricts();
+  } else {
+    document.getElementById('assign-district-list').innerHTML =
+      '<div class="assign-empty">載入中⋯</div>';
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (!res.success) {
+          document.getElementById('assign-district-list').innerHTML =
+            '<div class="assign-empty" style="color:#ef4444">' + esc(res.error || '載入失敗') + '</div>';
+          return;
+        }
+        assignOptions = res;
+        renderAssignDistricts();
+      })
+      .withFailureHandler(function() {
+        document.getElementById('assign-district-list').innerHTML =
+          '<div class="assign-empty" style="color:#ef4444">網路錯誤</div>';
+      })
+      .getAssignOptionsForFrontend();
+  }
+}
+  var submitBtn = document.querySelector('#modal-assign .btn-submit');
+  submitBtn.innerHTML = '✅ 確認指派';
+  submitBtn.disabled = false;
+
+  document.getElementById('modal-assign').classList.remove('hidden');
+
+  // 載入(或重用)選項
+  if (assignOptions) {
+    renderAssignDistricts();
+  } else {
+    document.getElementById('assign-district-list').innerHTML =
+      '<div class="assign-empty">載入中⋯</div>';
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (!res.success) {
+          document.getElementById('assign-district-list').innerHTML =
+            '<div class="assign-empty" style="color:#ef4444">' + esc(res.error || '載入失敗') + '</div>';
+          return;
+        }
+        assignOptions = res;
+        renderAssignDistricts();
+      })
+      .withFailureHandler(function() {
+        document.getElementById('assign-district-list').innerHTML =
+          '<div class="assign-empty" style="color:#ef4444">網路錯誤</div>';
+      })
+      .getAssignOptionsForFrontend();
+  }
+}
+
+function renderAssignDistricts() {
+  var container = document.getElementById('assign-district-list');
+  if (!assignOptions.districts || assignOptions.districts.length === 0) {
+    container.innerHTML = '<div class="assign-empty">白名單尚未設定任何小組長</div>';
+    return;
+  }
+  container.innerHTML = assignOptions.districts.map(function(d, i) {
+    return '<button class="assign-chip" data-di="' + i + '" onclick="selectAssignDistrict(this)">' +
+      esc(d.districtName) + '（' + d.leaders.length + '）</button>';
+  }).join('');
+}
+
+function selectAssignDistrict(btn) {
+  // 互斥:清掉結案選擇
+  assignSelected.conclusion = null;
+  document.querySelectorAll('#assign-conclude-grid .status-option').forEach(function(b) {
+    b.classList.remove('selected');
+  });
+  document.getElementById('assign-conclude-note-section').classList.add('hidden');
+
+  document.querySelectorAll('#assign-district-list .assign-chip').forEach(function(b) {
+    b.classList.remove('selected');
+  });
+  btn.classList.add('selected');
+  var di = parseInt(btn.dataset.di);
+  var district = assignOptions.districts[di];
+  assignSelected.district = district.districtName;
+  assignSelected.leader = null;
+  assignSelected.group  = null;
+
+  var leaderListEl = document.getElementById('assign-leader-list');
+  if (!district.leaders || district.leaders.length === 0) {
+    leaderListEl.innerHTML = '<div class="assign-empty">此區沒有小組長</div>';
+    return;
+  }
+  leaderListEl.innerHTML = district.leaders.map(function(l, li) {
+    return '<div class="assign-leader-row" data-li="' + li + '" onclick="selectAssignLeader(this)">' +
+      '<div class="lname">👤 ' + esc(l.name) + '</div>' +
+      (l.group ? '<div class="lgroup">小組:' + esc(l.group) + '</div>' : '<div class="lgroup">(未設定小組)</div>') +
+    '</div>';
+  }).join('');
+}
+
+function selectAssignLeader(row) {
+  document.querySelectorAll('#assign-leader-list .assign-leader-row').forEach(function(r) {
+    r.classList.remove('selected');
+  });
+  row.classList.add('selected');
+  var li = parseInt(row.dataset.li);
+  var district = assignOptions.districts.find(function(d) { return d.districtName === assignSelected.district; });
+  if (!district) return;
+  var leader = district.leaders[li];
+  assignSelected.leader = leader.name;
+  assignSelected.group  = leader.group || '';
+}
+function selectAssignConclude(btn) {
+  // 互斥:清掉指派選擇
+  assignSelected.district = null;
+  assignSelected.leader   = null;
+  assignSelected.group    = null;
+  document.querySelectorAll('#assign-district-list .assign-chip').forEach(function(b) {
+    b.classList.remove('selected');
+  });
+  document.querySelectorAll('#assign-leader-list .assign-leader-row').forEach(function(r) {
+    r.classList.remove('selected');
+  });
+  document.getElementById('assign-leader-list').innerHTML =
+    '<div class="assign-empty">請先選擇區</div>';
+
+  document.querySelectorAll('#assign-conclude-grid .status-option').forEach(function(b) {
+    b.classList.remove('selected');
+  });
+  btn.classList.add('selected');
+  var val = btn.dataset.val;
+  assignSelected.conclusion = val;
+
+  // 顯示補充說明欄(聯絡不上不需要)
+  var labelMap = {
+    '不跟進':       '原因',
+    '轉介其他分堂': '轉介的分堂名稱',
+    '其他':         '原因'
+  };
+  var placeholderMap = {
+    '不跟進':       '例:本人表示暫無意願',
+    '轉介其他分堂': '例:台北大安堂',
+    '其他':         '請說明原因'
+  };
+  document.getElementById('assign-conclude-note-input').value = '';
+  if (val === '聯絡不上') {
+    document.getElementById('assign-conclude-note-section').classList.add('hidden');
+  } else {
+    document.getElementById('assign-conclude-note-label').textContent = labelMap[val] || '補充說明';
+    document.getElementById('assign-conclude-note-input').placeholder = placeholderMap[val] || '';
+    document.getElementById('assign-conclude-note-section').classList.remove('hidden');
+  }
+}
+
+function submitAssign() {
+  // 判斷分流
+  var isAssign   = !!assignSelected.leader;
+  var isConclude = !!assignSelected.conclusion;
+
+  if (!isAssign && !isConclude) {
+    showToast('請選擇小組長,或選擇結案原因');
+    return;
+  }
+
+  // 結案需要補充說明(聯絡不上除外)
+  if (isConclude && assignSelected.conclusion !== '聯絡不上') {
+    var noteVal = document.getElementById('assign-conclude-note-input').value.trim();
+    if (!noteVal) {
+      showToast('請填寫補充說明');
+      return;
+    }
+    assignSelected.concludeNote = noteVal;
+  } else if (isConclude) {
+    assignSelected.concludeNote = '';
+  }
+
+  var submitBtn = document.querySelector('#modal-assign .btn-submit');
+  submitBtn.innerHTML = '<span class="spinner"></span>處理中⋯';
+  submitBtn.disabled = true;
+
+  var target = assignTarget;
+
+  // 分流 A:指派
+  if (isAssign) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (!res.success) {
+          showToast('指派失敗:' + (res.error || ''));
+          submitBtn.innerHTML = '✅ 確認';
+          submitBtn.disabled = false;
+          return;
+        }
+        _afterAssignSuccess(target, '已指派給 ' + assignSelected.leader, function() {
+          target.leader = assignSelected.leader;
+          target.group  = assignSelected.group;
+        });
+      })
+      .withFailureHandler(function() {
+        showToast('網路錯誤,請重試');
+        submitBtn.innerHTML = '✅ 確認';
+        submitBtn.disabled = false;
+      })
+      .assignMemberForFrontend(target.rowIndex, assignSelected.leader, assignSelected.group);
+    return;
+  }
+
+  // 分流 B:直接結案
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) {
+        showToast('結案失敗:' + (res.error || ''));
+        submitBtn.innerHTML = '✅ 確認';
+        submitBtn.disabled = false;
+        return;
+      }
+      _afterAssignSuccess(target, '已結案:' + assignSelected.conclusion, function() {
+        target.conclusion  = assignSelected.conclusion;
+        target.groupJoined = assignSelected.concludeNote;
+      });
+    })
+    .withFailureHandler(function() {
+      showToast('網路錯誤,請重試');
+      submitBtn.innerHTML = '✅ 確認';
+      submitBtn.disabled = false;
+    })
+    .concludeUnassignedForFrontend(target.rowIndex, assignSelected.conclusion, assignSelected.concludeNote);
+}
+
+// 指派 / 結案成功後的共用收尾
+function _afterAssignSuccess(target, toastMsg, updateFn) {
+  if (updateFn) updateFn();
+
+  // 從未分配清單移除
+  var idx = allMembers.indexOf(target);
+  if (idx !== -1) allMembers.splice(idx, 1);
+
+  closeModal('modal-assign');
+  showToast('✅ ' + toastMsg);
+
+  // 更新警示橫條的數字
+  var bannerCount = document.getElementById('unassigned-banner-count');
+  if (bannerCount) bannerCount.textContent = allMembers.length;
+  if (allMembers.length === 0) {
+    var subEl = document.getElementById('unassigned-banner-sub');
+    if (subEl) subEl.textContent = '🎉 目前沒有未分配的新人';
+  }
+  // 同步區牧首頁的未分配卡片數字
+  var topCard = document.getElementById('unassigned-count');
+  if (topCard) {
+    var n = parseInt(topCard.textContent) || 0;
+    var newN = Math.max(0, n - 1);
+    topCard.textContent = newN;
+    if (newN === 0) {
+      var card = document.getElementById('unassigned-card');
+      if (card) card.classList.add('hidden');
+    }
+  }
+  renderMembers();
+}
+
+// ================================================================
+// 工具
+// ================================================================
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function showToast(msg) {
+  var old = document.querySelector('.toast');
+  if (old) old.remove();
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.remove(); }, 2800);
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(function(el) {
+  el.addEventListener('click', function(e) { if (e.target === el) closeModal(el.id); });
+});
+</script>
+</body>
+</html>
