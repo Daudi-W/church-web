@@ -107,7 +107,9 @@
       h += renderServices(res.services);
       if (res.isLeader) h += renderZone(res.zone, res.zoneMembers, res.scope, res.group);
     }
-    if (res.isTeamLead) h += renderTeam(res.teamName, res.teamSchedule);
+    if (res.isTeamLead && res.teamLeads) {
+      res.teamLeads.forEach(function (tl) { h += renderTeam(tl.teamName, tl.schedule); });
+    }
     document.getElementById('viewArea').innerHTML = h;
   }
 
