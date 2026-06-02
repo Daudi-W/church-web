@@ -89,11 +89,18 @@
     .then(function(res){
       if (!res.ok) { setStatus('⚠️ ' + (res.error || '驗證失敗'), true); return; }
       setStatus('✅ 登入成功', false);
-      var html =
-        '<div class="ok">✅ 身分驗證通過（後端確認，非前端自報）</div>' +
-        '登入 email：<code>' + res.email + '</code><br>' +
-        '讀到測試表：<code>' + res.sheetTitle + '</code><br>' +
-        '同工資料庫：' + (res.volunteerSheetFound ? '找到，<strong>' + res.volunteerCount + '</strong> 筆同工' : '<span class="err">找不到</span>');
+      var html = '<div class="ok">✅ 身分驗證通過（後端確認，非前端自報）</div>' +
+        '登入 email：<code>' + res.email + '</code><br>';
+      if (res.matched) {
+        html +=
+          '姓名：<strong>' + (res.name || '—') + '</strong><br>' +
+          '牧區：' + (res.zone || '—') + '<br>' +
+          '牧養身份：<strong>' + (res.shepherdRole || '—') + '</strong><br>' +
+          '事工團：' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '');
+      } else {
+        html += '<span class="err">⚠️ 查無身分</span>：' +
+          (res.note ? res.note : '你已成功登入，但不在名單中（之後走「帳號申請」加入）');
+      }
       var rd = document.getElementById('result');
       rd.innerHTML = html; rd.className = 'result show';
       document.getElementById('logoutBtn').style.display = 'block';
