@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>服事系統（測試沙盒）— 登入驗證</title>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    margin: 0; background: #f4f6f8; color: #1f2d3d;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .card {
+    background: #fff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.08);
+    max-width: 460px; width: 100%; padding: 32px;
+  }
+  .badge {
+    display: inline-block; background: #fff4e5; color: #b26a00;
+    font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; margin-bottom: 14px;
+  }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .sub { color: #6b7a8d; font-size: 14px; margin: 0 0 22px; line-height: 1.6; }
+  #gBtn { display: flex; justify-content: center; margin: 18px 0; }
+  #status { font-size: 14px; min-height: 22px; text-align: center; margin-top: 6px; }
+  .result {
+    margin-top: 18px; background: #f0f7ff; border: 1px solid #cfe6ff; border-radius: 12px;
+    padding: 16px; font-size: 14px; line-height: 1.9; display: none;
+  }
+  .result.show { display: block; }
+  .result .ok { color: #1a7f37; font-weight: 700; }
+  .result code { background: #e7eef5; padding: 1px 6px; border-radius: 5px; font-size: 13px; }
+  .err { color: #c0392b; }
+  .foot { margin-top: 22px; font-size: 12px; color: #9aa7b4; line-height: 1.7; }
+  button.logout {
+    margin-top: 14px; width: 100%; padding: 10px; border: 1px solid #d0d7de; background: #fff;
+    border-radius: 10px; cursor: pointer; font-size: 14px; color: #444;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <span class="badge">🧪 測試沙盒・不影響正式系統</span>
+  <h1>服事系統 — 登入驗證</h1>
+  <p class="sub">用你的 Google 帳號登入，系統會驗證身分（不能冒名）並讀取<strong>隔離的測試試算表</strong>，把結果顯示在下方。這是環節 2 的驗收頁。</p>
+
+  <div id="gBtn"></div>
+  <div id="status">請點上方按鈕，用 Google 登入</div>
+
+  <div class="result" id="result"></div>
+  <button class="logout" id="logoutBtn" style="display:none" onclick="logout()">登出 / 換帳號</button>
+
+  <p class="foot">
+    後端：service-app 測試 GAS ・ 資料：測試沙盒試算表（複製自正式）<br>
+    登入只做身分驗票，唯讀，不寫入任何資料。
+  </p>
+</div>
+
+<script>
+  // 測試沙盒後端（service-app GAS 部署）
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxavwu853Lejoco68BOJ1hEiH6MSrXMe2do171i8uUbGtQxDYBrLqk5U07H6Qas96rAWQ/exec';
+  // 沿用教會 church-login 的 OAuth 用戶端 ID（與場地/新人同一組）
+  var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
+
+  function initGoogleLogin() {
+    if (!(window.google && google.accounts && google.accounts.id)) {
+      return setTimeout(initGoogleLogin, 100);
+    }
+    google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onGoogleLogin, auto_select: false });
+    google.accounts.id.renderButton(document.getElementById('gBtn'),
+      { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
+  }
+  window.addEventListener('load', initGoogleLogin);
+
+  function setStatus(msg, isErr) {
+    var el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = isErr ? 'err' : '';
+  }
+
+  function onGoogleLogin(response) {
+    setStatus('⏳ 驗證身分中…', false);
+    fetch(SCRIPT_URL, {
+      method: 'POST', redirect: 'follow',
+      body: JSON.stringify({ action: 'whoami', idToken: response.credential })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (!res.ok) { setStatus('⚠️ ' + (res.error || '驗證失敗'), true); return; }
+      setStatus('✅ 登入成功', false);
+      var html =
+        '<div class="ok">✅ 身分驗證通過（後端確認，非前端自報）</div>' +
+        '登入 email：<code>' + res.email + '</code><br>' +
+        '讀到測試表：<code>' + res.sheetTitle + '</code><br>' +
+        '同工資料庫：' + (res.volunteerSheetFound ? '找到，<strong>' + res.volunteerCount + '</strong> 筆同工' : '<span class="err">找不到</span>');
+      var rd = document.getElementById('result');
+      rd.innerHTML = html; rd.className = 'result show';
+      document.getElementById('logoutBtn').style.display = 'block';
+    })
+    .catch(function(){ setStatus('⚠️ 連線失敗，請稍後再試', true); });
+  }
+
+  function logout() {
+    if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+    location.reload();
+  }
+</script>
+</body>
+</html>
