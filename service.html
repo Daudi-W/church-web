@@ -37,6 +37,9 @@
   table.svc { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
   table.svc th, table.svc td { border: 1px solid #cfe6ff; padding: 5px 8px; text-align: left; }
   table.svc th { background: #dceeff; }
+  .mbr { margin-top: 8px; padding: 8px 10px; background: #f7faff; border: 1px solid #e1ecf7; border-radius: 8px; font-size: 13px; }
+  .mbr-none { color: #8a97a4; }
+  .mbr-svc { color: #34465a; padding-left: 10px; margin-top: 2px; }
   .foot { margin-top: 22px; font-size: 12px; color: #9aa7b4; line-height: 1.7; }
   button.logout {
     margin-top: 14px; width: 100%; padding: 10px; border: 1px solid #d0d7de; background: #fff;
@@ -78,6 +81,29 @@
   }
   window.addEventListener('load', initGoogleLogin);
 
+  function svcLine(s) {
+    return s.date + '(' + s.weekday + ') ' + (s.session || '') + ' ' + s.role + (s.instrument ? '（' + s.instrument + '）' : '');
+  }
+
+  function renderZone(zone, members) {
+    if (!members || !members.length) {
+      return '<div class="svc-title" style="margin-top:18px">👥 本區（' + (zone || '—') + '）</div><div class="svc-empty">本區（依白名單）目前沒有其他同工。</div>';
+    }
+    var withSvc = members.filter(function (m) { return m.services && m.services.length; });
+    var h = '<div class="svc-title" style="margin-top:18px">👥 本區（' + zone + '）同工的未來服事</div>';
+    h += '<div class="svc-empty">共 ' + members.length + ' 位同工，' + withSvc.length + ' 位有排班（依白名單的「區」分組）。</div>';
+    members.forEach(function (m) {
+      var label = m.displayName + (m.shepherdRole ? '・' + m.shepherdRole : '');
+      if (m.services && m.services.length) {
+        var items = m.services.map(function (s) { return '<div class="mbr-svc">' + svcLine(s) + '</div>'; }).join('');
+        h += '<div class="mbr"><b>' + label + '</b>（' + m.services.length + '）' + items + '</div>';
+      } else {
+        h += '<div class="mbr mbr-none"><b>' + label + '</b>：未來無排班</div>';
+      }
+    });
+    return h;
+  }
+
   function renderServices(list) {
     var h = '<div class="svc-title">📋 我未來的服事（' + (list ? list.length : 0) + '）</div>';
     if (!list || !list.length) {
@@ -118,6 +144,7 @@
           '事工團：' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '') + '<br>' +
           '可服事崗位：' + (res.skills || '—');
         html += renderServices(res.services);
+        if (res.isLeader) html += renderZone(res.zone, res.zoneMembers);
       } else {
         html += '<span class="err">⚠️ 查無身分</span>：' +
           (res.note ? res.note : '你已成功登入，但不在名單中（之後走「帳號申請」加入）');
