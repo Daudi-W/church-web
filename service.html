@@ -49,6 +49,22 @@
   .wk-ses { font-size: 13px; padding: 3px 0 3px 12px; color: #34465a; }
   .wk-ses-h { display: inline-block; min-width: 48px; color: #6a4b9e; font-weight: 700; }
   .sp { color: #b26a00; font-size: 12px; }
+  .slot { cursor: pointer; border-radius: 6px; }
+  .slot:hover { background: #eef5ff; }
+  .slot .edit { color: #2563eb; font-size: 11px; opacity: .6; }
+  .pk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+  .pk-panel { background: #fff; border-radius: 14px; max-width: 440px; width: 100%; max-height: 80vh; overflow: auto; padding: 18px; position: relative; }
+  .pk-close { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 18px; cursor: pointer; color: #888; }
+  .pk-h { font-weight: 700; font-size: 15px; color: #1f4e79; margin-bottom: 10px; }
+  .pk-cur { margin-bottom: 10px; font-size: 13px; }
+  .chip { display: inline-block; background: #eef2ff; border-radius: 999px; padding: 2px 8px; margin: 2px; }
+  .chip a { color: #c0392b; cursor: pointer; margin-left: 2px; }
+  .pk-skill { font-weight: 700; font-size: 13px; color: #6a4b9e; margin-top: 10px; }
+  .pk-cands { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .cand { padding: 7px 12px; border: 1px solid #2563eb; background: #fff; color: #2563eb; border-radius: 999px; cursor: pointer; font-size: 14px; }
+  .cand:hover { background: #2563eb; color: #fff; }
+  .cand.sameday { border-color: #b45309; color: #b45309; }
+  .cand.sameday:hover { background: #b45309; color: #fff; }
   .foot { margin-top: 22px; font-size: 12px; color: #9aa7b4; line-height: 1.7; }
   button.logout {
     margin-top: 14px; width: 100%; padding: 10px; border: 1px solid #d0d7de; background: #fff;
@@ -74,12 +90,17 @@
   </p>
 </div>
 
+<div id="picker" class="pk-overlay" style="display:none" onclick="if(event.target===this)closePicker()">
+  <div class="pk-panel"><button class="pk-close" onclick="closePicker()">✕</button><div class="pk-body"></div></div>
+</div>
+
 <script>
   // 測試沙盒後端（service-app GAS 部署）
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxavwu853Lejoco68BOJ1hEiH6MSrXMe2do171i8uUbGtQxDYBrLqk5U07H6Qas96rAWQ/exec';
   // 沿用教會 church-login 的 OAuth 用戶端 ID（與場地/新人同一組）
   var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
   var LAST_RES = null;
+  var ID_TOKEN = null;
   var VIEW_MODE = 'card'; // 'card' | 'week'
 
   function initGoogleLogin() {
@@ -113,6 +134,47 @@
     document.getElementById('viewArea').innerHTML = h;
   }
 
+  function openPicker(row, col) {
+    var p = document.getElementById('picker');
+    p.style.display = 'flex';
+    p.querySelector('.pk-body').innerHTML = '查詢可排的人…';
+    api('candidates', { row: row, col: col }).then(function (res) {
+      var b = p.querySelector('.pk-body');
+      if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || '無法取得'); return; }
+      var h = '<div class="pk-h">' + res.date + '（' + res.weekday + '）' + (res.session || '') + ' · ' + res.role + '</div>';
+      if (res.current && res.current.length) {
+        h += '<div class="pk-cur">目前排：' + res.current.map(function (n) {
+          return '<span class="chip">' + n + ' <a onclick="doUnassign(' + row + ',' + col + ',&quot;' + n + '&quot;)">✕</a></span>';
+        }).join(' ') + '</div>';
+      }
+      Object.keys(res.candidatesBySkill).forEach(function (sk) {
+        var list = res.candidatesBySkill[sk];
+        h += '<div class="pk-skill">' + sk + '（' + list.length + ' 人可排）</div><div class="pk-cands">';
+        if (!list.length) h += '<span class="svc-empty">沒有可排的人（都撞班/休息/請假/牧區限制）</span>';
+        list.forEach(function (c) {
+          h += '<button class="cand' + (c.sameDay ? ' sameday' : '') + '" onclick="doAssign(' + row + ',' + col + ',&quot;' + c.name + '&quot;)">' +
+            c.name + (c.sameDay ? ' ⚠同日' : '') + '</button>';
+        });
+        h += '</div>';
+      });
+      b.innerHTML = h;
+    }).catch(function () { p.querySelector('.pk-body').innerHTML = '⚠️ 連線失敗'; });
+  }
+  function closePicker() { document.getElementById('picker').style.display = 'none'; }
+  function doAssign(row, col, name) {
+    api('assign', { row: row, col: col, name: name }).then(function (res) {
+      if (!res.ok) { alert('指派失敗：' + (res.error || '')); return; }
+      closePicker(); refresh();
+    });
+  }
+  function doUnassign(row, col, name) {
+    if (!confirm('確定把「' + name + '」從這個崗位移除？')) return;
+    api('unassign', { row: row, col: col, name: name }).then(function (res) {
+      if (!res.ok) { alert('取消失敗：' + (res.error || '')); return; }
+      closePicker(); refresh();
+    });
+  }
+
   function renderTeam(teamName, sched) {
     var h = '<div class="zone-h">🛠 我的事工團（' + (teamName || '') + '）未來班表</div>';
     if (!sched || !sched.length) return h + '<div class="svc-empty">未來沒有這個團的排班欄位。</div>';
@@ -124,8 +186,9 @@
       h += '<div class="wk-date">📅 ' + d.date + '（' + d.weekday + '）' + (d.session || '') +
         (d.special ? ' <span class="sp">⟨' + d.special + '⟩</span>' : '') + '</div>';
       d.slots.forEach(function (s) {
-        h += '<div class="wk-ses"><span class="wk-ses-h">' + s.label + '</span> ' +
-          (s.empty ? '<span class="err">缺人</span>' : s.names.join('、')) + '</div>';
+        var content = s.empty ? '<span class="err">缺人</span>' : s.names.join('、');
+        h += '<div class="wk-ses slot" onclick="openPicker(' + s.row + ',' + s.col + ')">' +
+          '<span class="wk-ses-h">' + s.label + '</span> ' + content + ' <span class="edit">✎排班</span></div>';
       });
     });
     return h;
@@ -224,39 +287,44 @@
     el.className = isErr ? 'err' : '';
   }
 
-  function onGoogleLogin(response) {
-    setStatus('⏳ 驗證身分中…', false);
-    fetch(SCRIPT_URL, {
+  function api(action, args) {
+    return fetch(SCRIPT_URL, {
       method: 'POST', redirect: 'follow',
-      body: JSON.stringify({ action: 'whoami', idToken: response.credential })
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-      if (!res.ok) { setStatus('⚠️ ' + (res.error || '驗證失敗'), true); return; }
-      setStatus('✅ 登入成功', false);
-      LAST_RES = res;
-      var html = '<div class="ok">✅ 身分驗證通過（後端確認，非前端自報）</div>' +
-        '登入 email：<code>' + res.email + '</code><br>';
-      if (res.matched) {
-        html +=
-          '姓名：<strong>' + (res.name || '—') + '</strong><br>' +
-          '牧區：' + (res.zone || '—') + (res.group ? ' / ' + res.group : '') + '<br>' +
-          '牧養身份：<strong>' + (res.shepherdRole || '—') + '</strong><br>' +
-          '事工團：' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '') + '<br>' +
-          '可服事崗位：' + (res.skills || '—');
-        html += '<div class="toggle"><button id="tgCard" onclick="switchView(\'card\')">🗂 卡片</button>' +
-                '<button id="tgWeek" onclick="switchView(\'week\')">📅 週視圖</button></div>';
-        html += '<div id="viewArea"></div>';
-      } else {
-        html += '<span class="err">⚠️ 查無身分</span>：' +
-          (res.note ? res.note : '你已成功登入，但不在名單中（之後走「帳號申請」加入）');
-      }
-      var rd = document.getElementById('result');
-      rd.innerHTML = html; rd.className = 'result show';
-      document.getElementById('logoutBtn').style.display = 'block';
-      if (res.matched) renderView();
-    })
-    .catch(function(){ setStatus('⚠️ 連線失敗，請稍後再試', true); });
+      body: JSON.stringify({ action: action, idToken: ID_TOKEN, args: args || {} })
+    }).then(function (r) { return r.json(); });
+  }
+
+  function onGoogleLogin(response) {
+    ID_TOKEN = response.credential;
+    setStatus('⏳ 驗證身分中…', false);
+    api('whoami').then(applyResult).catch(function () { setStatus('⚠️ 連線失敗，請稍後再試', true); });
+  }
+
+  function refresh() { api('whoami').then(applyResult).catch(function () {}); }
+
+  function applyResult(res) {
+    if (!res.ok) { setStatus('⚠️ ' + (res.error || '驗證失敗'), true); return; }
+    setStatus('✅ 登入成功', false);
+    LAST_RES = res;
+    var html = '<div class="ok">✅ 身分驗證通過（後端確認，非前端自報）</div>' +
+      '登入 email：<code>' + res.email + '</code><br>';
+    if (res.matched) {
+      html += '姓名：<strong>' + (res.name || '—') + '</strong><br>' +
+        '牧區：' + (res.zone || '—') + (res.group ? ' / ' + res.group : '') + '<br>' +
+        '牧養身份：<strong>' + (res.shepherdRole || '—') + '</strong><br>' +
+        '事工團：' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '') + '<br>' +
+        '可服事崗位：' + (res.skills || '—');
+      html += '<div class="toggle"><button id="tgCard" onclick="switchView(\'card\')">🗂 卡片</button>' +
+              '<button id="tgWeek" onclick="switchView(\'week\')">📅 週視圖</button></div>';
+      html += '<div id="viewArea"></div>';
+    } else {
+      html += '<span class="err">⚠️ 查無身分</span>：' +
+        (res.note ? res.note : '你已成功登入，但不在名單中（之後走「帳號申請」加入）');
+    }
+    var rd = document.getElementById('result');
+    rd.innerHTML = html; rd.className = 'result show';
+    document.getElementById('logoutBtn').style.display = 'block';
+    if (res.matched) renderView();
   }
 
   function logout() {
