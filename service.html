@@ -42,6 +42,12 @@
   .mbr-svc { color: #34465a; padding-left: 10px; margin-top: 2px; }
   .zone-h { margin-top: 18px; font-weight: 700; font-size: 15px; color: #1f4e79; border-top: 2px solid #cfe6ff; padding-top: 12px; }
   .grp-h { margin-top: 12px; font-weight: 700; font-size: 13px; color: #6a4b9e; background: #f3edff; padding: 4px 8px; border-radius: 6px; }
+  .toggle { margin-top: 14px; display: flex; gap: 8px; }
+  .toggle button { flex: 1; padding: 8px; border: 1px solid #cfe6ff; background: #fff; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .toggle button.on { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .wk-date { margin-top: 12px; font-weight: 700; font-size: 14px; color: #1f4e79; }
+  .wk-ses { font-size: 13px; padding: 3px 0 3px 12px; color: #34465a; }
+  .wk-ses-h { display: inline-block; min-width: 48px; color: #6a4b9e; font-weight: 700; }
   .foot { margin-top: 22px; font-size: 12px; color: #9aa7b4; line-height: 1.7; }
   button.logout {
     margin-top: 14px; width: 100%; padding: 10px; border: 1px solid #d0d7de; background: #fff;
@@ -72,6 +78,8 @@
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxavwu853Lejoco68BOJ1hEiH6MSrXMe2do171i8uUbGtQxDYBrLqk5U07H6Qas96rAWQ/exec';
   // 沿用教會 church-login 的 OAuth 用戶端 ID（與場地/新人同一組）
   var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
+  var LAST_RES = null;
+  var VIEW_MODE = 'card'; // 'card' | 'week'
 
   function initGoogleLogin() {
     if (!(window.google && google.accounts && google.accounts.id)) {
@@ -82,6 +90,61 @@
       { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
   }
   window.addEventListener('load', initGoogleLogin);
+
+  function switchView(mode) { VIEW_MODE = mode; renderView(); }
+
+  function renderView() {
+    var res = LAST_RES; if (!res || !res.matched) return;
+    var bc = document.getElementById('tgCard'), bw = document.getElementById('tgWeek');
+    if (bc) bc.className = VIEW_MODE === 'card' ? 'on' : '';
+    if (bw) bw.className = VIEW_MODE === 'week' ? 'on' : '';
+    var h = '';
+    if (VIEW_MODE === 'week') {
+      h += renderWeek('📋 我未來的服事', myEntries(res));
+      if (res.isLeader) h += renderWeek((res.scope === 'group' ? '👥 我的小組' : '👥 本區') + '同工 · 週視圖', zoneEntries(res));
+    } else {
+      h += renderServices(res.services);
+      if (res.isLeader) h += renderZone(res.zone, res.zoneMembers, res.scope, res.group);
+    }
+    document.getElementById('viewArea').innerHTML = h;
+  }
+
+  function myEntries(res) {
+    return (res.services || []).map(function (s) {
+      return { date: s.date, weekday: s.weekday, session: s.session, role: s.role, instrument: s.instrument, who: '我' };
+    });
+  }
+  function zoneEntries(res) {
+    var out = [];
+    (res.zoneMembers || []).forEach(function (m) {
+      (m.services || []).forEach(function (s) {
+        out.push({ date: s.date, weekday: s.weekday, session: s.session, role: s.role, instrument: s.instrument, who: m.displayName });
+      });
+    });
+    return out;
+  }
+  function dkey(d) { var p = String(d).split('/'); return (parseInt(p[0], 10) || 0) * 100 + (parseInt(p[1], 10) || 0); }
+
+  function renderWeek(title, entries) {
+    var h = '<div class="zone-h">' + title + '</div>';
+    if (!entries.length) return h + '<div class="svc-empty">未來沒有排班。</div>';
+    var byDate = {}, order = [];
+    entries.forEach(function (e) {
+      if (!byDate[e.date]) { byDate[e.date] = { weekday: e.weekday, sessions: {}, sorder: [] }; order.push(e.date); }
+      var ses = e.session || '—';
+      if (!byDate[e.date].sessions[ses]) { byDate[e.date].sessions[ses] = []; byDate[e.date].sorder.push(ses); }
+      byDate[e.date].sessions[ses].push(e.who + ' · ' + e.role + (e.instrument ? '（' + e.instrument + '）' : ''));
+    });
+    order.sort(function (a, b) { return dkey(a) - dkey(b); });
+    order.forEach(function (k) {
+      var d = byDate[k];
+      h += '<div class="wk-date">📅 ' + k + '（' + d.weekday + '）</div>';
+      d.sorder.forEach(function (ses) {
+        h += '<div class="wk-ses"><span class="wk-ses-h">' + ses + '</span> ' + d.sessions[ses].join('、') + '</div>';
+      });
+    });
+    return h;
+  }
 
   function svcLine(s) {
     return s.date + '(' + s.weekday + ') ' + (s.session || '') + ' ' + s.role + (s.instrument ? '（' + s.instrument + '）' : '');
@@ -149,17 +212,19 @@
     .then(function(res){
       if (!res.ok) { setStatus('⚠️ ' + (res.error || '驗證失敗'), true); return; }
       setStatus('✅ 登入成功', false);
+      LAST_RES = res;
       var html = '<div class="ok">✅ 身分驗證通過（後端確認，非前端自報）</div>' +
         '登入 email：<code>' + res.email + '</code><br>';
       if (res.matched) {
         html +=
           '姓名：<strong>' + (res.name || '—') + '</strong><br>' +
-          '牧區：' + (res.zone || '—') + '<br>' +
+          '牧區：' + (res.zone || '—') + (res.group ? ' / ' + res.group : '') + '<br>' +
           '牧養身份：<strong>' + (res.shepherdRole || '—') + '</strong><br>' +
           '事工團：' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '') + '<br>' +
           '可服事崗位：' + (res.skills || '—');
-        html += renderServices(res.services);
-        if (res.isLeader) html += renderZone(res.zone, res.zoneMembers, res.scope, res.group);
+        html += '<div class="toggle"><button id="tgCard" onclick="switchView(\'card\')">🗂 卡片</button>' +
+                '<button id="tgWeek" onclick="switchView(\'week\')">📅 週視圖</button></div>';
+        html += '<div id="viewArea"></div>';
       } else {
         html += '<span class="err">⚠️ 查無身分</span>：' +
           (res.note ? res.note : '你已成功登入，但不在名單中（之後走「帳號申請」加入）');
@@ -167,6 +232,7 @@
       var rd = document.getElementById('result');
       rd.innerHTML = html; rd.className = 'result show';
       document.getElementById('logoutBtn').style.display = 'block';
+      if (res.matched) renderView();
     })
     .catch(function(){ setStatus('⚠️ 連線失敗，請稍後再試', true); });
   }
