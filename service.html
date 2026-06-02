@@ -32,6 +32,11 @@
   .result .ok { color: #1a7f37; font-weight: 700; }
   .result code { background: #e7eef5; padding: 1px 6px; border-radius: 5px; font-size: 13px; }
   .err { color: #c0392b; }
+  .svc-title { margin-top: 14px; font-weight: 700; font-size: 14px; }
+  .svc-empty { color: #6b7a8d; font-size: 13px; margin-top: 4px; }
+  table.svc { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  table.svc th, table.svc td { border: 1px solid #cfe6ff; padding: 5px 8px; text-align: left; }
+  table.svc th { background: #dceeff; }
   .foot { margin-top: 22px; font-size: 12px; color: #9aa7b4; line-height: 1.7; }
   button.logout {
     margin-top: 14px; width: 100%; padding: 10px; border: 1px solid #d0d7de; background: #fff;
@@ -73,6 +78,20 @@
   }
   window.addEventListener('load', initGoogleLogin);
 
+  function renderServices(list) {
+    var h = '<div class="svc-title">📋 我未來的服事（' + (list ? list.length : 0) + '）</div>';
+    if (!list || !list.length) {
+      return h + '<div class="svc-empty">未來目前沒有排到你的服事（或服事表尚未排到）。</div>';
+    }
+    h += '<table class="svc"><tr><th>日期</th><th>堂次</th><th>崗位</th></tr>';
+    list.forEach(function (s) {
+      var role = s.role + (s.instrument ? '（' + s.instrument + '）' : '');
+      h += '<tr><td>' + s.date + '（' + s.weekday + '）</td><td>' + (s.session || '—') + '</td><td>' + role + '</td></tr>';
+    });
+    h += '</table>';
+    return h;
+  }
+
   function setStatus(msg, isErr) {
     var el = document.getElementById('status');
     el.textContent = msg;
@@ -98,6 +117,7 @@
           '牧養身份：<strong>' + (res.shepherdRole || '—') + '</strong><br>' +
           '事工團：' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '') + '<br>' +
           '可服事崗位：' + (res.skills || '—');
+        html += renderServices(res.services);
       } else {
         html += '<span class="err">⚠️ 查無身分</span>：' +
           (res.note ? res.note : '你已成功登入，但不在名單中（之後走「帳號申請」加入）');
