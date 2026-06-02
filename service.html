@@ -96,7 +96,8 @@
           '姓名：<strong>' + (res.name || '—') + '</strong><br>' +
           '牧區：' + (res.zone || '—') + '<br>' +
           '牧養身份：<strong>' + (res.shepherdRole || '—') + '</strong><br>' +
-          '事工團：' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '');
+          '事工團：' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '') + '<br>' +
+          '可服事崗位：' + (res.skills || '—');
       } else {
         html += '<span class="err">⚠️ 查無身分</span>：' +
           (res.note ? res.note : '你已成功登入，但不在名單中（之後走「帳號申請」加入）');
