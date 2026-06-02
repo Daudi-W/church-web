@@ -149,10 +149,12 @@
       }
       Object.keys(res.candidatesBySkill).forEach(function (sk) {
         var list = res.candidatesBySkill[sk];
-        h += '<div class="pk-skill">' + sk + '（' + list.length + ' 人可排）</div><div class="pk-cands">';
+        var isLead = /主責|主領/.test(sk);
+        h += '<div class="pk-skill">' + sk + '（' + list.length + ' 人可排）' +
+          (isLead ? ' <span class="sp">點選＝排為主責（最前面）</span>' : '') + '</div><div class="pk-cands">';
         if (!list.length) h += '<span class="svc-empty">沒有可排的人（都撞班/休息/請假/牧區限制）</span>';
         list.forEach(function (c) {
-          h += '<button class="cand' + (c.sameDay ? ' sameday' : '') + '" data-name="' + c.name + '">' +
+          h += '<button class="cand' + (c.sameDay ? ' sameday' : '') + '" data-name="' + c.name + '" data-skill="' + sk + '">' +
             c.name + (c.sameDay ? ' ⚠同日' : '') + '</button>';
         });
         h += '</div>';
@@ -160,7 +162,7 @@
       b.innerHTML = h;
       // 用事件綁定（避免內嵌 onclick 的字串/引號問題）
       b.querySelectorAll('.cand').forEach(function (btn) {
-        btn.addEventListener('click', function () { doAssign(row, col, btn.getAttribute('data-name')); });
+        btn.addEventListener('click', function () { doAssign(row, col, btn.getAttribute('data-name'), btn.getAttribute('data-skill')); });
       });
       b.querySelectorAll('.rm').forEach(function (a) {
         a.addEventListener('click', function () { doUnassign(row, col, a.getAttribute('data-name')); });
@@ -168,9 +170,9 @@
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
   }
   function closePicker() { document.getElementById('picker').style.display = 'none'; }
-  function doAssign(row, col, name) {
+  function doAssign(row, col, name, skill) {
     var b = document.querySelector('#picker .pk-body'); if (b) b.innerHTML = '指派「' + name + '」中…';
-    api('assign', { row: row, col: col, name: name }).then(function (res) {
+    api('assign', { row: row, col: col, name: name, skill: skill }).then(function (res) {
       if (!res.ok) { alert('指派失敗：' + (res.error || '')); openPicker(row, col); return; }
       closePicker(); refresh();
     }).catch(function (e) { alert('連線失敗：' + e); });
