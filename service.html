@@ -49,6 +49,7 @@
   .wk-ses { font-size: 13px; padding: 3px 0 3px 12px; color: #34465a; }
   .wk-ses-h { display: inline-block; min-width: 48px; color: #6a4b9e; font-weight: 700; }
   .sp { color: #b26a00; font-size: 12px; }
+  .lead-tag { display: inline-block; background: #b26a00; color: #fff; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; }
   .slot { cursor: pointer; border-radius: 6px; }
   .slot:hover { background: #eef5ff; }
   .slot .edit { color: #2563eb; font-size: 11px; opacity: .6; }
@@ -142,9 +143,11 @@
     api('candidates', { row: row, col: col }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || '無法取得'); return; }
       var h = '<div class="pk-h">' + res.date + '（' + res.weekday + '）' + (res.session || '') + ' · ' + res.role + '</div>';
+      var hasLead = Object.keys(res.candidatesBySkill).some(function (k) { return /主責|主領/.test(k); });
       if (res.current && res.current.length) {
-        h += '<div class="pk-cur">目前排：' + res.current.map(function (n) {
-          return '<span class="chip">' + n + ' <a class="rm" data-name="' + n + '">✕</a></span>';
+        h += '<div class="pk-cur">目前排：' + res.current.map(function (n, i) {
+          var tag = (hasLead && i === 0) ? '<span class="lead-tag">主責</span>' : '';
+          return '<span class="chip">' + tag + n + ' <a class="rm" data-name="' + n + '">✕</a></span>';
         }).join(' ') + '</div>';
       }
       Object.keys(res.candidatesBySkill).forEach(function (sk) {
@@ -196,7 +199,12 @@
       h += '<div class="wk-date">📅 ' + d.date + '（' + d.weekday + '）' + (d.session || '') +
         (d.special ? ' <span class="sp">⟨' + d.special + '⟩</span>' : '') + '</div>';
       d.slots.forEach(function (s) {
-        var content = s.empty ? '<span class="err">缺人</span>' : s.names.join('、');
+        var content;
+        if (s.empty) content = '<span class="err">缺人</span>';
+        else if (/主責|主領/.test(s.label) && s.names.length) {
+          var lead = s.names[0], rest = s.names.slice(1);
+          content = '<span class="lead-tag">主責</span>' + lead + (rest.length ? '　同工：' + rest.join('、') : '');
+        } else content = s.names.join('、');
         h += '<div class="wk-ses slot" onclick="openPicker(' + s.row + ',' + s.col + ')">' +
           '<span class="wk-ses-h">' + s.label + '</span> ' + content + ' <span class="edit">✎排班</span></div>';
       });
