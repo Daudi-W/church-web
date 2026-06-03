@@ -252,7 +252,6 @@
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
   }
 
-  function renderTeam(teamName, sched) {
   function doUnassign(row, col, name) {
     if (!confirm('確定把「' + name + '」從這個崗位移除？')) return;
     api('unassign', { row: row, col: col, name: name }).then(function (res) {
