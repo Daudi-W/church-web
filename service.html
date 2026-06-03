@@ -50,6 +50,17 @@
   .wk-ses-h { display: inline-block; min-width: 48px; color: #6a4b9e; font-weight: 700; }
   .sp { color: #b26a00; font-size: 12px; }
   .lead-tag { display: inline-block; background: #b26a00; color: #fff; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; }
+  .actions { margin-top: 14px; display: flex; gap: 8px; }
+  .actions button { flex: 1; padding: 9px; border: 1px solid #2563eb; background: #fff; color: #2563eb; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .actions button:hover { background: #2563eb; color: #fff; }
+  .draft { width: 100%; min-height: 90px; margin: 8px 0; padding: 10px; border: 1px solid #cfe6ff; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical; }
+  .draft.tall { min-height: 260px; }
+  .pk-btns { display: flex; gap: 8px; }
+  .pk-btns button { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid #2563eb; background: #2563eb; color: #fff; cursor: pointer; font-size: 14px; }
+  .pk-btns button:last-child { background: #fff; color: #444; border-color: #d0d7de; }
+  .lv-form { display: flex; flex-direction: column; gap: 10px; margin: 8px 0; }
+  .lv-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #555; }
+  .lv-form input { padding: 8px; border: 1px solid #cfd8e3; border-radius: 8px; font-size: 15px; }
   .slot { cursor: pointer; border-radius: 6px; }
   .slot:hover { background: #eef5ff; }
   .slot .edit { color: #2563eb; font-size: 11px; opacity: .6; }
@@ -103,6 +114,7 @@
   var LAST_RES = null;
   var ID_TOKEN = null;
   var VIEW_MODE = 'card'; // 'card' | 'week'
+  var CUR = {}; // 目前開啟排班的格子情境（給通知草稿用）
 
   function initGoogleLogin() {
     if (!(window.google && google.accounts && google.accounts.id)) {
@@ -142,6 +154,7 @@
     b.innerHTML = '查詢可排的人…';
     api('candidates', { row: row, col: col }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || '無法取得'); return; }
+      CUR = { date: res.date, weekday: res.weekday, session: res.session };
       var h = '<div class="pk-h">' + res.date + '（' + res.weekday + '）' + (res.session || '') + ' · ' + res.role + '</div>';
       var hasLead = Object.keys(res.candidatesBySkill).some(function (k) { return /主責|主領/.test(k); });
       if (res.current && res.current.length) {
@@ -177,9 +190,69 @@
     var b = document.querySelector('#picker .pk-body'); if (b) b.innerHTML = '指派「' + name + '」中…';
     api('assign', { row: row, col: col, name: name, skill: skill }).then(function (res) {
       if (!res.ok) { alert('指派失敗：' + (res.error || '')); openPicker(row, col); return; }
-      closePicker(); refresh();
+      showNotify(name, skill); refresh();
     }).catch(function (e) { alert('連線失敗：' + e); });
   }
+
+  function showNotify(name, skill) {
+    var b = document.querySelector('#picker .pk-body'); if (!b) return;
+    var draft = 'Hi ' + name + ' 🙌 幫你排了 ' + CUR.date + '（' + CUR.weekday + '）' + (CUR.session || '') +
+      '・' + skill + '，再麻煩你了，謝謝！';
+    b.innerHTML = '<div class="pk-h">✅ 已排入！通知草稿</div>' +
+      '<textarea class="draft" readonly>' + draft + '</textarea>' +
+      '<div class="pk-btns"><button onclick="copyDraft(this)">📋 複製</button>' +
+      '<button onclick="closePicker()">完成</button></div>';
+  }
+
+  function copyDraft(btn) {
+    var ta = document.querySelector('#picker .draft'); if (!ta) return;
+    ta.select();
+    try { navigator.clipboard.writeText(ta.value); } catch (e) { try { document.execCommand('copy'); } catch (e2) { } }
+    btn.textContent = '✅ 已複製';
+  }
+
+  function openLeave() {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    p.querySelector('.pk-body').innerHTML =
+      '<div class="pk-h">🙋 我要請假</div>' +
+      '<div class="lv-form"><label>日期 <input type="date" id="lvDate"></label>' +
+      '<label>原因（選填）<input type="text" id="lvReason" placeholder="如：出差、家庭因素"></label></div>' +
+      '<div class="pk-btns"><button onclick="submitLeave()">送出</button><button onclick="closePicker()">取消</button></div>';
+  }
+  function submitLeave() {
+    var dv = document.getElementById('lvDate').value;
+    if (!dv) { alert('請先選日期'); return; }
+    var d = new Date(dv); var md = (d.getMonth() + 1) + '/' + d.getDate();
+    var reason = document.getElementById('lvReason').value;
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
+    api('leave', { dates: [md], reason: reason }).then(function (res) {
+      if (!res.ok) { alert('請假失敗：' + (res.error || '')); openLeave(); return; }
+      b.innerHTML = '<div class="pk-h">✅ 已登記請假（' + md + '）</div>' +
+        '<div class="svc-empty">排班時會自動避開你。下面是給「' + (res.leader || '小組長') + '」的通知草稿：</div>' +
+        '<textarea class="draft" readonly>' + res.draft + '</textarea>' +
+        '<div class="pk-btns"><button onclick="copyDraft(this)">📋 複製</button><button onclick="closePicker();refresh()">完成</button></div>';
+    }).catch(function (e) { alert('連線失敗：' + e); });
+  }
+
+  function openAnnouncement() {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    var b = p.querySelector('.pk-body'); b.innerHTML = '產生公告中…';
+    api('announcement', { count: 9 }).then(function (res) {
+      if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || ''); return; }
+      var lines = [];
+      (res.slots || []).forEach(function (s) {
+        lines.push('📅 ' + s.date + '（' + s.weekday + '）' + s.session + (s.special ? ' [' + s.special + ']' : ''));
+        s.items.forEach(function (it) { lines.push('・' + it.role + '：' + it.who); });
+        lines.push('');
+      });
+      var text = lines.join('\n') || '（未來沒有排班資料）';
+      b.innerHTML = '<div class="pk-h">📢 未來服事公告（可複製貼 LINE）</div>' +
+        '<textarea class="draft tall" readonly>' + text + '</textarea>' +
+        '<div class="pk-btns"><button onclick="copyDraft(this)">📋 複製</button><button onclick="closePicker()">關閉</button></div>';
+    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
+  }
+
+  function renderTeam(teamName, sched) {
   function doUnassign(row, col, name) {
     if (!confirm('確定把「' + name + '」從這個崗位移除？')) return;
     api('unassign', { row: row, col: col, name: name }).then(function (res) {
@@ -332,6 +405,8 @@
         '牧養身份：<strong>' + (res.shepherdRole || '—') + '</strong><br>' +
         '事工團：' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '') + '<br>' +
         '可服事崗位：' + (res.skills || '—');
+      html += '<div class="actions"><button onclick="openLeave()">🙋 我要請假</button>' +
+              '<button onclick="openAnnouncement()">📢 產生公告</button></div>';
       html += '<div class="toggle"><button id="tgCard" onclick="switchView(\'card\')">🗂 卡片</button>' +
               '<button id="tgWeek" onclick="switchView(\'week\')">📅 週視圖</button></div>';
       html += '<div id="viewArea"></div>';
