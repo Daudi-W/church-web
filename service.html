@@ -3,169 +3,492 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>服事系統（測試沙盒）— 登入驗證</title>
+<title>桃園服事系統</title>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
+  :root {
+    --tl-900: #04342C; --tl-800: #085041; --tl-600: #0F6E56;
+    --tl-200: #5DCAA5; --tl-100: #9FE1CB; --tl-50: #E1F5EE;
+    --ink: #1f2d3d; --mut: #6b7a8d; --hint: #9aa7b4;
+    --bg: #f4f6f8; --line: #e3e9ef; --red: #c0392b;
+  }
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
-    margin: 0; background: #f4f6f8; color: #1f2d3d;
-    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+    margin: 0; background: var(--bg); color: var(--ink); min-height: 100vh;
   }
-  .card {
-    background: #fff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.08);
-    max-width: 460px; width: 100%; padding: 32px;
-  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 16px 84px; }
   .badge {
     display: inline-block; background: #fff4e5; color: #b26a00;
-    font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; margin-bottom: 14px;
+    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
   }
-  h1 { font-size: 20px; margin: 0 0 6px; }
-  .sub { color: #6b7a8d; font-size: 14px; margin: 0 0 22px; line-height: 1.6; }
-  #gBtn { display: flex; justify-content: center; margin: 18px 0; }
-  #status { font-size: 14px; min-height: 22px; text-align: center; margin-top: 6px; }
-  .result {
-    margin-top: 18px; background: #f0f7ff; border: 1px solid #cfe6ff; border-radius: 12px;
-    padding: 16px; font-size: 14px; line-height: 1.9; display: none;
+  /* 登入畫面 */
+  .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .card {
+    background: #fff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.07);
+    max-width: 420px; width: 100%; padding: 30px;
   }
-  .result.show { display: block; }
-  .result .ok { color: #1a7f37; font-weight: 700; }
-  .result code { background: #e7eef5; padding: 1px 6px; border-radius: 5px; font-size: 13px; }
-  .err { color: #c0392b; }
-  .svc-title { margin-top: 14px; font-weight: 700; font-size: 14px; }
-  .svc-empty { color: #6b7a8d; font-size: 13px; margin-top: 4px; }
-  table.svc { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
-  table.svc th, table.svc td { border: 1px solid #cfe6ff; padding: 5px 8px; text-align: left; }
-  table.svc th { background: #dceeff; }
-  .mbr { margin-top: 8px; padding: 8px 10px; background: #f7faff; border: 1px solid #e1ecf7; border-radius: 8px; font-size: 13px; }
-  .mbr-none { color: #8a97a4; }
-  .mbr-svc { color: #34465a; padding-left: 10px; margin-top: 2px; }
-  .zone-h { margin-top: 18px; font-weight: 700; font-size: 15px; color: #1f4e79; border-top: 2px solid #cfe6ff; padding-top: 12px; }
-  .grp-h { margin-top: 12px; font-weight: 700; font-size: 13px; color: #6a4b9e; background: #f3edff; padding: 4px 8px; border-radius: 6px; }
-  .toggle { margin-top: 14px; display: flex; gap: 8px; }
-  .toggle button { flex: 1; padding: 8px; border: 1px solid #cfe6ff; background: #fff; border-radius: 8px; cursor: pointer; font-size: 14px; }
-  .toggle button.on { background: #2563eb; color: #fff; border-color: #2563eb; }
-  .wk-date { margin-top: 12px; font-weight: 700; font-size: 14px; color: #1f4e79; }
-  .wk-ses { font-size: 13px; padding: 3px 0 3px 12px; color: #34465a; }
-  .wk-ses-h { display: inline-block; min-width: 48px; color: #6a4b9e; font-weight: 700; }
-  .sp { color: #b26a00; font-size: 12px; }
+  .card h1 { font-size: 20px; margin: 10px 0 6px; }
+  .sub { color: var(--mut); font-size: 14px; margin: 0 0 20px; line-height: 1.6; }
+  #gBtn { display: flex; justify-content: center; margin: 16px 0; }
+  #status { font-size: 14px; min-height: 22px; text-align: center; color: var(--mut); }
+  .err { color: var(--red); }
+  .foot { margin-top: 18px; font-size: 12px; color: var(--hint); line-height: 1.7; }
+  /* 主畫面 */
+  .hdr { padding: 22px 2px 6px; }
+  .hdr .d { font-size: 13px; color: var(--tl-600); font-weight: 700; }
+  .hdr h1 { font-size: 22px; margin: 2px 0 0; }
+  .hdr .badge { float: right; margin-top: 4px; }
+  .hero {
+    background: var(--tl-50); border-radius: 14px; padding: 16px; margin-top: 14px;
+  }
+  .hero .cap { font-size: 12px; color: var(--tl-600); font-weight: 700; }
+  .hero .big { font-size: 18px; font-weight: 700; color: var(--tl-900); margin-top: 4px; }
+  .hero .what { font-size: 15px; color: var(--tl-800); margin-top: 2px; }
+  .hero.none { background: #fff; border: 1px dashed var(--tl-100); color: var(--mut); font-size: 14px; }
+  .qa { display: flex; gap: 8px; margin-top: 10px; }
+  .qa button {
+    flex: 1; padding: 11px 0; font-size: 14px; border: 1px solid var(--tl-200);
+    background: #fff; color: var(--tl-800); border-radius: 11px; cursor: pointer;
+  }
+  .qa button:active { background: var(--tl-50); }
+  .sec { margin-top: 18px; }
+  .sec-h { font-size: 13px; color: var(--hint); font-weight: 700; margin: 0 0 4px 2px; }
+  .mon { font-size: 12px; color: var(--hint); font-weight: 700; margin: 12px 0 2px 2px; }
+  .tl-row { display: flex; gap: 12px; align-items: center; padding: 7px 0; }
+  .tl-date {
+    width: 44px; min-width: 44px; text-align: center; background: #fff;
+    border: 1px solid var(--line); border-radius: 10px; padding: 5px 0;
+  }
+  .tl-date b { display: block; font-size: 17px; line-height: 1.2; }
+  .tl-date span { font-size: 10px; color: var(--hint); }
+  .tl-date.hot { background: var(--tl-50); border-color: var(--tl-100); }
+  .tl-date.hot b { color: var(--tl-800); }
+  .tl-date.hot span { color: var(--tl-600); }
+  .tl-txt { font-size: 14px; line-height: 1.5; }
+  .tl-txt .who { color: var(--mut); }
+  .tl-txt .sp { color: #b26a00; font-size: 12px; }
+  .empty { color: var(--mut); font-size: 13px; padding: 8px 2px; }
+  .panel { background: #fff; border-radius: 14px; padding: 14px 16px; margin-top: 12px; }
+  .panel .ph { font-size: 15px; font-weight: 700; }
+  .panel .ps { font-size: 12px; color: var(--mut); margin-top: 2px; }
+  .gap-badge { display: inline-block; background: #fdecea; color: var(--red); font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
+  .ok-badge { display: inline-block; background: var(--tl-50); color: var(--tl-600); font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
   .lead-tag { display: inline-block; background: #b26a00; color: #fff; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; }
-  .actions { margin-top: 14px; display: flex; gap: 8px; }
-  .actions button { flex: 1; padding: 9px; border: 1px solid #2563eb; background: #fff; color: #2563eb; border-radius: 8px; cursor: pointer; font-size: 14px; }
-  .actions button:hover { background: #2563eb; color: #fff; }
-  .draft { width: 100%; min-height: 90px; margin: 8px 0; padding: 10px; border: 1px solid #cfe6ff; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical; }
-  .draft.tall { min-height: 260px; }
-  .pk-btns { display: flex; gap: 8px; }
-  .pk-btns button { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid #2563eb; background: #2563eb; color: #fff; cursor: pointer; font-size: 14px; }
-  .pk-btns button:last-child { background: #fff; color: #444; border-color: #d0d7de; }
+  .slot-line { font-size: 13px; padding: 3px 0 3px 2px; }
+  .slot-line .lb { display: inline-block; min-width: 64px; color: var(--tl-600); font-weight: 700; }
+  .grp-h { margin: 14px 0 4px; font-weight: 700; font-size: 13px; color: #6a4b9e; background: #f3edff; padding: 4px 10px; border-radius: 8px; }
+  .mbr { background: #fff; border-radius: 12px; padding: 10px 12px; margin-top: 8px; font-size: 13px; }
+  .mbr .nm { font-weight: 700; font-size: 14px; }
+  .mbr .rl { color: var(--mut); font-size: 12px; margin-left: 6px; }
+  .mbr .none { color: var(--hint); }
+  .chips { margin-top: 4px; }
+  .chip { display: inline-block; background: var(--bg); border-radius: 8px; padding: 3px 8px; margin: 2px 4px 2px 0; font-size: 12px; color: #34465a; }
+  .toggle { display: flex; gap: 4px; background: #e9eef3; border-radius: 10px; padding: 3px; margin-top: 10px; }
+  .toggle button { flex: 1; padding: 7px 0; font-size: 13px; border: none; background: transparent; border-radius: 8px; cursor: pointer; color: var(--mut); }
+  .toggle button.on { background: #fff; color: var(--ink); font-weight: 700; }
+  /* 我的 */
+  .me-card { background: #fff; border-radius: 14px; padding: 18px 16px; margin-top: 14px; }
+  .me-top { display: flex; align-items: center; gap: 12px; }
+  .ava { width: 48px; height: 48px; border-radius: 50%; background: var(--tl-50); color: var(--tl-800); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; }
+  .me-top .nm { font-size: 17px; font-weight: 700; }
+  .me-top .em { font-size: 12px; color: var(--mut); word-break: break-all; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; padding: 9px 2px; border-top: 1px solid var(--line); font-size: 14px; margin-top: 0; }
+  .kv:first-of-type { margin-top: 12px; }
+  .kv .k { color: var(--mut); white-space: nowrap; }
+  .kv .v { text-align: right; }
+  .btn { width: 100%; padding: 12px 0; font-size: 14px; border-radius: 11px; cursor: pointer; margin-top: 10px; border: 1px solid var(--tl-200); background: #fff; color: var(--tl-800); }
+  .btn.line { border-color: #d0d7de; color: #555; }
+  /* 底部分頁 */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; background: #fff;
+    border-top: 1px solid var(--line); display: flex; padding: 6px 0 calc(8px + env(safe-area-inset-bottom));
+    max-width: 480px; margin: 0 auto; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,.05);
+  }
+  .tabbar button { flex: 1; border: none; background: none; cursor: pointer; font-size: 11px; color: var(--hint); padding: 4px 0; }
+  .tabbar button .ic { display: block; font-size: 20px; margin-bottom: 1px; }
+  .tabbar button.on { color: var(--tl-600); font-weight: 700; }
+  /* 彈窗 */
+  .pk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+  .pk-panel { background: #fff; border-radius: 16px; max-width: 420px; width: 100%; max-height: 82vh; overflow: auto; padding: 20px; position: relative; }
+  .pk-close { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 18px; cursor: pointer; color: #888; }
+  .pk-h { font-weight: 700; font-size: 16px; margin-bottom: 10px; }
+  .pk-btns { display: flex; gap: 8px; margin-top: 12px; }
+  .pk-btns button { flex: 1; padding: 11px; border-radius: 10px; border: 1px solid var(--tl-600); background: var(--tl-600); color: #fff; cursor: pointer; font-size: 14px; }
+  .pk-btns button:last-child { background: #fff; color: #555; border-color: #d0d7de; }
   .lv-form { display: flex; flex-direction: column; gap: 10px; margin: 8px 0; }
   .lv-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #555; }
-  .lv-form input { padding: 8px; border: 1px solid #cfd8e3; border-radius: 8px; font-size: 15px; }
-  .slot { cursor: pointer; border-radius: 6px; }
-  .slot:hover { background: #eef5ff; }
-  .slot .edit { color: #2563eb; font-size: 11px; opacity: .6; }
-  .pk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
-  .pk-panel { background: #fff; border-radius: 14px; max-width: 440px; width: 100%; max-height: 80vh; overflow: auto; padding: 18px; position: relative; }
-  .pk-close { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 18px; cursor: pointer; color: #888; }
-  .pk-h { font-weight: 700; font-size: 15px; color: #1f4e79; margin-bottom: 10px; }
-  .pk-cur { margin-bottom: 10px; font-size: 13px; }
-  .chip { display: inline-block; background: #eef2ff; border-radius: 999px; padding: 2px 8px; margin: 2px; }
-  .chip a { color: #c0392b; cursor: pointer; margin-left: 2px; }
-  .pk-skill { font-weight: 700; font-size: 13px; color: #6a4b9e; margin-top: 10px; }
-  .pk-cands { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .cand { padding: 7px 12px; border: 1px solid #2563eb; background: #fff; color: #2563eb; border-radius: 999px; cursor: pointer; font-size: 14px; }
-  .cand:hover { background: #2563eb; color: #fff; }
-  .cand.sameday { border-color: #b45309; color: #b45309; }
-  .cand.sameday:hover { background: #b45309; color: #fff; }
-  .foot { margin-top: 22px; font-size: 12px; color: #9aa7b4; line-height: 1.7; }
-  button.logout {
-    margin-top: 14px; width: 100%; padding: 10px; border: 1px solid #d0d7de; background: #fff;
-    border-radius: 10px; cursor: pointer; font-size: 14px; color: #444;
-  }
+  .lv-form input { padding: 9px; border: 1px solid #cfd8e3; border-radius: 9px; font-size: 15px; }
+  .add-day { align-self: flex-start; border: 1px dashed var(--tl-600); background: #fff; color: var(--tl-600); border-radius: 9px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  .draft { width: 100%; min-height: 90px; margin: 8px 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; font-family: inherit; resize: vertical; }
+  .draft.tall { min-height: 260px; }
+  .hint-s { color: var(--mut); font-size: 13px; line-height: 1.6; }
+  .ap-card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-top: 10px; font-size: 13px; }
+  .ap-card .pk-btns { margin-top: 8px; }
 </style>
 </head>
 <body>
-<div class="card">
-  <span class="badge">🧪 測試沙盒・不影響正式系統</span>
-  <h1>服事系統 — 登入驗證</h1>
-  <p class="sub">用你的 Google 帳號登入，系統會驗證身分（不能冒名）並讀取<strong>隔離的測試試算表</strong>，把結果顯示在下方。這是環節 2 的驗收頁。</p>
 
-  <div id="gBtn"></div>
-  <div id="status">請點上方按鈕，用 Google 登入</div>
-
-  <div class="result" id="result"></div>
-  <button class="logout" id="logoutBtn" style="display:none" onclick="logout()">登出 / 換帳號</button>
-
-  <p class="foot">
-    後端：service-app 測試 GAS ・ 資料：測試沙盒試算表（複製自正式）<br>
-    登入只做身分驗票，唯讀，不寫入任何資料。
-  </p>
+<div class="login-screen" id="loginScreen">
+  <div class="card">
+    <span class="badge">🧪 測試沙盒</span>
+    <h1>桃園服事系統</h1>
+    <p class="sub">查詢你接下來的服事、線上請假。用 Google 帳號登入即可開始。</p>
+    <div id="gBtn"></div>
+    <div id="status">請點上方按鈕，用 Google 登入</div>
+    <div id="uArea"></div>
+    <p class="foot">登入只做身分驗證，資料來自服事排班試算表。<br>有問題請找全職同工。</p>
+  </div>
 </div>
+
+<div class="wrap" id="app" style="display:none">
+  <div class="hdr">
+    <span class="badge">🧪 沙盒</span>
+    <div class="d" id="hdrDate"></div>
+    <h1 id="hdrName"></h1>
+  </div>
+  <div id="main"></div>
+</div>
+
+<div class="tabbar" id="tabbar" style="display:none"></div>
 
 <div id="picker" class="pk-overlay" style="display:none" onclick="if(event.target===this)closePicker()">
   <div class="pk-panel"><button class="pk-close" onclick="closePicker()">✕</button><div class="pk-body"></div></div>
 </div>
 
 <script>
-  // 測試沙盒後端（service-app GAS 部署）
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxavwu853Lejoco68BOJ1hEiH6MSrXMe2do171i8uUbGtQxDYBrLqk5U07H6Qas96rAWQ/exec';
-  // 沿用教會 church-login 的 OAuth 用戶端 ID（與場地/新人同一組）
   var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
-  var LAST_RES = null;
-  var ID_TOKEN = null;
-  var VIEW_MODE = 'card'; // 'card' | 'week'
+  var LAST_RES = null, ID_TOKEN = null, TAB = 'home', CARE_VIEW = 'member';
+  var WD_TODAY = ['日', '一', '二', '三', '四', '五', '六'];
 
   function initGoogleLogin() {
-    if (!(window.google && google.accounts && google.accounts.id)) {
-      return setTimeout(initGoogleLogin, 100);
-    }
+    if (!(window.google && google.accounts && google.accounts.id)) return setTimeout(initGoogleLogin, 100);
     google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onGoogleLogin, auto_select: false });
     google.accounts.id.renderButton(document.getElementById('gBtn'),
       { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
   }
   window.addEventListener('load', initGoogleLogin);
 
-  function switchView(mode) { VIEW_MODE = mode; renderView(); }
+  function api(action, args) {
+    return fetch(SCRIPT_URL, {
+      method: 'POST', redirect: 'follow',
+      body: JSON.stringify({ action: action, idToken: ID_TOKEN, args: args || {} })
+    }).then(function (r) { return r.json(); });
+  }
 
-  function renderView() {
-    var res = LAST_RES; if (!res || !res.matched) return;
-    var bc = document.getElementById('tgCard'), bw = document.getElementById('tgWeek');
-    if (bc) bc.className = VIEW_MODE === 'card' ? 'on' : '';
-    if (bw) bw.className = VIEW_MODE === 'week' ? 'on' : '';
+  function setStatus(msg, isErr) {
+    var el = document.getElementById('status');
+    el.textContent = msg; el.className = isErr ? 'err' : '';
+  }
+
+  function onGoogleLogin(response) {
+    ID_TOKEN = response.credential;
+    setStatus('⏳ 驗證身分中…', false);
+    api('whoami').then(applyResult).catch(function () { setStatus('⚠️ 連線失敗，請稍後再試', true); });
+  }
+  function refresh() { api('whoami').then(applyResult).catch(function () { }); }
+
+  function logout() {
+    if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+    location.reload();
+  }
+
+  function applyResult(res) {
+    if (!res.ok) { setStatus('⚠️ ' + (res.error || '驗證失敗'), true); return; }
+    LAST_RES = res;
+    if (!res.matched) { renderUnmatched(res); return; }
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('tabbar').style.display = 'flex';
+    var now = new Date();
+    document.getElementById('hdrDate').textContent = (now.getMonth() + 1) + '月' + now.getDate() + '日（' + WD_TODAY[now.getDay()] + '）';
+    document.getElementById('hdrName').textContent = '平安，' + (res.displayName || res.name || '');
+    var tabs = [{ id: 'home', ic: '📋', lb: '服事' }];
+    if (res.isLeader) tabs.push({ id: 'care', ic: '👥', lb: '牧養' });
+    if (res.isTeamLead) tabs.push({ id: 'team', ic: '🗓', lb: '班表' });
+    tabs.push({ id: 'me', ic: '👤', lb: '我的' });
+    var tb = document.getElementById('tabbar');
+    tb.innerHTML = tabs.map(function (t) {
+      return '<button data-tab="' + t.id + '"><span class="ic">' + t.ic + '</span>' + t.lb + '</button>';
+    }).join('');
+    tb.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () { TAB = btn.getAttribute('data-tab'); renderTab(); });
+    });
+    if (!tabs.some(function (t) { return t.id === TAB; })) TAB = 'home';
+    renderTab();
+  }
+
+  function renderTab() {
+    var res = LAST_RES;
+    document.querySelectorAll('.tabbar button').forEach(function (b) {
+      b.className = (b.getAttribute('data-tab') === TAB) ? 'on' : '';
+    });
     var h = '';
-    if (VIEW_MODE === 'week') {
-      h += renderWeek('📋 我未來的服事', myEntries(res));
-      if (res.isLeader) h += renderWeek((res.scope === 'group' ? '👥 我的小組' : '👥 本區') + '同工 · 週視圖', zoneEntries(res));
+    if (TAB === 'home') h = renderHome(res);
+    else if (TAB === 'care') h = renderCare(res);
+    else if (TAB === 'team') h = renderTeamTab(res);
+    else h = renderMe(res);
+    document.getElementById('main').innerHTML = h;
+    bindTabEvents();
+    window.scrollTo(0, 0);
+  }
+
+  function bindTabEvents() {
+    document.querySelectorAll('[data-act]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var act = el.getAttribute('data-act');
+        if (act === 'leave') openLeave();
+        else if (act === 'announce') openAnnouncement();
+        else if (act === 'review') openReview();
+        else if (act === 'logout') logout();
+        else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
+        else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
+      });
+    });
+  }
+
+  function roleText(s) { return s.role + (s.instrument ? '（' + s.instrument + '）' : ''); }
+  function dayOf(d) { return parseInt(String(d).split('/')[1], 10) || 0; }
+  function monthOf(d) { return parseInt(String(d).split('/')[0], 10) || 0; }
+
+  function dateBox(date, weekday, hot) {
+    return '<div class="tl-date' + (hot ? ' hot' : '') + '"><b>' + dayOf(date) + '</b><span>' + weekday + '</span></div>';
+  }
+
+  function renderTimeline(entries, textFn) {
+    if (!entries.length) return '<div class="empty">未來目前沒有排班。</div>';
+    var h = '', lastMon = -1;
+    entries.forEach(function (e) {
+      var m = monthOf(e.date);
+      if (m !== lastMon) { h += '<div class="mon">' + m + ' 月</div>'; lastMon = m; }
+      h += '<div class="tl-row">' + dateBox(e.date, e.weekday, !!e.hot) +
+        '<div class="tl-txt">' + textFn(e) + '</div></div>';
+    });
+    return h;
+  }
+
+  function renderHome(res) {
+    var list = res.services || [];
+    var h = '';
+    if (list.length) {
+      var nx = list[0];
+      h += '<div class="hero"><div class="cap">你的下一次服事</div>' +
+        '<div class="big">' + nx.date + '（' + nx.weekday + '）' + (nx.session || '') + '</div>' +
+        '<div class="what">' + roleText(nx) + '</div></div>';
     } else {
-      h += renderServices(res.services);
-      if (res.isLeader) h += renderZone(res.zone, res.zoneMembers, res.scope, res.group);
+      h += '<div class="hero none">未來目前沒有排到你的服事，好好休息 😊</div>';
     }
-    if (res.isTeamLead && res.teamLeads) {
-      res.teamLeads.forEach(function (tl) { h += renderTeam(tl.teamName, tl.schedule); });
-      if (res.scheduleUrl) {
-        h += '<div class="actions"><button onclick="window.open(\'' + res.scheduleUrl + '\',\'_blank\')">📊 開試算表排班</button></div>' +
-          '<div class="svc-empty">排班調整請直接在試算表進行（可用「排班小幫手」選單的找替補、自動排班）。</div>';
-      }
+    h += '<div class="qa"><button data-act="leave">🙋 我要請假</button><button data-act="announce">📢 服事公告</button></div>';
+    if (list.length > 1) {
+      h += '<div class="sec"><div class="sec-h">之後的服事</div>' +
+        renderTimeline(list.slice(1), function (e) {
+          return (e.session || '') + '・' + roleText(e);
+        }) + '</div>';
     }
-    document.getElementById('viewArea').innerHTML = h;
+    return h;
   }
 
-  // 排班調整已改回試算表進行（網頁端唯讀），原 openPicker/doAssign 已移除
-  function closePicker() { document.getElementById('picker').style.display = 'none'; }
-
-  function copyDraft(btn) {
-    var ta = document.querySelector('#picker .draft'); if (!ta) return;
-    ta.select();
-    try { navigator.clipboard.writeText(ta.value); } catch (e) { try { document.execCommand('copy'); } catch (e2) { } }
-    btn.textContent = '✅ 已複製';
+  function renderCare(res) {
+    var members = res.zoneMembers || [];
+    var title = (res.scope === 'group') ? ('我的小組（' + (res.group || '—') + '）') : ('本區（' + (res.zone || '—') + '）');
+    var withSvc = members.filter(function (m) { return m.services && m.services.length; }).length;
+    var h = '<div class="sec"><div class="sec-h">' + title + '・共 ' + members.length + ' 位，' + withSvc + ' 位有排班</div></div>';
+    h += '<div class="toggle"><button data-act="careview" data-v="member" class="' + (CARE_VIEW === 'member' ? 'on' : '') + '">依同工</button>' +
+      '<button data-act="careview" data-v="date" class="' + (CARE_VIEW === 'date' ? 'on' : '') + '">依日期</button></div>';
+    if (!members.length) return h + '<div class="empty">目前沒有可顯示的同工。</div>';
+    if (CARE_VIEW === 'date') {
+      var entries = [];
+      members.forEach(function (m) {
+        (m.services || []).forEach(function (s) {
+          entries.push({ date: s.date, weekday: s.weekday, session: s.session, txt: m.displayName + '・' + roleText(s) });
+        });
+      });
+      entries.sort(function (a, b) { return (monthOf(a.date) * 100 + dayOf(a.date)) - (monthOf(b.date) * 100 + dayOf(b.date)); });
+      var byDate = {}, order = [];
+      entries.forEach(function (e) {
+        if (!byDate[e.date]) { byDate[e.date] = { weekday: e.weekday, lines: [] }; order.push(e.date); }
+        byDate[e.date].lines.push((e.session ? e.session + '・' : '') + e.txt);
+      });
+      var h2 = '', lastMon = -1;
+      order.forEach(function (d) {
+        var m = monthOf(d);
+        if (m !== lastMon) { h2 += '<div class="mon">' + m + ' 月</div>'; lastMon = m; }
+        h2 += '<div class="tl-row">' + dateBox(d, byDate[d].weekday, false) +
+          '<div class="tl-txt">' + byDate[d].lines.join('<br>') + '</div></div>';
+      });
+      return h + (h2 || '<div class="empty">組員未來都沒有排班。</div>');
+    }
+    var groups = {}, order2 = [];
+    members.forEach(function (m) {
+      var g = m.group || '（未分組）';
+      if (!groups[g]) { groups[g] = []; order2.push(g); }
+      groups[g].push(m);
+    });
+    var hideHdr = (res.scope === 'group') || (order2.length === 1 && order2[0] === '（未分組）');
+    order2.forEach(function (g) {
+      if (!hideHdr) h += '<div class="grp-h">📍 ' + g + '（' + groups[g].length + '）</div>';
+      groups[g].forEach(function (m) {
+        var label = '<span class="nm">' + m.displayName + '</span>' + (m.shepherdRole ? '<span class="rl">' + m.shepherdRole + '</span>' : '');
+        if (m.services && m.services.length) {
+          var chips = m.services.map(function (s) {
+            return '<span class="chip">' + s.date + ' ' + (s.session || '') + ' ' + roleText(s) + '</span>';
+          }).join('');
+          h += '<div class="mbr">' + label + '<div class="chips">' + chips + '</div></div>';
+        } else {
+          h += '<div class="mbr">' + label + ' <span class="none">未來無排班</span></div>';
+        }
+      });
+    });
+    return h;
   }
 
+  function renderTeamTab(res) {
+    var h = '';
+    if (res.scheduleUrl) {
+      h += '<div class="qa" style="margin-top:14px"><button data-act="sheet">📊 開試算表排班</button></div>' +
+        '<div class="empty">排班調整請在試算表進行（找替補、自動排班都在那邊）。</div>';
+    }
+    (res.teamLeads || []).forEach(function (tl) {
+      var sched = tl.schedule || [];
+      var gaps = 0;
+      sched.forEach(function (d) { d.slots.forEach(function (s) { if (s.empty) gaps++; }); });
+      h += '<div class="panel"><div class="ph">🛠 ' + (tl.teamName || '') + '</div>' +
+        '<div class="ps">未來 ' + sched.length + ' 個時段　' +
+        (gaps ? '<span class="gap-badge">缺 ' + gaps + ' 個崗位</span>' : '<span class="ok-badge">皆有人</span>') + '</div>';
+      var lastMon = -1;
+      sched.forEach(function (d) {
+        var m = monthOf(d.date);
+        if (m !== lastMon) { h += '<div class="mon">' + m + ' 月</div>'; lastMon = m; }
+        var lines = '';
+        d.slots.forEach(function (s) {
+          var content;
+          if (s.empty) content = '<span class="gap-badge">缺人</span>';
+          else if (/主責|主領/.test(s.label) && s.names.length) {
+            var lead = s.names[0], rest = s.names.slice(1);
+            content = '<span class="lead-tag">主責</span>' + lead + (rest.length ? '　' + rest.join('、') : '');
+          } else content = s.names.join('、');
+          lines += '<div class="slot-line"><span class="lb">' + s.label + '</span>' + content + '</div>';
+        });
+        h += '<div class="tl-row">' + dateBox(d.date, d.weekday, false) +
+          '<div class="tl-txt" style="flex:1">' + (d.session || '') +
+          (d.special ? ' <span class="sp">⟨' + d.special + '⟩</span>' : '') + lines + '</div></div>';
+      });
+      h += '</div>';
+    });
+    return h || '<div class="empty">你目前不是任何事工團的主責。</div>';
+  }
+
+  function renderMe(res) {
+    var disp = res.displayName || res.name || '';
+    var h = '<div class="me-card"><div class="me-top">' +
+      '<div class="ava">' + (disp ? disp.charAt(0) : '?') + '</div>' +
+      '<div><div class="nm">' + (res.name || '') + '</div><div class="em">' + (res.email || '') + '</div></div></div>';
+    h += '<div class="kv"><span class="k">區 / 小組</span><span class="v">' + (res.zone || '—') + (res.group ? ' / ' + res.group : '') + '</span></div>';
+    h += '<div class="kv"><span class="k">牧養身份</span><span class="v">' + (res.shepherdRole || '—') + '</span></div>';
+    h += '<div class="kv"><span class="k">事工團</span><span class="v">' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '') + '</span></div>';
+    h += '<div class="kv"><span class="k">可服事崗位</span><span class="v">' + (res.skills || '—') + '</span></div>';
+    h += '</div>';
+    if (res.isAdmin) {
+      h += '<button class="btn" data-act="review">🛡 帳號審核' +
+        (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button>';
+    }
+    h += '<button class="btn line" data-act="logout">登出 / 換帳號</button>';
+    return h;
+  }
+
+  /* ===== 查無身分 / 帳號申請 ===== */
+  function renderUnmatched(res) {
+    setStatus('✅ 登入成功', false);
+    var u = document.getElementById('uArea');
+    var h = '';
+    if (res.applied && res.applyStatus === '待審') {
+      h = '<div class="ap-card">⏳ <b>帳號審核中</b><br><span class="hint-s">你的申請已送出，核准後重新登入即可使用。</span></div>';
+    } else if (res.applied && res.applyStatus === '婉拒') {
+      h = '<div class="ap-card">⚠️ <b>申請未通過</b><br><span class="hint-s">請與全職同工聯繫確認，或重新申請。</span>' +
+        '<div class="pk-btns"><button onclick="openApply()">📝 重新申請</button></div></div>';
+    } else if (res.note) {
+      h = '<div class="ap-card">⚠️ ' + res.note + '</div>';
+    } else {
+      h = '<div class="ap-card">👋 <b>你還不在名單中</b><br><span class="hint-s">送出申請，全職同工核准後就能使用。</span>' +
+        '<div class="pk-btns"><button onclick="openApply()">📝 申請帳號</button></div></div>';
+    }
+    h += '<button class="btn line" onclick="logout()">登出 / 換帳號</button>';
+    u.innerHTML = h;
+  }
+
+  function openApply() {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    p.querySelector('.pk-body').innerHTML =
+      '<div class="pk-h">📝 申請帳號</div>' +
+      '<div class="hint-s">填寫後送出，全職同工核准後重新登入即可使用。</div>' +
+      '<div class="lv-form">' +
+      '<label>姓名（全名，必填）<input type="text" id="apName" placeholder="如：王小明"></label>' +
+      '<label>區（選填）<input type="text" id="apZone" placeholder="如：沛璟區"></label>' +
+      '<label>小組（選填）<input type="text" id="apGroup" placeholder="如：約書亞小組"></label>' +
+      '<label>備註（選填）<input type="text" id="apNote" placeholder="如：敬拜團鼓手"></label></div>' +
+      '<div class="pk-btns"><button onclick="submitApply()">送出申請</button><button onclick="closePicker()">取消</button></div>';
+  }
+  function submitApply() {
+    var name = document.getElementById('apName').value.trim();
+    if (!name) { alert('請填寫姓名（全名）'); return; }
+    var args = {
+      name: name,
+      zone: document.getElementById('apZone').value.trim(),
+      group: document.getElementById('apGroup').value.trim(),
+      note: document.getElementById('apNote').value.trim()
+    };
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
+    api('apply', args).then(function (res) {
+      if (!res.ok) { alert('申請失敗：' + (res.error || '')); openApply(); return; }
+      b.innerHTML = '<div class="pk-h">✅ 申請已送出</div>' +
+        '<div class="hint-s">核准後重新登入即可使用，請耐心等候。</div>' +
+        '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
+    }).catch(function (e) { alert('連線失敗：' + e); });
+  }
+
+  /* ===== 審核 ===== */
+  function openReview() {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    var b = p.querySelector('.pk-body'); b.innerHTML = '讀取待審申請…';
+    api('applications').then(function (res) {
+      if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || '無法取得'); return; }
+      var list = res.applications || [];
+      var h = '<div class="pk-h">🛡 帳號審核（' + list.length + ' 筆待審）</div>';
+      if (!list.length) h += '<div class="hint-s">目前沒有待審的申請。</div>';
+      list.forEach(function (a) {
+        h += '<div class="ap-card" style="border:1px solid var(--line)"><b>' + a.name + '</b>' +
+          (a.zone ? '・' + a.zone : '') + (a.group ? '/' + a.group : '') + '<br>' +
+          '<span class="hint-s">' + a.email + (a.note ? '・' + a.note : '') + '・' + a.appliedAt + '</span>' +
+          '<div class="pk-btns">' +
+          '<button class="rv-ok" data-row="' + a.row + '" data-name="' + a.name + '">✅ 核准</button>' +
+          '<button class="rv-no" data-row="' + a.row + '" data-name="' + a.name + '">婉拒</button></div></div>';
+      });
+      b.innerHTML = h;
+      b.querySelectorAll('.rv-ok').forEach(function (btn) {
+        btn.addEventListener('click', function () { doReview(btn.getAttribute('data-row'), 'approve', btn.getAttribute('data-name')); });
+      });
+      b.querySelectorAll('.rv-no').forEach(function (btn) {
+        btn.addEventListener('click', function () { doReview(btn.getAttribute('data-row'), 'reject', btn.getAttribute('data-name')); });
+      });
+    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
+  }
+  function doReview(row, decision, name) {
+    if (decision === 'reject' && !confirm('確定婉拒「' + name + '」的申請？')) return;
+    var b = document.querySelector('#picker .pk-body'); if (b) b.innerHTML = '處理中…';
+    api('review', { row: Number(row), decision: decision }).then(function (res) {
+      if (!res.ok) { alert('處理失敗：' + (res.error || '')); }
+      openReview();
+    }).catch(function (e) { alert('連線失敗：' + e); });
+  }
+
+  /* ===== 請假 ===== */
   function openLeave() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
     p.querySelector('.pk-body').innerHTML =
       '<div class="pk-h">🙋 我要請假</div>' +
       '<div class="lv-form"><div id="lvDates"><label>日期 <input type="date" class="lvDate"></label></div>' +
-      '<button type="button" onclick="addLeaveDate()" style="align-self:flex-start;border:1px dashed #2563eb;background:#fff;color:#2563eb;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px">＋ 再加一天</button>' +
+      '<button type="button" class="add-day" onclick="addLeaveDate()">＋ 再加一天</button>' +
       '<label>原因（選填）<input type="text" id="lvReason" placeholder="如：出差、家庭因素"></label></div>' +
       '<div class="pk-btns"><button onclick="submitLeave()">送出</button><button onclick="closePicker()">取消</button></div>';
   }
@@ -189,12 +512,13 @@
     api('leave', { dates: mds, reason: reason }).then(function (res) {
       if (!res.ok) { alert('請假失敗：' + (res.error || '')); openLeave(); return; }
       b.innerHTML = '<div class="pk-h">✅ 已登記請假（' + mds.join('、') + '）</div>' +
-        '<div class="svc-empty">排班時會自動避開你。下面是給「' + (res.leader || '小組長') + '」的通知草稿：</div>' +
+        '<div class="hint-s">排班時會自動避開你。下面是給「' + (res.leader || '小組長') + '」的通知草稿：</div>' +
         '<textarea class="draft" readonly>' + res.draft + '</textarea>' +
         '<div class="pk-btns"><button onclick="copyDraft(this)">📋 複製</button><button onclick="closePicker();refresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
   }
 
+  /* ===== 公告 ===== */
   function openAnnouncement() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
     var b = p.querySelector('.pk-body'); b.innerHTML = '產生公告中…';
@@ -207,249 +531,20 @@
         lines.push('');
       });
       var text = lines.join('\n') || '（未來沒有排班資料）';
-      b.innerHTML = '<div class="pk-h">📢 未來服事公告（可複製貼 LINE）</div>' +
+      b.innerHTML = '<div class="pk-h">📢 未來三週服事公告</div>' +
+        '<div class="hint-s">可直接複製貼到 LINE。</div>' +
         '<textarea class="draft tall" readonly>' + text + '</textarea>' +
         '<div class="pk-btns"><button onclick="copyDraft(this)">📋 複製</button><button onclick="closePicker()">關閉</button></div>';
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
   }
 
-  function openApply() {
-    var p = document.getElementById('picker'); p.style.display = 'flex';
-    p.querySelector('.pk-body').innerHTML =
-      '<div class="pk-h">📝 申請帳號</div>' +
-      '<div class="svc-empty">填寫後送出，全職同工核准後重新登入即可使用。</div>' +
-      '<div class="lv-form">' +
-      '<label>姓名（全名，必填）<input type="text" id="apName" placeholder="如：王小明"></label>' +
-      '<label>區（選填）<input type="text" id="apZone" placeholder="如：沛璟區"></label>' +
-      '<label>小組（選填）<input type="text" id="apGroup" placeholder="如：約書亞小組"></label>' +
-      '<label>備註（選填）<input type="text" id="apNote" placeholder="如：敬拜團鼓手"></label></div>' +
-      '<div class="pk-btns"><button onclick="submitApply()">送出申請</button><button onclick="closePicker()">取消</button></div>';
+  function copyDraft(btn) {
+    var ta = document.querySelector('#picker .draft'); if (!ta) return;
+    ta.select();
+    try { navigator.clipboard.writeText(ta.value); } catch (e) { try { document.execCommand('copy'); } catch (e2) { } }
+    btn.textContent = '✅ 已複製';
   }
-  function submitApply() {
-    var name = document.getElementById('apName').value.trim();
-    if (!name) { alert('請填寫姓名（全名）'); return; }
-    var args = {
-      name: name,
-      zone: document.getElementById('apZone').value.trim(),
-      group: document.getElementById('apGroup').value.trim(),
-      note: document.getElementById('apNote').value.trim()
-    };
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
-    api('apply', args).then(function (res) {
-      if (!res.ok) { alert('申請失敗：' + (res.error || '')); openApply(); return; }
-      b.innerHTML = '<div class="pk-h">✅ 申請已送出</div>' +
-        '<div class="svc-empty">核准後重新登入即可使用，請耐心等候。</div>' +
-        '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
-    }).catch(function (e) { alert('連線失敗：' + e); });
-  }
-
-  function openReview() {
-    var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '讀取待審申請…';
-    api('applications').then(function (res) {
-      if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || '無法取得'); return; }
-      var list = res.applications || [];
-      var h = '<div class="pk-h">🛡 帳號審核（' + list.length + ' 筆待審）</div>';
-      if (!list.length) h += '<div class="svc-empty">目前沒有待審的申請。</div>';
-      list.forEach(function (a) {
-        h += '<div class="mbr"><b>' + a.name + '</b>' +
-          (a.zone ? '・' + a.zone : '') + (a.group ? '/' + a.group : '') + '<br>' +
-          '<span class="svc-empty">' + a.email + (a.note ? '・' + a.note : '') + '・' + a.appliedAt + '</span>' +
-          '<div class="pk-btns" style="margin-top:6px">' +
-          '<button class="rv-ok" data-row="' + a.row + '" data-name="' + a.name + '">✅ 核准</button>' +
-          '<button class="rv-no" data-row="' + a.row + '" data-name="' + a.name + '">婉拒</button></div></div>';
-      });
-      b.innerHTML = h;
-      b.querySelectorAll('.rv-ok').forEach(function (btn) {
-        btn.addEventListener('click', function () { doReview(btn.getAttribute('data-row'), 'approve', btn.getAttribute('data-name')); });
-      });
-      b.querySelectorAll('.rv-no').forEach(function (btn) {
-        btn.addEventListener('click', function () { doReview(btn.getAttribute('data-row'), 'reject', btn.getAttribute('data-name')); });
-      });
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
-  }
-  function doReview(row, decision, name) {
-    if (decision === 'reject' && !confirm('確定婉拒「' + name + '」的申請？')) return;
-    var b = document.querySelector('#picker .pk-body'); if (b) b.innerHTML = '處理中…';
-    api('review', { row: Number(row), decision: decision }).then(function (res) {
-      if (!res.ok) { alert('處理失敗：' + (res.error || '')); }
-      openReview(); // 重新載入待審清單
-    }).catch(function (e) { alert('連線失敗：' + e); });
-  }
-
-  function renderTeam(teamName, sched) {
-    var h = '<div class="zone-h">🛠 我的事工團（' + (teamName || '') + '）未來班表</div>';
-    if (!sched || !sched.length) return h + '<div class="svc-empty">未來沒有這個團的排班欄位。</div>';
-    var gaps = 0;
-    sched.forEach(function (d) { d.slots.forEach(function (s) { if (s.empty) gaps++; }); });
-    h += '<div class="svc-empty">未來 ' + sched.length + ' 個時段，' +
-      (gaps ? '<span class="err">缺 ' + gaps + ' 個崗位</span>' : '目前皆有人') + '。</div>';
-    sched.forEach(function (d) {
-      h += '<div class="wk-date">📅 ' + d.date + '（' + d.weekday + '）' + (d.session || '') +
-        (d.special ? ' <span class="sp">⟨' + d.special + '⟩</span>' : '') + '</div>';
-      d.slots.forEach(function (s) {
-        var content;
-        if (s.empty) content = '<span class="err">缺人</span>';
-        else if (/主責|主領/.test(s.label) && s.names.length) {
-          var lead = s.names[0], rest = s.names.slice(1);
-          content = '<span class="lead-tag">主責</span>' + lead + (rest.length ? '　同工：' + rest.join('、') : '');
-        } else content = s.names.join('、');
-        h += '<div class="wk-ses"><span class="wk-ses-h">' + s.label + '</span> ' + content + '</div>';
-      });
-    });
-    return h;
-  }
-
-  function myEntries(res) {
-    return (res.services || []).map(function (s) {
-      return { date: s.date, weekday: s.weekday, session: s.session, role: s.role, instrument: s.instrument, who: '我' };
-    });
-  }
-  function zoneEntries(res) {
-    var out = [];
-    (res.zoneMembers || []).forEach(function (m) {
-      (m.services || []).forEach(function (s) {
-        out.push({ date: s.date, weekday: s.weekday, session: s.session, role: s.role, instrument: s.instrument, who: m.displayName });
-      });
-    });
-    return out;
-  }
-  function dkey(d) { var p = String(d).split('/'); return (parseInt(p[0], 10) || 0) * 100 + (parseInt(p[1], 10) || 0); }
-
-  function renderWeek(title, entries) {
-    var h = '<div class="zone-h">' + title + '</div>';
-    if (!entries.length) return h + '<div class="svc-empty">未來沒有排班。</div>';
-    var byDate = {}, order = [];
-    entries.forEach(function (e) {
-      if (!byDate[e.date]) { byDate[e.date] = { weekday: e.weekday, sessions: {}, sorder: [] }; order.push(e.date); }
-      var ses = e.session || '—';
-      if (!byDate[e.date].sessions[ses]) { byDate[e.date].sessions[ses] = []; byDate[e.date].sorder.push(ses); }
-      byDate[e.date].sessions[ses].push(e.who + ' · ' + e.role + (e.instrument ? '（' + e.instrument + '）' : ''));
-    });
-    order.sort(function (a, b) { return dkey(a) - dkey(b); });
-    order.forEach(function (k) {
-      var d = byDate[k];
-      h += '<div class="wk-date">📅 ' + k + '（' + d.weekday + '）</div>';
-      d.sorder.forEach(function (ses) {
-        h += '<div class="wk-ses"><span class="wk-ses-h">' + ses + '</span> ' + d.sessions[ses].join('、') + '</div>';
-      });
-    });
-    return h;
-  }
-
-  function svcLine(s) {
-    return s.date + '(' + s.weekday + ') ' + (s.session || '') + ' ' + s.role + (s.instrument ? '（' + s.instrument + '）' : '');
-  }
-
-  function renderMember(m) {
-    var label = m.displayName + (m.shepherdRole ? '・' + m.shepherdRole : '');
-    if (m.services && m.services.length) {
-      var items = m.services.map(function (s) { return '<div class="mbr-svc">' + svcLine(s) + '</div>'; }).join('');
-      return '<div class="mbr"><b>' + label + '</b>（' + m.services.length + '）' + items + '</div>';
-    }
-    return '<div class="mbr mbr-none"><b>' + label + '</b>：未來無排班</div>';
-  }
-
-  function renderZone(zone, members, scope, myGroup) {
-    var title = (scope === 'group') ? ('👥 我的小組（' + (myGroup || '—') + '）') : ('👥 本區（' + (zone || '—') + '）');
-    if (!members || !members.length) {
-      return '<div class="zone-h">' + title + '</div><div class="svc-empty">目前沒有可顯示的同工。</div>';
-    }
-    var withSvc = members.filter(function (m) { return m.services && m.services.length; }).length;
-    var h = '<div class="zone-h">' + title + ' 同工的未來服事</div>';
-    h += '<div class="svc-empty">共 ' + members.length + ' 位，' + withSvc + ' 位有排班。</div>';
-    // 依小組分組
-    var groups = {}, order = [];
-    members.forEach(function (m) {
-      var g = m.group || '（未分組）';
-      if (!groups[g]) { groups[g] = []; order.push(g); }
-      groups[g].push(m);
-    });
-    var hideGrpHdr = (scope === 'group') || (order.length === 1 && order[0] === '（未分組）');
-    order.forEach(function (g) {
-      if (!hideGrpHdr) h += '<div class="grp-h">📍 ' + g + '（' + groups[g].length + '）</div>';
-      groups[g].forEach(function (m) { h += renderMember(m); });
-    });
-    return h;
-  }
-
-  function renderServices(list) {
-    var h = '<div class="svc-title">📋 我未來的服事（' + (list ? list.length : 0) + '）</div>';
-    if (!list || !list.length) {
-      return h + '<div class="svc-empty">未來目前沒有排到你的服事（或服事表尚未排到）。</div>';
-    }
-    h += '<table class="svc"><tr><th>日期</th><th>堂次</th><th>崗位</th></tr>';
-    list.forEach(function (s) {
-      var role = s.role + (s.instrument ? '（' + s.instrument + '）' : '');
-      h += '<tr><td>' + s.date + '（' + s.weekday + '）</td><td>' + (s.session || '—') + '</td><td>' + role + '</td></tr>';
-    });
-    h += '</table>';
-    return h;
-  }
-
-  function setStatus(msg, isErr) {
-    var el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = isErr ? 'err' : '';
-  }
-
-  function api(action, args) {
-    return fetch(SCRIPT_URL, {
-      method: 'POST', redirect: 'follow',
-      body: JSON.stringify({ action: action, idToken: ID_TOKEN, args: args || {} })
-    }).then(function (r) { return r.json(); });
-  }
-
-  function onGoogleLogin(response) {
-    ID_TOKEN = response.credential;
-    setStatus('⏳ 驗證身分中…', false);
-    api('whoami').then(applyResult).catch(function () { setStatus('⚠️ 連線失敗，請稍後再試', true); });
-  }
-
-  function refresh() { api('whoami').then(applyResult).catch(function () {}); }
-
-  function applyResult(res) {
-    if (!res.ok) { setStatus('⚠️ ' + (res.error || '驗證失敗'), true); return; }
-    setStatus('✅ 登入成功', false);
-    LAST_RES = res;
-    var html = '<div class="ok">✅ 身分驗證通過（後端確認，非前端自報）</div>' +
-      '登入 email：<code>' + res.email + '</code><br>';
-    if (res.matched) {
-      html += '姓名：<strong>' + (res.name || '—') + '</strong><br>' +
-        '牧區：' + (res.zone || '—') + (res.group ? ' / ' + res.group : '') + '<br>' +
-        '牧養身份：<strong>' + (res.shepherdRole || '—') + '</strong><br>' +
-        '事工團：' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '') + '<br>' +
-        '可服事崗位：' + (res.skills || '—');
-      html += '<div class="actions"><button onclick="openLeave()">🙋 我要請假</button>' +
-              '<button onclick="openAnnouncement()">📢 產生公告</button></div>';
-      if (res.isAdmin) {
-        html += '<div class="actions"><button onclick="openReview()">🛡 帳號審核' +
-          (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button></div>';
-      }
-      html += '<div class="toggle"><button id="tgCard" onclick="switchView(\'card\')">🗂 卡片</button>' +
-              '<button id="tgWeek" onclick="switchView(\'week\')">📅 週視圖</button></div>';
-      html += '<div id="viewArea"></div>';
-    } else if (res.applied && res.applyStatus === '待審') {
-      html += '<span class="err">⏳ 帳號審核中</span>：你的申請已送出，核准後重新登入即可使用。';
-    } else if (res.applied && res.applyStatus === '婉拒') {
-      html += '<span class="err">⚠️ 申請未通過</span>：請直接與全職同工聯繫確認，或重新申請。' +
-        '<div class="actions"><button onclick="openApply()">📝 重新申請</button></div>';
-    } else if (res.note) {
-      html += '<span class="err">⚠️ 查無身分</span>：' + res.note;
-    } else {
-      html += '<span class="err">⚠️ 查無身分</span>：你已成功登入，但還不在名單中。' +
-        '<div class="actions"><button onclick="openApply()">📝 申請帳號</button></div>';
-    }
-    var rd = document.getElementById('result');
-    rd.innerHTML = html; rd.className = 'result show';
-    document.getElementById('logoutBtn').style.display = 'block';
-    if (res.matched) renderView();
-  }
-
-  function logout() {
-    if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
-    location.reload();
-  }
+  function closePicker() { document.getElementById('picker').style.display = 'none'; }
 </script>
 </body>
 </html>
