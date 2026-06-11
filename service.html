@@ -111,7 +111,14 @@
     border-top: 1px solid var(--line); display: flex; padding: 6px 0 calc(8px + env(safe-area-inset-bottom));
     max-width: 480px; margin: 0 auto; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,.05);
   }
-  .tabbar button { flex: 1; border: none; background: none; cursor: pointer; font-size: 11px; color: var(--hint); padding: 4px 0; }
+  .tabbar button { flex: 1; border: none; background: none; cursor: pointer; font-size: 11px; color: var(--hint); padding: 4px 0; position: relative; }
+  .nbadge { position: absolute; top: 0; left: 55%; background: #e24b4a; color: #fff; border-radius: 999px; font-size: 10px; font-weight: 700; padding: 1px 5px; line-height: 1.3; }
+  .chg { display: inline-block; background: #fdf0dc; color: #b26a00; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 6px; margin-left: 6px; }
+  .nt { background: #fff; border-radius: 12px; padding: 10px 12px; margin-top: 8px; font-size: 13px; }
+  .nt .t { color: var(--hint); font-size: 11px; margin-top: 2px; }
+  .nt.new { border-left: 3px solid var(--tl-600); border-radius: 0 12px 12px 0; }
+  .wkh { background: var(--tl-50); color: var(--tl-800); font-weight: 700; font-size: 13px; padding: 6px 10px; border-radius: 8px; margin: 12px 0 2px; }
+  .wkh .rng { font-weight: 400; color: var(--tl-600); }
   .tabbar button .ic { display: block; font-size: 20px; margin-bottom: 1px; }
   .tabbar button.on { color: var(--tl-600); font-weight: 700; }
   /* 彈窗 */
@@ -182,18 +189,41 @@
   window.addEventListener('load', initGoogleLogin);
   window.addEventListener('load', loadBoard);
 
+  function boardDate(md) {
+    var p = String(md).split('/');
+    var now = new Date();
+    var d = new Date(now.getFullYear(), (parseInt(p[0], 10) || 1) - 1, parseInt(p[1], 10) || 1);
+    if (d.getTime() - now.getTime() < -180 * 86400000) d.setFullYear(d.getFullYear() + 1); // 跨年
+    return d;
+  }
+
   function loadBoard() {
     fetch(SCRIPT_URL + '?board=1', { redirect: 'follow' })
       .then(function (r) { return r.json(); })
       .then(function (res) {
         if (!res.ok || !res.slots || !res.slots.length) return;
         if (document.getElementById('app').style.display !== 'none') return; // 已登入就不顯示
-        var h = res.slots.map(function (s) {
-          var lines = (s.items || []).map(function (it) {
-            return '<div class="bd-line"><span class="rl">' + it.role + '</span>' + it.who + '</div>';
+        // 以「週」為單位分組（第一堂週六＝該週的開始）
+        var groups = [], cur = null;
+        res.slots.forEach(function (s) {
+          var d = boardDate(s.date);
+          var off = (d.getDay() - 6 + 7) % 7; // 距上一個週六幾天
+          var ws = new Date(d); ws.setDate(d.getDate() - off);
+          var key = ws.getMonth() + '-' + ws.getDate();
+          if (!cur || cur.key !== key) { cur = { key: key, slots: [], min: s.date, max: s.date }; groups.push(cur); }
+          cur.slots.push(s); cur.max = s.date;
+        });
+        var TAGS = ['本週', '下週', '第三週'];
+        var h = groups.map(function (g, i) {
+          var rng = g.min + (g.max !== g.min ? '–' + g.max : '');
+          var wk = '<div class="wkh">' + (TAGS[i] || '第' + (i + 1) + '週') + ' <span class="rng">' + rng + '</span></div>';
+          return wk + g.slots.map(function (s) {
+            var lines = (s.items || []).map(function (it) {
+              return '<div class="bd-line"><span class="rl">' + it.role + '</span>' + it.who + '</div>';
+            }).join('');
+            return '<div class="bd-slot"><div class="bd-d">' + s.date + '（' + s.weekday + '）' + (s.session || '') +
+              (s.special ? ' <span class="sp">⟨' + s.special + '⟩</span>' : '') + '</div>' + lines + '</div>';
           }).join('');
-          return '<div class="bd-slot"><div class="bd-d">' + s.date + '（' + s.weekday + '）' + (s.session || '') +
-            (s.special ? ' <span class="sp">⟨' + s.special + '⟩</span>' : '') + '</div>' + lines + '</div>';
         }).join('');
         document.getElementById('boardArea').innerHTML = h;
         document.getElementById('boardCard').style.display = 'block';
@@ -237,10 +267,12 @@
     var tabs = [{ id: 'home', ic: '📋', lb: '服事' }];
     if (res.isLeader) tabs.push({ id: 'care', ic: '👥', lb: '牧養' });
     if (res.isTeamLead) tabs.push({ id: 'team', ic: '🗓', lb: '班表' });
+    tabs.push({ id: 'noti', ic: '🔔', lb: '通知' });
     tabs.push({ id: 'me', ic: '👤', lb: '我的' });
     var tb = document.getElementById('tabbar');
     tb.innerHTML = tabs.map(function (t) {
-      return '<button data-tab="' + t.id + '"><span class="ic">' + t.ic + '</span>' + t.lb + '</button>';
+      var bd = (t.id === 'noti' && res.unseenNoti) ? '<span class="nbadge">' + res.unseenNoti + '</span>' : '';
+      return '<button data-tab="' + t.id + '">' + bd + '<span class="ic">' + t.ic + '</span>' + t.lb + '</button>';
     }).join('');
     tb.querySelectorAll('button').forEach(function (btn) {
       btn.addEventListener('click', function () { TAB = btn.getAttribute('data-tab'); renderTab(); });
@@ -258,10 +290,31 @@
     if (TAB === 'home') h = renderHome(res);
     else if (TAB === 'care') h = renderCare(res);
     else if (TAB === 'team') h = renderTeamTab(res);
+    else if (TAB === 'noti') h = renderNoti(res);
     else h = renderMe(res);
     document.getElementById('main').innerHTML = h;
     bindTabEvents();
     window.scrollTo(0, 0);
+    if (TAB === 'noti' && res.unseenNoti) {
+      api('notiSeen').catch(function () { });
+      res.unseenNoti = 0;
+      var bd = document.querySelector('.tabbar .nbadge');
+      if (bd) bd.remove();
+    }
+  }
+
+  function renderNoti(res) {
+    var list = res.notifications || [];
+    var h = '<div class="sec"><div class="sec-h">服事異動通知</div></div>';
+    if (!list.length) return h + '<div class="empty">目前沒有異動通知。服事表有變動時會出現在這裡。</div>';
+    var unseen = res.unseenNoti || 0;
+    list.forEach(function (n, i) {
+      var icon = n.action === '排入' ? '✅ 新排入' : '❌ 已取消';
+      h += '<div class="nt' + (i < unseen ? ' new' : '') + '"><b>' + icon + '</b>　' +
+        n.date + '（' + n.weekday + '）' + n.session + '・' + n.role +
+        '<div class="t">' + n.ts + '</div></div>';
+    });
+    return h;
   }
 
   function bindTabEvents() {
@@ -305,7 +358,8 @@
     if (list.length) {
       var nx = list[0];
       h += '<div class="hero"><div class="cap">你的下一次服事</div>' +
-        '<div class="big">' + nx.date + '（' + nx.weekday + '）' + (nx.session || '') + '</div>' +
+        '<div class="big">' + nx.date + '（' + nx.weekday + '）' + (nx.session || '') +
+        (nx.changed ? '<span class="chg">異動</span>' : '') + '</div>' +
         '<div class="what">' + roleText(nx) + '</div></div>';
     } else {
       h += '<div class="hero none">未來目前沒有排到你的服事，好好休息 😊</div>';
@@ -314,7 +368,7 @@
     if (list.length > 1) {
       h += '<div class="sec"><div class="sec-h">之後的服事</div>' +
         renderTimeline(list.slice(1), function (e) {
-          return (e.session || '') + '・' + roleText(e);
+          return (e.session || '') + '・' + roleText(e) + (e.changed ? '<span class="chg">異動</span>' : '');
         }) + '</div>';
     }
     return h;
