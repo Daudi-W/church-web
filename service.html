@@ -252,6 +252,70 @@
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
   }
 
+  function openApply() {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    p.querySelector('.pk-body').innerHTML =
+      '<div class="pk-h">📝 申請帳號</div>' +
+      '<div class="svc-empty">填寫後送出，全職同工核准後重新登入即可使用。</div>' +
+      '<div class="lv-form">' +
+      '<label>姓名（全名，必填）<input type="text" id="apName" placeholder="如：王小明"></label>' +
+      '<label>牧區（選填）<input type="text" id="apZone" placeholder="如：沛璟區"></label>' +
+      '<label>小組（選填）<input type="text" id="apGroup" placeholder="如：約書亞小組"></label>' +
+      '<label>備註（選填）<input type="text" id="apNote" placeholder="如：敬拜團鼓手"></label></div>' +
+      '<div class="pk-btns"><button onclick="submitApply()">送出申請</button><button onclick="closePicker()">取消</button></div>';
+  }
+  function submitApply() {
+    var name = document.getElementById('apName').value.trim();
+    if (!name) { alert('請填寫姓名（全名）'); return; }
+    var args = {
+      name: name,
+      zone: document.getElementById('apZone').value.trim(),
+      group: document.getElementById('apGroup').value.trim(),
+      note: document.getElementById('apNote').value.trim()
+    };
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
+    api('apply', args).then(function (res) {
+      if (!res.ok) { alert('申請失敗：' + (res.error || '')); openApply(); return; }
+      b.innerHTML = '<div class="pk-h">✅ 申請已送出</div>' +
+        '<div class="svc-empty">核准後重新登入即可使用，請耐心等候。</div>' +
+        '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
+    }).catch(function (e) { alert('連線失敗：' + e); });
+  }
+
+  function openReview() {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    var b = p.querySelector('.pk-body'); b.innerHTML = '讀取待審申請…';
+    api('applications').then(function (res) {
+      if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || '無法取得'); return; }
+      var list = res.applications || [];
+      var h = '<div class="pk-h">🛡 帳號審核（' + list.length + ' 筆待審）</div>';
+      if (!list.length) h += '<div class="svc-empty">目前沒有待審的申請。</div>';
+      list.forEach(function (a) {
+        h += '<div class="mbr"><b>' + a.name + '</b>' +
+          (a.zone ? '・' + a.zone : '') + (a.group ? '/' + a.group : '') + '<br>' +
+          '<span class="svc-empty">' + a.email + (a.note ? '・' + a.note : '') + '・' + a.appliedAt + '</span>' +
+          '<div class="pk-btns" style="margin-top:6px">' +
+          '<button class="rv-ok" data-row="' + a.row + '" data-name="' + a.name + '">✅ 核准</button>' +
+          '<button class="rv-no" data-row="' + a.row + '" data-name="' + a.name + '">婉拒</button></div></div>';
+      });
+      b.innerHTML = h;
+      b.querySelectorAll('.rv-ok').forEach(function (btn) {
+        btn.addEventListener('click', function () { doReview(btn.getAttribute('data-row'), 'approve', btn.getAttribute('data-name')); });
+      });
+      b.querySelectorAll('.rv-no').forEach(function (btn) {
+        btn.addEventListener('click', function () { doReview(btn.getAttribute('data-row'), 'reject', btn.getAttribute('data-name')); });
+      });
+    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
+  }
+  function doReview(row, decision, name) {
+    if (decision === 'reject' && !confirm('確定婉拒「' + name + '」的申請？')) return;
+    var b = document.querySelector('#picker .pk-body'); if (b) b.innerHTML = '處理中…';
+    api('review', { row: Number(row), decision: decision }).then(function (res) {
+      if (!res.ok) { alert('處理失敗：' + (res.error || '')); }
+      openReview(); // 重新載入待審清單
+    }).catch(function (e) { alert('連線失敗：' + e); });
+  }
+
   function doUnassign(row, col, name) {
     if (!confirm('確定把「' + name + '」從這個崗位移除？')) return;
     api('unassign', { row: row, col: col, name: name }).then(function (res) {
@@ -406,12 +470,23 @@
         '可服事崗位：' + (res.skills || '—');
       html += '<div class="actions"><button onclick="openLeave()">🙋 我要請假</button>' +
               '<button onclick="openAnnouncement()">📢 產生公告</button></div>';
+      if (res.isAdmin) {
+        html += '<div class="actions"><button onclick="openReview()">🛡 帳號審核' +
+          (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button></div>';
+      }
       html += '<div class="toggle"><button id="tgCard" onclick="switchView(\'card\')">🗂 卡片</button>' +
               '<button id="tgWeek" onclick="switchView(\'week\')">📅 週視圖</button></div>';
       html += '<div id="viewArea"></div>';
+    } else if (res.applied && res.applyStatus === '待審') {
+      html += '<span class="err">⏳ 帳號審核中</span>：你的申請已送出，核准後重新登入即可使用。';
+    } else if (res.applied && res.applyStatus === '婉拒') {
+      html += '<span class="err">⚠️ 申請未通過</span>：請直接與全職同工聯繫確認，或重新申請。' +
+        '<div class="actions"><button onclick="openApply()">📝 重新申請</button></div>';
+    } else if (res.note) {
+      html += '<span class="err">⚠️ 查無身分</span>：' + res.note;
     } else {
-      html += '<span class="err">⚠️ 查無身分</span>：' +
-        (res.note ? res.note : '你已成功登入，但不在名單中（之後走「帳號申請」加入）');
+      html += '<span class="err">⚠️ 查無身分</span>：你已成功登入，但還不在名單中。' +
+        '<div class="actions"><button onclick="openApply()">📝 申請帳號</button></div>';
     }
     var rd = document.getElementById('result');
     rd.innerHTML = html; rd.className = 'result show';
