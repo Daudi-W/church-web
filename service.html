@@ -23,7 +23,13 @@
     font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
   }
   /* 登入畫面 */
-  .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-screen { display: flex; flex-direction: column; align-items: center; padding: 28px 16px 48px; }
+  .bd-slot { border-top: 1px solid var(--line); padding: 10px 0 6px; }
+  .bd-slot:first-child { border-top: none; padding-top: 4px; }
+  .bd-d { font-size: 14px; font-weight: 700; color: var(--tl-800); }
+  .bd-d .sp { color: #b26a00; font-size: 12px; font-weight: 400; }
+  .bd-line { font-size: 13px; padding: 2px 0 2px 4px; color: #34465a; }
+  .bd-line .rl { display: inline-block; min-width: 78px; color: var(--tl-600); font-weight: 700; }
   .card {
     background: #fff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.07);
     max-width: 420px; width: 100%; padding: 30px;
@@ -139,6 +145,11 @@
     <div id="uArea"></div>
     <p class="foot">登入只做身分驗證，資料來自服事排班試算表。<br>有問題請找全職同工。</p>
   </div>
+  <div class="card" id="boardCard" style="display:none; margin-top:14px;">
+    <h1 style="font-size:17px; margin:0 0 8px;">📅 未來三週服事表</h1>
+    <div id="boardArea"></div>
+    <p class="foot">登入後可看個人服事、線上請假。</p>
+  </div>
 </div>
 
 <div class="wrap" id="app" style="display:none">
@@ -159,7 +170,7 @@
 <script>
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxavwu853Lejoco68BOJ1hEiH6MSrXMe2do171i8uUbGtQxDYBrLqk5U07H6Qas96rAWQ/exec';
   var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
-  var LAST_RES = null, ID_TOKEN = null, TAB = 'home', CARE_VIEW = 'member';
+  var LAST_RES = null, ID_TOKEN = null, TAB = 'home', CARE_VIEW = 'member', TEAM_IDX = 0;
   var WD_TODAY = ['日', '一', '二', '三', '四', '五', '六'];
 
   function initGoogleLogin() {
@@ -169,6 +180,25 @@
       { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
   }
   window.addEventListener('load', initGoogleLogin);
+  window.addEventListener('load', loadBoard);
+
+  function loadBoard() {
+    fetch(SCRIPT_URL + '?board=1', { redirect: 'follow' })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (!res.ok || !res.slots || !res.slots.length) return;
+        if (document.getElementById('app').style.display !== 'none') return; // 已登入就不顯示
+        var h = res.slots.map(function (s) {
+          var lines = (s.items || []).map(function (it) {
+            return '<div class="bd-line"><span class="rl">' + it.role + '</span>' + it.who + '</div>';
+          }).join('');
+          return '<div class="bd-slot"><div class="bd-d">' + s.date + '（' + s.weekday + '）' + (s.session || '') +
+            (s.special ? ' <span class="sp">⟨' + s.special + '⟩</span>' : '') + '</div>' + lines + '</div>';
+        }).join('');
+        document.getElementById('boardArea').innerHTML = h;
+        document.getElementById('boardCard').style.display = 'block';
+      }).catch(function () { });
+  }
 
   function api(action, args) {
     return fetch(SCRIPT_URL, {
@@ -244,6 +274,7 @@
         else if (act === 'logout') logout();
         else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
         else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
+        else if (act === 'teamsel') { TEAM_IDX = Number(el.getAttribute('data-i')) || 0; renderTab(); }
       });
     });
   }
@@ -349,7 +380,14 @@
       h += '<div class="qa" style="margin-top:14px"><button data-act="sheet">📊 開試算表排班</button></div>' +
         '<div class="empty">排班調整請在試算表進行（找替補、自動排班都在那邊）。</div>';
     }
-    (res.teamLeads || []).forEach(function (tl) {
+    var all = res.teamLeads || [];
+    if (TEAM_IDX >= all.length) TEAM_IDX = 0;
+    if (all.length > 1) {
+      h += '<div class="toggle">' + all.map(function (tl, i) {
+        return '<button data-act="teamsel" data-i="' + i + '" class="' + (i === TEAM_IDX ? 'on' : '') + '">' + (tl.teamName || '') + '</button>';
+      }).join('') + '</div>';
+    }
+    (all.length ? [all[TEAM_IDX]] : []).forEach(function (tl) {
       var sched = tl.schedule || [];
       var gaps = 0;
       sched.forEach(function (d) { d.slots.forEach(function (s) { if (s.empty) gaps++; }); });
