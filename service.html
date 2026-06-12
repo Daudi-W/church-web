@@ -525,11 +525,19 @@
     });
     var lines = order.map(function (d) {
       var g = byDate[d];
-      var parts = g.items.map(function (s) {
-        return (s.session || '') + ' ' + roleText(s) + brTag(s) + (s.changed ? '<span class="chg">異動</span>' : '');
+      // 先按 堂次+堂區 分組，同一堂的多個角色用頓號併在一起
+      var bySes = {}, sorder = [];
+      g.items.forEach(function (s) {
+        var key = (s.branch || '桃園') + '｜' + (s.session || '');
+        if (!bySes[key]) { bySes[key] = { session: s.session || '', branch: s.branch, roles: [] }; sorder.push(key); }
+        bySes[key].roles.push(roleText(s) + (s.changed ? '<span class="chg">異動</span>' : ''));
+      });
+      var parts = sorder.map(function (k) {
+        var c = bySes[k];
+        return (c.session || '') + ' ' + c.roles.join('、') + brTag(c);
       });
       return '<div class="big" style="margin-top:8px;">' + d + '（' + g.weekday + '）</div>' +
-        '<div class="what">' + parts.join('、') + '</div>';
+        '<div class="what">' + parts.join('<br>') + '</div>';
     }).join('');
     return '<div class="hero"><div class="cap">你最近的服事' + (group.length > 1 ? '（' + group.length + ' 場）' : '') + '</div>' + lines + '</div>';
   }
