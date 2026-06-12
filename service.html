@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>桃園服事系統</title>
 <script src="https://accounts.google.com/gsi/client" async></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
 <style>
   :root {
     --tl-900: #04342C; --tl-800: #085041; --tl-600: #0F6E56;
@@ -119,6 +120,24 @@
   .nt.new { border-left: 3px solid var(--tl-600); border-radius: 0 12px 12px 0; }
   .wkh { background: var(--tl-50); color: var(--tl-800); font-weight: 700; font-size: 13px; padding: 6px 10px; border-radius: 8px; margin: 12px 0 2px; }
   .wkh .rng { font-weight: 400; color: var(--tl-600); }
+  i.ti { vertical-align: -2px; }
+  /* 桌面版：左側導覽 + 加寬內容 */
+  @media (min-width: 900px) {
+    .wrap { max-width: 860px; padding: 0 24px 40px 150px; }
+    .tabbar {
+      left: calc(50% - 430px); right: auto; top: 110px; bottom: auto;
+      width: 100px; max-width: none; margin: 0; flex-direction: column; gap: 2px;
+      border: 1px solid var(--line); border-top: 1px solid var(--line);
+      border-radius: 16px; padding: 12px 0; box-shadow: 0 8px 30px rgba(0,0,0,.06);
+    }
+    .tabbar button { flex: none; padding: 10px 0; font-size: 12px; }
+    .tabbar button .ic { font-size: 22px; }
+    .nbadge { left: 58%; top: 4px; }
+    .hdr { padding-top: 30px; }
+    .login-screen { flex-direction: row; align-items: flex-start; justify-content: center; gap: 20px; padding-top: 48px; }
+    .login-screen .card { margin-top: 0; }
+    #boardCard { margin-top: 0 !important; max-width: 460px; }
+  }
   .tabbar button .ic { display: block; font-size: 20px; margin-bottom: 1px; }
   .tabbar button.on { color: var(--tl-600); font-weight: 700; }
   /* 彈窗 */
@@ -153,7 +172,7 @@
     <p class="foot">登入只做身分驗證，資料來自服事排班試算表。<br>有問題請找全職同工。</p>
   </div>
   <div class="card" id="boardCard" style="display:none; margin-top:14px;">
-    <h1 style="font-size:17px; margin:0 0 8px;">📅 未來三週服事表</h1>
+    <h1 style="font-size:17px; margin:0 0 8px;"><i class="ti ti-calendar"></i> 未來三週服事表</h1>
     <div id="boardArea"></div>
     <p class="foot">登入後可看個人服事、線上請假。</p>
   </div>
@@ -264,15 +283,15 @@
     var now = new Date();
     document.getElementById('hdrDate').textContent = (now.getMonth() + 1) + '月' + now.getDate() + '日（' + WD_TODAY[now.getDay()] + '）';
     document.getElementById('hdrName').textContent = '平安，' + (res.displayName || res.name || '');
-    var tabs = [{ id: 'home', ic: '📋', lb: '服事' }];
-    if (res.isLeader) tabs.push({ id: 'care', ic: '👥', lb: '牧養' });
-    if (res.isTeamLead) tabs.push({ id: 'team', ic: '🗓', lb: '班表' });
-    tabs.push({ id: 'noti', ic: '🔔', lb: '通知' });
-    tabs.push({ id: 'me', ic: '👤', lb: '我的' });
+    var tabs = [{ id: 'home', ic: 'ti-calendar-heart', lb: '服事' }];
+    if (res.isLeader) tabs.push({ id: 'care', ic: 'ti-users', lb: '牧養' });
+    if (res.isTeamLead) tabs.push({ id: 'team', ic: 'ti-clipboard-list', lb: '班表' });
+    tabs.push({ id: 'noti', ic: 'ti-bell', lb: '通知' });
+    tabs.push({ id: 'me', ic: 'ti-user-circle', lb: '我的' });
     var tb = document.getElementById('tabbar');
     tb.innerHTML = tabs.map(function (t) {
       var bd = (t.id === 'noti' && res.unseenNoti) ? '<span class="nbadge">' + res.unseenNoti + '</span>' : '';
-      return '<button data-tab="' + t.id + '">' + bd + '<span class="ic">' + t.ic + '</span>' + t.lb + '</button>';
+      return '<button data-tab="' + t.id + '">' + bd + '<i class="ti ' + t.ic + ' ic"></i>' + t.lb + '</button>';
     }).join('');
     tb.querySelectorAll('button').forEach(function (btn) {
       btn.addEventListener('click', function () { TAB = btn.getAttribute('data-tab'); renderTab(); });
@@ -309,7 +328,7 @@
     if (!list.length) return h + '<div class="empty">目前沒有異動通知。服事表有變動時會出現在這裡。</div>';
     var unseen = res.unseenNoti || 0;
     list.forEach(function (n, i) {
-      var icon = n.action === '排入' ? '✅ 新排入' : '❌ 已取消';
+      var icon = n.action === '排入' ? '<i class="ti ti-circle-check" style="color:var(--tl-600)"></i> 新排入' : '<i class="ti ti-circle-x" style="color:var(--red)"></i> 已取消';
       h += '<div class="nt' + (i < unseen ? ' new' : '') + '"><b>' + icon + '</b>　' +
         n.date + '（' + n.weekday + '）' + n.session + '・' + n.role +
         '<div class="t">' + n.ts + '</div></div>';
@@ -364,7 +383,7 @@
     } else {
       h += '<div class="hero none">未來目前沒有排到你的服事，好好休息 😊</div>';
     }
-    h += '<div class="qa"><button data-act="leave">🙋 我要請假</button><button data-act="announce">📢 服事公告</button></div>';
+    h += '<div class="qa"><button data-act="leave"><i class="ti ti-calendar-off"></i> 我要請假</button><button data-act="announce"><i class="ti ti-speakerphone"></i> 服事公告</button></div>';
     if (list.length > 1) {
       h += '<div class="sec"><div class="sec-h">之後的服事</div>' +
         renderTimeline(list.slice(1), function (e) {
@@ -412,7 +431,7 @@
     });
     var hideHdr = (res.scope === 'group') || (order2.length === 1 && order2[0] === '（未分組）');
     order2.forEach(function (g) {
-      if (!hideHdr) h += '<div class="grp-h">📍 ' + g + '（' + groups[g].length + '）</div>';
+      if (!hideHdr) h += '<div class="grp-h"><i class="ti ti-map-pin"></i> ' + g + '（' + groups[g].length + '）</div>';
       groups[g].forEach(function (m) {
         var label = '<span class="nm">' + m.displayName + '</span>' + (m.shepherdRole ? '<span class="rl">' + m.shepherdRole + '</span>' : '');
         if (m.services && m.services.length) {
@@ -431,7 +450,7 @@
   function renderTeamTab(res) {
     var h = '';
     if (res.scheduleUrl) {
-      h += '<div class="qa" style="margin-top:14px"><button data-act="sheet">📊 開試算表排班</button></div>' +
+      h += '<div class="qa" style="margin-top:14px"><button data-act="sheet"><i class="ti ti-external-link"></i> 開試算表排班</button></div>' +
         '<div class="empty">排班調整請在試算表進行（找替補、自動排班都在那邊）。</div>';
     }
     var all = res.teamLeads || [];
@@ -445,7 +464,7 @@
       var sched = tl.schedule || [];
       var gaps = 0;
       sched.forEach(function (d) { d.slots.forEach(function (s) { if (s.empty) gaps++; }); });
-      h += '<div class="panel"><div class="ph">🛠 ' + (tl.teamName || '') + '</div>' +
+      h += '<div class="panel"><div class="ph"><i class="ti ti-tool"></i> ' + (tl.teamName || '') + '</div>' +
         '<div class="ps">未來 ' + sched.length + ' 個時段　' +
         (gaps ? '<span class="gap-badge">缺 ' + gaps + ' 個崗位</span>' : '<span class="ok-badge">皆有人</span>') + '</div>';
       var lastMon = -1;
@@ -482,7 +501,7 @@
     h += '<div class="kv"><span class="k">可服事崗位</span><span class="v">' + (res.skills || '—') + '</span></div>';
     h += '</div>';
     if (res.isAdmin) {
-      h += '<button class="btn" data-act="review">🛡 帳號審核' +
+      h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
         (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button>';
     }
     h += '<button class="btn line" data-act="logout">登出 / 換帳號</button>';
@@ -498,12 +517,12 @@
       h = '<div class="ap-card">⏳ <b>帳號審核中</b><br><span class="hint-s">你的申請已送出，核准後重新登入即可使用。</span></div>';
     } else if (res.applied && res.applyStatus === '婉拒') {
       h = '<div class="ap-card">⚠️ <b>申請未通過</b><br><span class="hint-s">請與全職同工聯繫確認，或重新申請。</span>' +
-        '<div class="pk-btns"><button onclick="openApply()">📝 重新申請</button></div></div>';
+        '<div class="pk-btns"><button onclick="openApply()"><i class="ti ti-pencil"></i> 重新申請</button></div></div>';
     } else if (res.note) {
       h = '<div class="ap-card">⚠️ ' + res.note + '</div>';
     } else {
       h = '<div class="ap-card">👋 <b>你還不在名單中</b><br><span class="hint-s">送出申請，全職同工核准後就能使用。</span>' +
-        '<div class="pk-btns"><button onclick="openApply()">📝 申請帳號</button></div></div>';
+        '<div class="pk-btns"><button onclick="openApply()"><i class="ti ti-pencil"></i> 申請帳號</button></div></div>';
     }
     h += '<button class="btn line" onclick="logout()">登出 / 換帳號</button>';
     u.innerHTML = h;
@@ -512,7 +531,7 @@
   function openApply() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
     p.querySelector('.pk-body').innerHTML =
-      '<div class="pk-h">📝 申請帳號</div>' +
+      '<div class="pk-h"><i class="ti ti-pencil"></i> 申請帳號</div>' +
       '<div class="hint-s">填寫後送出，全職同工核准後重新登入即可使用。</div>' +
       '<div class="lv-form">' +
       '<label>姓名（全名，必填）<input type="text" id="apName" placeholder="如：王小明"></label>' +
@@ -546,7 +565,7 @@
     api('applications').then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || '無法取得'); return; }
       var list = res.applications || [];
-      var h = '<div class="pk-h">🛡 帳號審核（' + list.length + ' 筆待審）</div>';
+      var h = '<div class="pk-h"><i class="ti ti-shield-check"></i> 帳號審核（' + list.length + ' 筆待審）</div>';
       if (!list.length) h += '<div class="hint-s">目前沒有待審的申請。</div>';
       list.forEach(function (a) {
         h += '<div class="ap-card" style="border:1px solid var(--line)"><b>' + a.name + '</b>' +
@@ -578,7 +597,7 @@
   function openLeave() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
     p.querySelector('.pk-body').innerHTML =
-      '<div class="pk-h">🙋 我要請假</div>' +
+      '<div class="pk-h"><i class="ti ti-calendar-off"></i> 我要請假</div>' +
       '<div class="lv-form"><div id="lvDates"><label>日期 <input type="date" class="lvDate"></label></div>' +
       '<button type="button" class="add-day" onclick="addLeaveDate()">＋ 再加一天</button>' +
       '<label>原因（選填）<input type="text" id="lvReason" placeholder="如：出差、家庭因素"></label></div>' +
@@ -606,7 +625,7 @@
       b.innerHTML = '<div class="pk-h">✅ 已登記請假（' + mds.join('、') + '）</div>' +
         '<div class="hint-s">排班時會自動避開你。下面是給「' + (res.leader || '小組長') + '」的通知草稿：</div>' +
         '<textarea class="draft" readonly>' + res.draft + '</textarea>' +
-        '<div class="pk-btns"><button onclick="copyDraft(this)">📋 複製</button><button onclick="closePicker();refresh()">完成</button></div>';
+        '<div class="pk-btns"><button onclick="copyDraft(this)"><i class="ti ti-copy"></i> 複製</button><button onclick="closePicker();refresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
   }
 
@@ -623,10 +642,10 @@
         lines.push('');
       });
       var text = lines.join('\n') || '（未來沒有排班資料）';
-      b.innerHTML = '<div class="pk-h">📢 未來三週服事公告</div>' +
+      b.innerHTML = '<div class="pk-h"><i class="ti ti-speakerphone"></i> 未來三週服事公告</div>' +
         '<div class="hint-s">可直接複製貼到 LINE。</div>' +
         '<textarea class="draft tall" readonly>' + text + '</textarea>' +
-        '<div class="pk-btns"><button onclick="copyDraft(this)">📋 複製</button><button onclick="closePicker()">關閉</button></div>';
+        '<div class="pk-btns"><button onclick="copyDraft(this)"><i class="ti ti-copy"></i> 複製</button><button onclick="closePicker()">關閉</button></div>';
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
   }
 
