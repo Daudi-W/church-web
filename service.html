@@ -471,6 +471,7 @@
         if (act === 'leave') openLeave();
         else if (act === 'announce') openAnnouncement();
         else if (act === 'review') openReview();
+        else if (act === 'publish') openPublish();
         else if (act === 'logout') logout();
         else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
         else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
@@ -685,6 +686,15 @@
     h += '<div class="kv"><span class="k">可服事崗位</span><span class="v">' + (res.skills || '—') + '</span></div>';
     h += '</div>';
     if (res.isAdmin) {
+      var ps = res.publishState || [];
+      var psLine = ps.map(function (b) {
+        return b.branch + '：' + (b.through ? '已公告到 ' + b.through : '<span style="color:var(--red)">尚未發布</span>');
+      }).join('　');
+      h += '<div class="me-card" style="margin-top:14px"><div style="font-weight:700;font-size:16px;margin-bottom:4px">' +
+        '<i class="ti ti-rosette-discount-check" style="color:var(--tl-600)"></i> 服事表發布</div>' +
+        '<div class="hint-s">' + psLine + '</div>' +
+        '<div class="hint-s" style="margin-top:6px;color:var(--mut)">發布前的更動不會通知大家；發布後改「已公告日期」才會跳異動通知。</div>' +
+        '<button class="btn" style="margin-top:10px" data-act="publish"><i class="ti ti-speakerphone"></i> 發布服事表</button></div>';
       h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
         (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button>';
     }
@@ -738,6 +748,43 @@
       if (!res.ok) { alert('申請失敗：' + (res.error || '')); openApply(); return; }
       b.innerHTML = '<div class="pk-h">✅ 申請已送出</div>' +
         '<div class="hint-s">核准後重新登入即可使用，請耐心等候。</div>' +
+        '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
+    }).catch(function (e) { alert('連線失敗：' + e); });
+  }
+
+  /* ===== 發布服事表 ===== */
+  function openPublish() {
+    var res = LAST_RES;
+    var ps = res.publishState || [];
+    var lastMap = {};
+    (res.scheduleLastDates || []).forEach(function (x) { lastMap[x.branch] = x.last; });
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    var opts = ps.map(function (b, i) {
+      return '<option value="' + b.branch + '">' + b.branch + '（' +
+        (b.through ? '目前已公告到 ' + b.through : '尚未發布') + '）</option>';
+    }).join('');
+    p.querySelector('.pk-body').innerHTML =
+      '<div class="pk-h"><i class="ti ti-speakerphone"></i> 發布服事表</div>' +
+      '<div class="hint-s">把某堂區的服事表「公告到指定日期」。這天（含）以前的更動才會通知同工，之後的當作草稿、不打擾。</div>' +
+      '<div class="lv-form">' +
+      '<label>堂區 <select id="pubBranch">' + opts + '</select></label>' +
+      '<label>公告到（含當天）<input type="date" id="pubDate"></label></div>' +
+      '<div class="pk-btns"><button onclick="submitPublish()">確認發布</button><button onclick="closePicker()">取消</button></div>';
+    // 預設帶該堂區目前排到的最後一天
+    var sel = document.getElementById('pubBranch');
+    function fill() { var d = lastMap[sel.value]; if (d) document.getElementById('pubDate').value = d; }
+    sel.addEventListener('change', fill); fill();
+  }
+  function submitPublish() {
+    var branch = document.getElementById('pubBranch').value;
+    var date = document.getElementById('pubDate').value;
+    if (!date) { alert('請選擇公告到哪一天'); return; }
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '發布中…';
+    api('publish', { branch: branch, date: date }).then(function (res) {
+      if (!res.ok) { alert('發布失敗：' + (res.error || '')); openPublish(); return; }
+      b.innerHTML = '<div class="pk-h">✅ 已發布</div>' +
+        '<div class="hint-s">' + res.branch + ' 已公告到 ' + res.through +
+        '。之後改這天以前的服事，系統才會通知對應的同工。</div>' +
         '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
   }
