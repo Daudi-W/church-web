@@ -130,6 +130,23 @@
   .noti-line { margin-top: 10px; background: #fff8ec; border: 1px solid #f3ddb5; color: #b26a00; font-size: 13px; font-weight: 700; padding: 10px 12px; border-radius: 11px; cursor: pointer; }
   .pub-links { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
   .pub-links a { font-size: 12px; color: var(--tl-800); border: 1px solid var(--tl-100); border-radius: 999px; padding: 5px 10px; text-decoration: none; }
+  /* 長輩友善：整體字級放大 */
+  .sub, .qa button, .tl-txt, .kv, .btn { font-size: 16px; }
+  .hero .big { font-size: 21px; }
+  .hero .what, .me-top .nm { font-size: 17px; }
+  .hero .cap, .sec-h, .mon, .toggle button, .tabbar button { font-size: 13px; }
+  .bd-d, .lk, .nt, .mbr, .slot-line, .bd-line, .hint-s, .lv-form label, .empty, .panel .ps { font-size: 15px; }
+  .mbr .nm { font-size: 16px; }
+  .tl-date b { font-size: 19px; }
+  .tl-date span, .badge { font-size: 12px; }
+  .chip, .pub-links a, .foot, .nt .t { font-size: 13px; }
+  .pk-h { font-size: 18px; }
+  .panel .ph { font-size: 17px; }
+  .wkh { font-size: 15px; }
+  .grp-h { font-size: 15px; }
+  .lv-form select { padding: 9px; border: 1px solid #cfd8e3; border-radius: 9px; font-size: 16px; }
+  .lv-form input { font-size: 16px; }
+  .nt .go { color: var(--tl-600); font-size: 13px; font-weight: 700; }
   /* 桌面版：左側導覽 + 加寬內容 */
   @media (min-width: 900px) {
     .wrap { max-width: 860px; padding: 0 24px 40px 150px; }
@@ -207,10 +224,12 @@
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxavwu853Lejoco68BOJ1hEiH6MSrXMe2do171i8uUbGtQxDYBrLqk5U07H6Qas96rAWQ/exec';
   var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
   var LAST_RES = null, ID_TOKEN = null, TAB = 'top', CARE_VIEW = 'member', TEAM_IDX = 0;
+  var TOKEN = null;
+  try { TOKEN = localStorage.getItem('svcToken'); } catch (e) { }
   // 工具與連結（要加連結改這裡即可；inApp=平台內頁面）
   var QUICK_LINKS = [
     { name: '借場地', icon: 'ti-door', url: 'venue.html' },
-    { name: '登記新人', icon: 'ti-user-plus', url: 'newcomer.html' }
+    { name: '新人跟進', icon: 'ti-user-plus', url: 'newcomer.html' }
   ];
   var TOOL_LINKS = [
     { name: '歌詞 PPT 系統', icon: 'ti-presentation', url: 'https://worshiplyrics.onrender.com' },
@@ -230,12 +249,61 @@
   window.addEventListener('load', initGoogleLogin);
   window.addEventListener('load', loadBoard);
   window.addEventListener('load', function () {
+    // 有平台 session 就直接登入（30 天免重登）
+    if (!TOKEN) return;
+    setStatus('⏳ 自動登入中…', false);
+    api('whoami').then(function (res) {
+      if (!res.ok) {
+        TOKEN = null; try { localStorage.removeItem('svcToken'); } catch (e) { }
+        setStatus('請點上方按鈕，用 Google 登入', false);
+        return;
+      }
+      applyResult(res);
+    }).catch(function () { setStatus('請點上方按鈕，用 Google 登入', false); });
+  });
+  window.addEventListener('load', function () {
     // 登入頁也放公開工具（外部連結，不需登入）
     document.getElementById('pubLinks').innerHTML = TOOL_LINKS
       .filter(function (l) { return l.url.indexOf('http') === 0; })
       .map(function (l) { return '<a href="' + l.url + '" target="_blank"><i class="ti ' + l.icon + '"></i> ' + l.name + '</a>'; })
       .join('');
   });
+
+  // 看板渲染（登入頁 + 全教會服事表共用）：以「週」分組（第一堂週六＝週首）
+  function boardHtml(slots) {
+    var groups = [], cur = null;
+    slots.forEach(function (s) {
+      var d = boardDate(s.date);
+      var off = (d.getDay() - 6 + 7) % 7;
+      var ws = new Date(d); ws.setDate(d.getDate() - off);
+      var key = ws.getMonth() + '-' + ws.getDate();
+      if (!cur || cur.key !== key) { cur = { key: key, slots: [], min: s.date, max: s.date }; groups.push(cur); }
+      cur.slots.push(s); cur.max = s.date;
+    });
+    var TAGS = ['本週', '下週', '第三週'];
+    return groups.map(function (g, i) {
+      var rng = g.min + (g.max !== g.min ? '–' + g.max : '');
+      var wk = '<div class="wkh">' + (TAGS[i] || '第' + (i + 1) + '週') + ' <span class="rng">' + rng + '</span></div>';
+      return wk + g.slots.map(function (s) {
+        var lines = (s.items || []).map(function (it) {
+          return '<div class="bd-line"><span class="rl">' + it.role + '</span>' + it.who + '</div>';
+        }).join('');
+        return '<div class="bd-slot"><div class="bd-d">' + s.date + '（' + s.weekday + '）' + (s.session || '') +
+          (s.special ? ' <span class="sp">⟨' + s.special + '⟩</span>' : '') + '</div>' + lines + '</div>';
+      }).join('');
+    }).join('');
+  }
+
+  function openChurchBoard() {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    var b = p.querySelector('.pk-body'); b.innerHTML = '載入全教會服事表…';
+    api('announcement', { weeks: 3 }).then(function (res) {
+      if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || ''); return; }
+      b.innerHTML = '<div class="pk-h"><i class="ti ti-calendar"></i> 全教會服事表（未來三週）</div>' +
+        boardHtml(res.slots || []) +
+        '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
+    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
+  }
 
   function boardDate(md) {
     var p = String(md).split('/');
@@ -251,29 +319,7 @@
       .then(function (res) {
         if (!res.ok || !res.slots || !res.slots.length) return;
         if (document.getElementById('app').style.display !== 'none') return; // 已登入就不顯示
-        // 以「週」為單位分組（第一堂週六＝該週的開始）
-        var groups = [], cur = null;
-        res.slots.forEach(function (s) {
-          var d = boardDate(s.date);
-          var off = (d.getDay() - 6 + 7) % 7; // 距上一個週六幾天
-          var ws = new Date(d); ws.setDate(d.getDate() - off);
-          var key = ws.getMonth() + '-' + ws.getDate();
-          if (!cur || cur.key !== key) { cur = { key: key, slots: [], min: s.date, max: s.date }; groups.push(cur); }
-          cur.slots.push(s); cur.max = s.date;
-        });
-        var TAGS = ['本週', '下週', '第三週'];
-        var h = groups.map(function (g, i) {
-          var rng = g.min + (g.max !== g.min ? '–' + g.max : '');
-          var wk = '<div class="wkh">' + (TAGS[i] || '第' + (i + 1) + '週') + ' <span class="rng">' + rng + '</span></div>';
-          return wk + g.slots.map(function (s) {
-            var lines = (s.items || []).map(function (it) {
-              return '<div class="bd-line"><span class="rl">' + it.role + '</span>' + it.who + '</div>';
-            }).join('');
-            return '<div class="bd-slot"><div class="bd-d">' + s.date + '（' + s.weekday + '）' + (s.session || '') +
-              (s.special ? ' <span class="sp">⟨' + s.special + '⟩</span>' : '') + '</div>' + lines + '</div>';
-          }).join('');
-        }).join('');
-        document.getElementById('boardArea').innerHTML = h;
+        document.getElementById('boardArea').innerHTML = boardHtml(res.slots);
         document.getElementById('boardCard').style.display = 'block';
       }).catch(function () { });
   }
@@ -281,7 +327,7 @@
   function api(action, args) {
     return fetch(SCRIPT_URL, {
       method: 'POST', redirect: 'follow',
-      body: JSON.stringify({ action: action, idToken: ID_TOKEN, args: args || {} })
+      body: JSON.stringify({ action: action, idToken: ID_TOKEN, sessionToken: TOKEN, args: args || {} })
     }).then(function (r) { return r.json(); });
   }
 
@@ -298,12 +344,19 @@
   function refresh() { api('whoami').then(applyResult).catch(function () { }); }
 
   function logout() {
+    try { api('logout'); } catch (e) { }
+    try { localStorage.removeItem('svcToken'); } catch (e) { }
+    TOKEN = null;
     if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
-    location.reload();
+    setTimeout(function () { location.reload(); }, 300);
   }
 
   function applyResult(res) {
     if (!res.ok) { setStatus('⚠️ ' + (res.error || '驗證失敗'), true); return; }
+    if (res.sessionToken) {
+      TOKEN = res.sessionToken;
+      try { localStorage.setItem('svcToken', TOKEN); } catch (e) { }
+    }
     LAST_RES = res;
     if (!res.matched) { renderUnmatched(res); return; }
     document.getElementById('loginScreen').style.display = 'none';
@@ -367,6 +420,9 @@
         body = n.date + '（' + n.weekday + '）' + n.session + '・' + n.role;
       } else if (n.action === '新人分發') {
         icon = '<i class="ti ti-user-plus" style="color:var(--tl-600)"></i> 新人分發';
+        body = (n.text || '') + ' <span class="go">點我前往新人跟進 →</span>';
+      } else if (n.action === '請假通知') {
+        icon = '<i class="ti ti-calendar-off" style="color:#b26a00"></i> 請假';
         body = n.text || '';
       } else if (n.action === '新人提醒') {
         icon = '<i class="ti ti-bell-ringing" style="color:#b26a00"></i> 跟進提醒';
@@ -375,8 +431,10 @@
         icon = '<i class="ti ti-info-circle" style="color:var(--tl-600)"></i> ' + (n.action || '通知');
         body = n.text || (n.date ? n.date + '（' + n.weekday + '）' + n.session + '・' + n.role : '');
       }
-      h += '<div class="nt' + (i < unseen ? ' new' : '') + '"><b>' + icon + '</b>　' + body +
-        '<div class="t">' + n.ts + '</div></div>';
+      var clickable = (n.action === '新人分發' || n.action === '新人提醒');
+      h += '<div class="nt' + (i < unseen ? ' new' : '') +
+        (clickable ? '" style="cursor:pointer" data-act="open" data-href="newcomer.html' : '') +
+        '"><b>' + icon + '</b>　' + body + '<div class="t">' + n.ts + '</div></div>';
     });
     return h;
   }
@@ -393,6 +451,7 @@
         else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
         else if (act === 'teamsel') { TEAM_IDX = Number(el.getAttribute('data-i')) || 0; renderTab(); }
         else if (act === 'gonoti') { TAB = 'noti'; renderTab(); }
+        else if (act === 'board') { openChurchBoard(); }
         else if (act === 'open') { window.open(el.getAttribute('data-href'), '_blank'); }
       });
     });
@@ -434,6 +493,7 @@
       h += '<div class="noti-line" data-act="gonoti"><i class="ti ti-bell-ringing"></i> 你有 ' + res.unseenNoti + ' 則新通知，點我查看</div>';
     }
     h += '<div class="sec"><div class="sec-h">快速申請</div></div><div class="qa qa-wrap">';
+    h += '<button data-act="board"><i class="ti ti-calendar"></i> 全教會服事表</button>';
     h += '<button data-act="leave"><i class="ti ti-calendar-off"></i> 請假</button>';
     h += '<button data-act="announce"><i class="ti ti-speakerphone"></i> 公告</button>';
     QUICK_LINKS.forEach(function (l) {
@@ -460,7 +520,7 @@
     } else {
       h += '<div class="hero none">未來目前沒有排到你的服事，好好休息 😊</div>';
     }
-    h += '<div class="qa"><button data-act="leave"><i class="ti ti-calendar-off"></i> 我要請假</button><button data-act="announce"><i class="ti ti-speakerphone"></i> 服事公告</button></div>';
+    h += '<div class="qa"><button data-act="leave"><i class="ti ti-calendar-off"></i> 我要請假</button><button data-act="board"><i class="ti ti-calendar"></i> 全教會服事表</button></div>';
     if (list.length > 1) {
       h += '<div class="sec"><div class="sec-h">之後的服事</div>' +
         renderTimeline(list.slice(1), function (e) {
@@ -547,7 +607,7 @@
       var lastMon = -1;
       sched.forEach(function (d) {
         var m = monthOf(d.date);
-        if (m !== lastMon) { h += '<div class="mon">' + m + ' 月</div>'; lastMon = m; }
+        if (m !== lastMon) { h += '<div class="wkh">' + m + ' 月</div>'; lastMon = m; }
         var lines = '';
         d.slots.forEach(function (s) {
           var content;
@@ -673,9 +733,18 @@
   /* ===== 請假 ===== */
   function openLeave() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
+    var whoSel = '';
+    var res = LAST_RES;
+    if (res && res.isLeader && res.zoneMembers && res.zoneMembers.length) {
+      whoSel = '<label>幫誰請假 <select id="lvWho">' +
+        '<option value="">我自己</option>' +
+        res.zoneMembers.map(function (m) {
+          return '<option value="' + m.displayName + '">' + m.displayName + (m.group ? '（' + m.group + '）' : '') + '</option>';
+        }).join('') + '</select></label>';
+    }
     p.querySelector('.pk-body').innerHTML =
       '<div class="pk-h"><i class="ti ti-calendar-off"></i> 我要請假</div>' +
-      '<div class="lv-form"><div id="lvDates"><label>日期 <input type="date" class="lvDate"></label></div>' +
+      '<div class="lv-form">' + whoSel + '<div id="lvDates"><label>日期 <input type="date" class="lvDate"></label></div>' +
       '<button type="button" class="add-day" onclick="addLeaveDate()">＋ 再加一天</button>' +
       '<label>原因（選填）<input type="text" id="lvReason" placeholder="如：出差、家庭因素"></label></div>' +
       '<div class="pk-btns"><button onclick="submitLeave()">送出</button><button onclick="closePicker()">取消</button></div>';
@@ -696,11 +765,16 @@
     });
     if (!mds.length) { alert('請先選日期'); return; }
     var reason = document.getElementById('lvReason').value;
+    var whoEl = document.getElementById('lvWho');
+    var forName = whoEl ? whoEl.value : '';
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
-    api('leave', { dates: mds, reason: reason }).then(function (res) {
+    api('leave', { dates: mds, reason: reason, forName: forName }).then(function (res) {
       if (!res.ok) { alert('請假失敗：' + (res.error || '')); openLeave(); return; }
+      var hint = res.proxy
+        ? '已幫「' + res.target + '」登記，系統會通知本人，排班自動避開。'
+        : '排班時會自動避開你，系統已通知你的小組長。';
       b.innerHTML = '<div class="pk-h">✅ 已登記請假（' + mds.join('、') + '）</div>' +
-        '<div class="hint-s">排班時會自動避開你。下面是給「' + (res.leader || '小組長') + '」的通知草稿：</div>' +
+        '<div class="hint-s">' + hint + '</div>' +
         '<textarea class="draft" readonly>' + res.draft + '</textarea>' +
         '<div class="pk-btns"><button onclick="copyDraft(this)"><i class="ti ti-copy"></i> 複製</button><button onclick="closePicker();refresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
@@ -710,7 +784,7 @@
   function openAnnouncement() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
     var b = p.querySelector('.pk-body'); b.innerHTML = '產生公告中…';
-    api('announcement', { weeks: 3 }).then(function (res) {
+    api('announcement', { weeks: 1 }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || ''); return; }
       var lines = [];
       (res.slots || []).forEach(function (s) {
@@ -719,7 +793,7 @@
         lines.push('');
       });
       var text = lines.join('\n') || '（未來沒有排班資料）';
-      b.innerHTML = '<div class="pk-h"><i class="ti ti-speakerphone"></i> 未來三週服事公告</div>' +
+      b.innerHTML = '<div class="pk-h"><i class="ti ti-speakerphone"></i> 未來一週服事公告</div>' +
         '<div class="hint-s">可直接複製貼到 LINE。</div>' +
         '<textarea class="draft tall" readonly>' + text + '</textarea>' +
         '<div class="pk-btns"><button onclick="copyDraft(this)"><i class="ti ti-copy"></i> 複製</button><button onclick="closePicker()">關閉</button></div>';
