@@ -439,10 +439,10 @@
       var icon, body;
       if (n.action === '排入') {
         icon = '<i class="ti ti-circle-check" style="color:var(--tl-600)"></i> 新增';
-        body = n.date + ' ' + String(n.session || '').replace(/^第/, '') + ' ' + n.role;
+        body = n.date + '（' + (n.weekday || '') + '）' + (n.session || '') + ' ' + n.role;
       } else if (n.action === '取消') {
         icon = '<i class="ti ti-circle-x" style="color:var(--red)"></i> 取消';
-        body = n.date + ' ' + String(n.session || '').replace(/^第/, '') + ' ' + n.role;
+        body = n.date + '（' + (n.weekday || '') + '）' + (n.session || '') + ' ' + n.role;
       } else if (n.action === '新人分發') {
         icon = '<i class="ti ti-user-plus" style="color:var(--tl-600)"></i> 新人分發';
         body = (n.text || '') + ' <span class="go">點我前往新人跟進 →</span>';
@@ -518,10 +518,18 @@
       var d = boardDate(s.date);
       return d >= ws && d < we;
     });
-    var lines = group.map(function (s) {
-      return '<div class="big" style="margin-top:8px;">' + s.date + '（' + s.weekday + '）' + (s.session || '') +
-        brTag(s) + (s.changed ? '<span class="chg">異動</span>' : '') + '</div>' +
-        '<div class="what">' + roleText(s) + '</div>';
+    var byDate = {}, order = [];
+    group.forEach(function (s) {
+      if (!byDate[s.date]) { byDate[s.date] = { weekday: s.weekday, items: [] }; order.push(s.date); }
+      byDate[s.date].items.push(s);
+    });
+    var lines = order.map(function (d) {
+      var g = byDate[d];
+      var parts = g.items.map(function (s) {
+        return (s.session || '') + ' ' + roleText(s) + brTag(s) + (s.changed ? '<span class="chg">異動</span>' : '');
+      });
+      return '<div class="big" style="margin-top:8px;">' + d + '（' + g.weekday + '）</div>' +
+        '<div class="what">' + parts.join('、') + '</div>';
     }).join('');
     return '<div class="hero"><div class="cap">你最近的服事' + (group.length > 1 ? '（' + group.length + ' 場）' : '') + '</div>' + lines + '</div>';
   }
