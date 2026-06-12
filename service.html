@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>桃園服事系統</title>
+<title>桃園教會服事平台</title>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
 <style>
@@ -121,6 +121,15 @@
   .wkh { background: var(--tl-50); color: var(--tl-800); font-weight: 700; font-size: 13px; padding: 6px 10px; border-radius: 8px; margin: 12px 0 2px; }
   .wkh .rng { font-weight: 400; color: var(--tl-600); }
   i.ti { vertical-align: -2px; }
+  .qa.qa-wrap { flex-wrap: wrap; }
+  .qa.qa-wrap button { flex: 1 1 45%; }
+  .links { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .lk { background: #fff; border-radius: 12px; padding: 12px; font-size: 13px; cursor: pointer; border: 1px solid var(--line); }
+  .lk:hover { border-color: var(--tl-200); }
+  .lk i { font-size: 20px; color: var(--tl-600); display: block; margin-bottom: 4px; }
+  .noti-line { margin-top: 10px; background: #fff8ec; border: 1px solid #f3ddb5; color: #b26a00; font-size: 13px; font-weight: 700; padding: 10px 12px; border-radius: 11px; cursor: pointer; }
+  .pub-links { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .pub-links a { font-size: 12px; color: var(--tl-800); border: 1px solid var(--tl-100); border-radius: 999px; padding: 5px 10px; text-decoration: none; }
   /* 桌面版：左側導覽 + 加寬內容 */
   @media (min-width: 900px) {
     .wrap { max-width: 860px; padding: 0 24px 40px 150px; }
@@ -164,11 +173,12 @@
 <div class="login-screen" id="loginScreen">
   <div class="card">
     <span class="badge">🧪 測試沙盒</span>
-    <h1>桃園服事系統</h1>
-    <p class="sub">查詢你接下來的服事、線上請假。用 Google 帳號登入即可開始。</p>
+    <h1>桃園教會服事平台</h1>
+    <p class="sub">服事查詢、請假、場地申請、新人跟進，一個帳號全搞定。用 Google 登入即可開始。</p>
     <div id="gBtn"></div>
     <div id="status">請點上方按鈕，用 Google 登入</div>
     <div id="uArea"></div>
+    <div class="pub-links" id="pubLinks"></div>
     <p class="foot">登入只做身分驗證，資料來自服事排班試算表。<br>有問題請找全職同工。</p>
   </div>
   <div class="card" id="boardCard" style="display:none; margin-top:14px;">
@@ -196,7 +206,19 @@
 <script>
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxavwu853Lejoco68BOJ1hEiH6MSrXMe2do171i8uUbGtQxDYBrLqk5U07H6Qas96rAWQ/exec';
   var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
-  var LAST_RES = null, ID_TOKEN = null, TAB = 'home', CARE_VIEW = 'member', TEAM_IDX = 0;
+  var LAST_RES = null, ID_TOKEN = null, TAB = 'top', CARE_VIEW = 'member', TEAM_IDX = 0;
+  // 工具與連結（要加連結改這裡即可；inApp=平台內頁面）
+  var QUICK_LINKS = [
+    { name: '借場地', icon: 'ti-door', url: 'venue.html' },
+    { name: '登記新人', icon: 'ti-user-plus', url: 'newcomer.html' }
+  ];
+  var TOOL_LINKS = [
+    { name: '歌詞 PPT 系統', icon: 'ti-presentation', url: 'https://worshiplyrics.onrender.com' },
+    { name: '節拍器疊片', icon: 'ti-music', url: 'https://daudi-w.github.io/metronome-tool/' },
+    { name: '即時問答', icon: 'ti-bulb', url: 'https://church-quiz-26060378.web.app' },
+    { name: '場地申請', icon: 'ti-door', url: 'venue.html' },
+    { name: '新人跟進', icon: 'ti-user-plus', url: 'newcomer.html' }
+  ];
   var WD_TODAY = ['日', '一', '二', '三', '四', '五', '六'];
 
   function initGoogleLogin() {
@@ -207,6 +229,13 @@
   }
   window.addEventListener('load', initGoogleLogin);
   window.addEventListener('load', loadBoard);
+  window.addEventListener('load', function () {
+    // 登入頁也放公開工具（外部連結，不需登入）
+    document.getElementById('pubLinks').innerHTML = TOOL_LINKS
+      .filter(function (l) { return l.url.indexOf('http') === 0; })
+      .map(function (l) { return '<a href="' + l.url + '" target="_blank"><i class="ti ' + l.icon + '"></i> ' + l.name + '</a>'; })
+      .join('');
+  });
 
   function boardDate(md) {
     var p = String(md).split('/');
@@ -283,7 +312,7 @@
     var now = new Date();
     document.getElementById('hdrDate').textContent = (now.getMonth() + 1) + '月' + now.getDate() + '日（' + WD_TODAY[now.getDay()] + '）';
     document.getElementById('hdrName').textContent = '平安，' + (res.displayName || res.name || '');
-    var tabs = [{ id: 'home', ic: 'ti-calendar-heart', lb: '服事' }];
+    var tabs = [{ id: 'top', ic: 'ti-home', lb: '首頁' }, { id: 'home', ic: 'ti-calendar-heart', lb: '服事' }];
     if (res.isLeader) tabs.push({ id: 'care', ic: 'ti-users', lb: '牧養' });
     if (res.isTeamLead) tabs.push({ id: 'team', ic: 'ti-clipboard-list', lb: '班表' });
     tabs.push({ id: 'noti', ic: 'ti-bell', lb: '通知' });
@@ -306,7 +335,8 @@
       b.className = (b.getAttribute('data-tab') === TAB) ? 'on' : '';
     });
     var h = '';
-    if (TAB === 'home') h = renderHome(res);
+    if (TAB === 'top') h = renderTop(res);
+    else if (TAB === 'home') h = renderHome(res);
     else if (TAB === 'care') h = renderCare(res);
     else if (TAB === 'team') h = renderTeamTab(res);
     else if (TAB === 'noti') h = renderNoti(res);
@@ -347,6 +377,8 @@
         else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
         else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
         else if (act === 'teamsel') { TEAM_IDX = Number(el.getAttribute('data-i')) || 0; renderTab(); }
+        else if (act === 'gonoti') { TAB = 'noti'; renderTab(); }
+        else if (act === 'open') { window.open(el.getAttribute('data-href'), '_blank'); }
       });
     });
   }
@@ -368,6 +400,36 @@
       h += '<div class="tl-row">' + dateBox(e.date, e.weekday, !!e.hot) +
         '<div class="tl-txt">' + textFn(e) + '</div></div>';
     });
+    return h;
+  }
+
+  function renderTop(res) {
+    var list = res.services || [];
+    var h = '';
+    if (list.length) {
+      var nx = list[0];
+      h += '<div class="hero"><div class="cap">你的下一次服事</div>' +
+        '<div class="big">' + nx.date + '（' + nx.weekday + '）' + (nx.session || '') +
+        (nx.changed ? '<span class="chg">異動</span>' : '') + '</div>' +
+        '<div class="what">' + roleText(nx) + '</div></div>';
+    } else {
+      h += '<div class="hero none">未來目前沒有排到你的服事，好好休息 😊</div>';
+    }
+    if (res.unseenNoti) {
+      h += '<div class="noti-line" data-act="gonoti"><i class="ti ti-bell-ringing"></i> 你有 ' + res.unseenNoti + ' 則新通知，點我查看</div>';
+    }
+    h += '<div class="sec"><div class="sec-h">快速申請</div></div><div class="qa qa-wrap">';
+    h += '<button data-act="leave"><i class="ti ti-calendar-off"></i> 請假</button>';
+    h += '<button data-act="announce"><i class="ti ti-speakerphone"></i> 公告</button>';
+    QUICK_LINKS.forEach(function (l) {
+      h += '<button data-act="open" data-href="' + l.url + '"><i class="ti ' + l.icon + '"></i> ' + l.name + '</button>';
+    });
+    h += '</div>';
+    h += '<div class="sec"><div class="sec-h">工具與連結</div></div><div class="links">';
+    TOOL_LINKS.forEach(function (l) {
+      h += '<div class="lk" data-act="open" data-href="' + l.url + '"><i class="ti ' + l.icon + '"></i>' + l.name + '</div>';
+    });
+    h += '</div>';
     return h;
   }
 
