@@ -870,6 +870,8 @@
   var CLIENT_ID  = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
   var ID_TOKEN   = null;   // Google 簽發的身分票（JWT）
   var USER_EMAIL = null;   // 驗證過的 email
+  var SVC_TOKEN  = null;   // 服事平台 session（同網域共用，免重登）
+  try { SVC_TOKEN = localStorage.getItem('svcToken'); } catch (e) { }
 
   function initGoogleLogin() {
     if (!(window.google && google.accounts && google.accounts.id)) {
@@ -884,18 +886,32 @@
       { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
   }
   window.addEventListener('load', initGoogleLogin);
+  window.addEventListener('load', function () {
+    // 從服事平台帶著 session 過來 → 自動登入，免再按 Google
+    if (!SVC_TOKEN) return;
+    document.getElementById('loginStatus').style.color = '#555';
+    document.getElementById('loginStatus').textContent = '⏳ 以平台帳號自動登入中…';
+    doSession({ action: 'session', sessionToken: SVC_TOKEN }, true);
+  });
 
   function onGoogleLogin(response) {
     ID_TOKEN = response.credential;
     document.getElementById('loginStatus').style.color = '#555';
     document.getElementById('loginStatus').textContent = '⏳ 驗證中…';
+    doSession({ action: 'session', idToken: ID_TOKEN }, false);
+  }
+
+  function doSession(payload, silentFail) {
     fetch(SCRIPT_URL, {
       method: 'POST', redirect: 'follow',
-      body: JSON.stringify({ action: 'session', idToken: ID_TOKEN })
+      body: JSON.stringify(payload)
     })
     .then(function(r) { return r.json(); })
     .then(function(res) {
-      if (!res.success) { showLoginError(res.message || '登入失敗,請重試'); return; }
+      if (!res.success) {
+        if (silentFail) { SVC_TOKEN = null; document.getElementById('loginStatus').textContent = '請用 Google 登入'; return; }
+        showLoginError(res.message || '登入失敗,請重試'); return;
+      }
       USER_EMAIL = res.email;
       emailVerified = !!res.allowed;
       document.getElementById('emailInput').value = res.email;
@@ -911,7 +927,10 @@
         '已登入：' + (res.name ? res.name + '（' + res.email + '）' : res.email);
       loadAndRenderCalendar();  // 登入後才載入借用情形
     })
-    .catch(function() { showLoginError('連線失敗,請稍後再試'); });
+    .catch(function() {
+      if (silentFail) { document.getElementById('loginStatus').textContent = '請用 Google 登入'; return; }
+      showLoginError('連線失敗,請稍後再試');
+    });
   }
 
   function showLoginError(msg) {
@@ -1057,7 +1076,7 @@
     var people  = document.getElementById('people').value;
     var email   = USER_EMAIL;  // 用 Google 登入驗證過的 email
 
-    if (!ID_TOKEN || !email) { requireRelogin(); return; }
+    if ((!ID_TOKEN && !SVC_TOKEN) || !email) { requireRelogin(); return; }
     if (!name)         { showResult(false, '請填寫申請人姓名。'); return; }
     if (!date)         { showResult(false, '請選擇使用日期。'); return; }
     if (!start || !end){ showResult(false, '請填寫使用時間。'); return; }
@@ -1068,6 +1087,7 @@
     var formData = {
       action: 'book',
       idToken: ID_TOKEN,
+      sessionToken: SVC_TOKEN,
       branch: currentBranch,
       name: name, date: date,
       startTime: start, endTime: end,
@@ -1232,14 +1252,14 @@
       return;
     }
 
-    if (!ID_TOKEN) {
+    if (!ID_TOKEN && !SVC_TOKEN) {
       content.innerHTML = '<div class="cal-error">請先登入後再查看借用情形。</div>';
       return;
     }
     fetch(SCRIPT_URL, {
       method: 'POST', redirect: 'follow',
       body: JSON.stringify({
-        action: 'getBookings', idToken: ID_TOKEN,
+        action: 'getBookings', idToken: ID_TOKEN, sessionToken: SVC_TOKEN,
         branch: calBranch,
         start: rangeStart.toISOString(), end: rangeEnd.toISOString()
       })

@@ -1335,13 +1335,15 @@ var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAc05-vf-HfZ0VcaPaFeV
 var CLIENT_ID  = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
 var ID_TOKEN   = null;   // Google 簽發的身分票
 var USER_EMAIL = null;   // 驗證過的 email
+var SVC_TOKEN  = null;   // 服事平台 session（同網域共用，免重登）
+try { SVC_TOKEN = localStorage.getItem('svcToken'); } catch (e) { }
 
 // 核心：把一個後端函式呼叫轉成帶 token 的 fetch，回傳 Promise
 function callBackend(action, args) {
-  if (!ID_TOKEN) { requireRelogin(); return Promise.reject('NO_AUTH'); }
+  if (!ID_TOKEN && !SVC_TOKEN) { requireRelogin(); return Promise.reject('NO_AUTH'); }
   return fetch(SCRIPT_URL, {
     method: 'POST', redirect: 'follow',
-    body: JSON.stringify({ action: action, idToken: ID_TOKEN, args: args || [] })
+    body: JSON.stringify({ action: action, idToken: ID_TOKEN, sessionToken: SVC_TOKEN, args: args || [] })
   })
   .then(function(r){ return r.json(); })
   .then(function(res){
@@ -1384,15 +1386,27 @@ function initGoogleLogin() {
     { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
 }
 window.addEventListener('load', initGoogleLogin);
+window.addEventListener('load', function () {
+  // 從服事平台帶 session 過來 → 自動登入
+  if (!SVC_TOKEN) return;
+  var st = document.getElementById('loginStatus');
+  if (st) { st.style.color = '#555'; st.textContent = '⏳ 以平台帳號自動登入中…'; }
+  bootLogin(true);
+});
 
 function onGoogleLogin(response) {
   ID_TOKEN = response.credential;
   var st = document.getElementById('loginStatus');
   st.style.color = '#555'; st.textContent = '⏳ 驗證中…';
-  // 登入後第一個請求：getMyDataForFrontend（同時驗票 + 取使用者資料）
+  bootLogin(false);
+}
+
+// 登入後第一個請求：getMyDataForFrontend（同時驗票 + 取使用者資料）
+function bootLogin(silentFail) {
   callBackend('getMyDataForFrontend', [])
     .then(function(data){
       if (!data || data.success === false) {
+        if (silentFail) { SVC_TOKEN = null; showPlainStatus('請用 Google 登入'); return; }
         showLoginError((data && data.error) || '登入失敗,請重試');
         return;
       }
@@ -1402,9 +1416,15 @@ function onGoogleLogin(response) {
       bootWithData(data);   // 用已取得的資料直接初始化,免再打一次後端
     })
     .catch(function(err){
+      if (silentFail) { SVC_TOKEN = null; showPlainStatus('請用 Google 登入'); return; }
       if (err === 'NO_AUTH') { showLoginError('登入逾時,請重新登入'); return; }
       showLoginError('連線失敗,請稍後再試');
     });
+}
+
+function showPlainStatus(msg) {
+  var el = document.getElementById('loginStatus');
+  if (el) { el.style.color = '#555'; el.textContent = msg; }
 }
 
 function showLoginError(msg) {
