@@ -238,11 +238,7 @@
   var LAST_RES = null, ID_TOKEN = null, TAB = 'top', CARE_VIEW = 'member', TEAM_IDX = 0;
   var TOKEN = null;
   try { TOKEN = localStorage.getItem('svcToken'); } catch (e) { }
-  // 工具與連結（要加連結改這裡即可；inApp=平台內頁面）
-  var QUICK_LINKS = [
-    { name: '借場地', icon: 'ti-door', url: 'venue.html' },
-    { name: '新人跟進', icon: 'ti-user-plus', url: 'newcomer.html' }
-  ];
+  // 工具連結改由帳號管理表「平台連結」分頁管理（whoami 回傳）；此為未載入時的備援
   var TOOL_LINKS = [
     { name: '歌詞 PPT 系統', icon: 'ti-presentation', url: 'https://worshiplyrics.onrender.com' },
     { name: '節拍器疊片', icon: 'ti-music', url: 'https://daudi-w.github.io/metronome-tool/' },
@@ -339,6 +335,11 @@
         if (!res.ok || !res.slots || !res.slots.length) return;
         if (document.getElementById('app').style.display !== 'none') return; // 已登入就不顯示
         document.getElementById('boardArea').innerHTML = boardHtml(res.slots);
+        if (res.publicLinks && res.publicLinks.length) {
+          document.getElementById('pubLinks').innerHTML = res.publicLinks.map(function (l) {
+            return '<a href="' + l.url + '" target="_blank"><i class="ti ' + (l.icon || 'ti-link') + '"></i> ' + l.name + '</a>';
+          }).join('');
+        }
         document.getElementById('boardCard').style.display = 'block';
       }).catch(function () { });
   }
@@ -392,7 +393,7 @@
     document.getElementById('hdrName').textContent = '平安，' + (res.displayName || res.name || '');
     var tabs = [{ id: 'top', ic: 'ti-home', lb: '首頁' }, { id: 'home', ic: 'ti-calendar-heart', lb: '服事' }];
     if (res.isLeader) tabs.push({ id: 'care', ic: 'ti-users', lb: '牧養' });
-    if (res.isTeamLead) tabs.push({ id: 'team', ic: 'ti-clipboard-list', lb: '班表' });
+    if (res.isTeamLead) tabs.push({ id: 'team', ic: 'ti-clipboard-list', lb: '事工團' });
     tabs.push({ id: 'noti', ic: 'ti-bell', lb: '通知' });
     tabs.push({ id: 'me', ic: 'ti-user-circle', lb: '我的' });
     var tb = document.getElementById('tabbar');
@@ -446,6 +447,9 @@
       } else if (n.action === '新人分發') {
         icon = '<i class="ti ti-user-plus" style="color:var(--tl-600)"></i> 新人分發';
         body = (n.text || '') + ' <span class="go">點我前往新人跟進 →</span>';
+      } else if (n.action === '請假衝突') {
+        icon = '<i class="ti ti-alert-triangle" style="color:var(--red)"></i> 請假衝突';
+        body = n.text || '';
       } else if (n.action === '請假通知') {
         icon = '<i class="ti ti-calendar-off" style="color:#b26a00"></i> 請假';
         body = n.text || '';
@@ -472,6 +476,7 @@
         else if (act === 'announce') openAnnouncement();
         else if (act === 'review') openReview();
         else if (act === 'publish') openPublish();
+        else if (act === 'survey') openSurvey();
         else if (act === 'logout') logout();
         else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
         else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
@@ -509,6 +514,20 @@
 
   function brTag(s) { return (s.branch && s.branch !== '桃園') ? '<span class="br-tag">' + s.branch + '</span>' : ''; }
 
+  // 同一天的服事：先按 堂次+堂區 分組，同一堂的多個角色用頓號併在一起
+  function sessionLinesHtml(items) {
+    var bySes = {}, sorder = [];
+    items.forEach(function (s) {
+      var key = (s.branch || '桃園') + '｜' + (s.session || '');
+      if (!bySes[key]) { bySes[key] = { session: s.session || '', branch: s.branch, roles: [] }; sorder.push(key); }
+      bySes[key].roles.push(roleText(s) + (s.changed ? '<span class="chg">異動</span>' : ''));
+    });
+    return sorder.map(function (k) {
+      var c = bySes[k];
+      return (c.session || '') + ' ' + c.roles.join('、') + brTag(c);
+    }).join('<br>');
+  }
+
   function heroHtml(list) {
     if (!list || !list.length) return '<div class="hero none">未來目前沒有排到你的服事，好好休息 😊</div>';
     var first = boardDate(list[0].date);
@@ -526,19 +545,8 @@
     });
     var lines = order.map(function (d) {
       var g = byDate[d];
-      // 先按 堂次+堂區 分組，同一堂的多個角色用頓號併在一起
-      var bySes = {}, sorder = [];
-      g.items.forEach(function (s) {
-        var key = (s.branch || '桃園') + '｜' + (s.session || '');
-        if (!bySes[key]) { bySes[key] = { session: s.session || '', branch: s.branch, roles: [] }; sorder.push(key); }
-        bySes[key].roles.push(roleText(s) + (s.changed ? '<span class="chg">異動</span>' : ''));
-      });
-      var parts = sorder.map(function (k) {
-        var c = bySes[k];
-        return (c.session || '') + ' ' + c.roles.join('、') + brTag(c);
-      });
       return '<div class="big" style="margin-top:8px;">' + d + '（' + g.weekday + '）</div>' +
-        '<div class="what">' + parts.join('<br>') + '</div>';
+        '<div class="what">' + sessionLinesHtml(g.items) + '</div>';
     }).join('');
     return '<div class="hero"><div class="cap">你最近的服事' + (group.length > 1 ? '（' + group.length + ' 場）' : '') + '</div>' + lines + '</div>';
   }
@@ -549,17 +557,18 @@
     if (res.unseenNoti) {
       h += '<div class="noti-line" data-act="gonoti"><i class="ti ti-bell-ringing"></i> 你有 ' + res.unseenNoti + ' 則新通知，點我查看</div>';
     }
-    h += '<div class="sec"><div class="sec-h">快速申請</div></div><div class="qa qa-wrap">';
+    h += '<div class="sec"><div class="sec-h">快速查看</div></div><div class="qa qa-wrap">';
     h += '<button data-act="board"><i class="ti ti-calendar"></i> 全教會服事表</button>';
-    h += '<button data-act="leave"><i class="ti ti-calendar-off"></i> 請假</button>';
     h += '<button data-act="announce"><i class="ti ti-speakerphone"></i> 公告</button>';
-    QUICK_LINKS.forEach(function (l) {
-      h += '<button data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + l.icon + '"></i> ' + l.name + '</button>';
-    });
+    h += '<button data-act="leave"><i class="ti ti-calendar-off"></i> 請假</button>';
+    h += '<button data-act="survey"><i class="ti ti-checklist"></i> 服事調查</button>';
+    h += '<button data-act="open" data-href="venue.html" data-name="場地申請"><i class="ti ti-door"></i> 場地申請</button>';
+    h += '<button data-act="open" data-href="newcomer.html" data-name="新人跟進"><i class="ti ti-user-plus"></i> 新人跟進</button>';
     h += '</div>';
+    var genLinks = (res.links && res.links.length) ? res.links.filter(function (l) { return !(l.teams && l.teams.length); }) : TOOL_LINKS;
     h += '<div class="sec"><div class="sec-h">工具與連結</div></div><div class="links">';
-    TOOL_LINKS.forEach(function (l) {
-      h += '<div class="lk" data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + l.icon + '"></i>' + l.name + '</div>';
+    genLinks.forEach(function (l) {
+      h += '<div class="lk" data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + (l.icon || 'ti-link') + '"></i>' + l.name + '</div>';
     });
     h += '</div>';
     return h;
@@ -569,11 +578,21 @@
     var list = res.services || [];
     var h = heroHtml(list);
     h += '<div class="qa"><button data-act="leave"><i class="ti ti-calendar-off"></i> 我要請假</button><button data-act="board"><i class="ti ti-calendar"></i> 全教會服事表</button></div>';
-    if (list.length > 1) {
-      h += '<div class="sec"><div class="sec-h">之後的服事</div>' +
-        renderTimeline(list.slice(1), function (e) {
-          return (e.session || '') + '・' + roleText(e) + brTag(e) + (e.changed ? '<span class="chg">異動</span>' : '');
-        }) + '</div>';
+    if (list.length) {
+      var byDate = {}, order = [];
+      list.forEach(function (sv) {
+        if (!byDate[sv.date]) { byDate[sv.date] = { weekday: sv.weekday, items: [] }; order.push(sv.date); }
+        byDate[sv.date].items.push(sv);
+      });
+      h += '<div class="sec"><div class="sec-h">之後的服事</div>';
+      var lastMon = -1;
+      order.forEach(function (d, i) {
+        var m = monthOf(d);
+        if (m !== lastMon) { h += '<div class="wkh">' + m + ' 月</div>'; lastMon = m; }
+        h += '<div class="tl-row">' + dateBox(d, byDate[d].weekday, i === 0) +
+          '<div class="tl-txt">' + sessionLinesHtml(byDate[d].items) + '</div></div>';
+      });
+      h += '</div>';
     }
     return h;
   }
@@ -619,13 +638,14 @@
       if (!hideHdr) h += '<div class="grp-h"><i class="ti ti-map-pin"></i> ' + g + '（' + groups[g].length + '）</div>';
       groups[g].forEach(function (m) {
         var label = '<span class="nm">' + m.displayName + '</span>' + (m.shepherdRole ? '<span class="rl">' + m.shepherdRole + '</span>' : '');
+        var freqLine = m.freq ? '<div class="hint-s" style="margin-top:2px">服事頻率：' + m.freq + '</div>' : '';
         if (m.services && m.services.length) {
           var chips = m.services.map(function (s) {
             return '<span class="chip">' + s.date + ' ' + (s.session || '') + ' ' + roleText(s) + '</span>';
           }).join('');
-          h += '<div class="mbr">' + label + '<div class="chips">' + chips + '</div></div>';
+          h += '<div class="mbr">' + label + freqLine + '<div class="chips">' + chips + '</div></div>';
         } else {
-          h += '<div class="mbr">' + label + ' <span class="none">未來無排班</span></div>';
+          h += '<div class="mbr">' + label + ' <span class="none">未來無排班</span>' + freqLine + '</div>';
         }
       });
     });
@@ -647,23 +667,27 @@
     }
     (all.length ? [all[TEAM_IDX]] : []).forEach(function (tl) {
       var sched = tl.schedule || [];
-      var gaps = 0;
-      sched.forEach(function (d) { d.slots.forEach(function (s) { if (s.empty) gaps++; }); });
+      var lvCount = 0;
+      sched.forEach(function (d) { d.slots.forEach(function (s) { if (s.leave && s.leave.length) lvCount += s.leave.length; }); });
       h += '<div class="panel"><div class="ph"><i class="ti ti-tool"></i> ' + (tl.teamName || '') + '</div>' +
-        '<div class="ps">未來 ' + sched.length + ' 個時段　' +
-        (gaps ? '<span class="gap-badge">缺 ' + gaps + ' 個崗位</span>' : '<span class="ok-badge">皆有人</span>') + '</div>';
+        '<div class="ps">未來 ' + sched.length + ' 個時段' +
+        (lvCount ? '　<span class="gap-badge"><i class="ti ti-alert-triangle"></i> 已排班但請假 ' + lvCount + ' 人次，請到試算表調整</span>' : '') + '</div>';
       var lastMon = -1;
       sched.forEach(function (d) {
         var m = monthOf(d.date);
         if (m !== lastMon) { h += '<div class="wkh">' + m + ' 月</div>'; lastMon = m; }
         var lines = '';
         d.slots.forEach(function (s) {
+          function nm(n) {
+            return (s.leave && s.leave.indexOf(n) !== -1)
+              ? '<span style="color:var(--red);font-weight:700">' + n + '<i class="ti ti-alert-triangle"></i>請假</span>' : n;
+          }
           var content;
           if (s.empty) content = '<span class="gap-badge">缺人</span>';
           else if (/主責|主領/.test(s.label) && s.names.length) {
             var lead = s.names[0], rest = s.names.slice(1);
-            content = '<span class="lead-tag">主責</span>' + lead + (rest.length ? '　' + rest.join('、') : '');
-          } else content = s.names.join('、');
+            content = '<span class="lead-tag">主責</span>' + nm(lead) + (rest.length ? '　' + rest.map(nm).join('、') : '');
+          } else content = s.names.map(nm).join('、');
           lines += '<div class="slot-line"><span class="lb">' + s.label + '</span>' + content + '</div>';
         });
         h += '<div class="tl-row">' + dateBox(d.date, d.weekday, false) +
@@ -682,9 +706,17 @@
       '<div><div class="nm">' + (res.name || '') + '</div><div class="em">' + (res.email || '') + '</div></div></div>';
     h += '<div class="kv"><span class="k">區 / 小組</span><span class="v">' + (res.zone || '—') + (res.group ? ' / ' + res.group : '') + '</span></div>';
     h += '<div class="kv"><span class="k">牧養身份</span><span class="v">' + (res.shepherdRole || '—') + '</span></div>';
-    h += '<div class="kv"><span class="k">事工團</span><span class="v">' + (res.team || '—') + (res.teamRole ? '（' + res.teamRole + '）' : '') + '</span></div>';
-    h += '<div class="kv"><span class="k">可服事崗位</span><span class="v">' + (res.skills || '—') + '</span></div>';
+    var teams = (res.myTeams && res.myTeams.length) ? res.myTeams.join('、') : (res.team || '—');
+    h += '<div class="kv"><span class="k">事工團</span><span class="v">' + teams + (res.teamRole ? '（' + res.teamRole + '）' : '') + '</span></div>';
     h += '</div>';
+    var tLinks = (res.links || []).filter(function (l) { return l.teams && l.teams.length; });
+    if (tLinks.length) {
+      h += '<div class="sec"><div class="sec-h">我的事工團連結</div></div><div class="links">';
+      tLinks.forEach(function (l) {
+        h += '<div class="lk" data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + (l.icon || 'ti-link') + '"></i>' + l.name + '</div>';
+      });
+      h += '</div>';
+    }
     if (res.isAdmin) {
       var ps = res.publishState || [];
       var psLine = ps.map(function (b) {
@@ -750,6 +782,14 @@
         '<div class="hint-s">核准後重新登入即可使用，請耐心等候。</div>' +
         '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
+  }
+
+  function openSurvey() {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    p.querySelector('.pk-body').innerHTML =
+      '<div class="pk-h"><i class="ti ti-checklist"></i> 下一季服事調查</div>' +
+      '<div class="hint-s">即將上線：開放時可在這裡勾選下一季「不行／可以」的日期、設定各事工團的服事頻率，截止後結果直接匯入排班系統。</div>' +
+      '<div class="pk-btns"><button onclick="closePicker()">知道了</button></div>';
   }
 
   /* ===== 發布服事表 ===== */
@@ -867,6 +907,10 @@
       var hint = res.proxy
         ? '已幫「' + res.target + '」登記，系統會通知本人，排班自動避開。'
         : '排班時會自動避開你，系統已通知你的小組長。';
+      if (res.conflicts && res.conflicts.length) {
+        hint += '<br><span style="color:var(--red);font-weight:700"><i class="ti ti-alert-triangle"></i> 注意：這些日期已被排班：' +
+          res.conflicts.join('；') + '。系統已通知團長調整。</span>';
+      }
       b.innerHTML = '<div class="pk-h">✅ 已登記請假（' + mds.join('、') + '）</div>' +
         '<div class="hint-s">' + hint + '</div>' +
         '<textarea class="draft" readonly>' + res.draft + '</textarea>' +
