@@ -354,8 +354,8 @@
 
   function renderNoti(res) {
     var list = res.notifications || [];
-    var h = '<div class="sec"><div class="sec-h">服事異動通知</div></div>';
-    if (!list.length) return h + '<div class="empty">目前沒有異動通知。服事表有變動時會出現在這裡。</div>';
+    var h = '<div class="sec"><div class="sec-h">通知中心</div></div>';
+    if (!list.length) return h + '<div class="empty">目前沒有通知。服事異動、新人分發、跟進提醒都會出現在這裡。</div>';
     var unseen = res.unseenNoti || 0;
     list.forEach(function (n, i) {
       var icon, body;
