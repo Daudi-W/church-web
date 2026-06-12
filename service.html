@@ -147,6 +147,11 @@
   .lv-form select { padding: 9px; border: 1px solid #cfd8e3; border-radius: 9px; font-size: 16px; }
   .lv-form input { font-size: 16px; }
   .nt .go { color: var(--tl-600); font-size: 13px; font-weight: 700; }
+  .br-tag { display: inline-block; background: #e8f0fe; color: #1a56db; font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 6px; margin-left: 6px; }
+  .embed-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border-bottom: 1px solid var(--line); }
+  .embed-bar button { border: 1px solid var(--tl-200); background: #fff; color: var(--tl-800); border-radius: 9px; padding: 8px 14px; font-size: 15px; cursor: pointer; }
+  .embed-bar .et { font-weight: 700; font-size: 16px; }
+  .embed-bar a { margin-left: auto; font-size: 14px; color: var(--tl-600); text-decoration: none; }
   /* 桌面版：左側導覽 + 加寬內容 */
   @media (min-width: 900px) {
     .wrap { max-width: 860px; padding: 0 24px 40px 150px; }
@@ -214,6 +219,15 @@
 
 <div class="tabbar" id="tabbar" style="display:none"></div>
 
+<div id="embed" style="display:none; position:fixed; inset:0; z-index:60; background:var(--bg); flex-direction:column;">
+  <div class="embed-bar">
+    <button onclick="closeEmbed()">← 返回平台</button>
+    <span class="et" id="embedTitle"></span>
+    <a id="embedExt" href="#" target="_blank">在新視窗開啟 ↗</a>
+  </div>
+  <iframe id="embedFrame" style="flex:1; border:none; width:100%;"></iframe>
+</div>
+
 <div id="picker" class="pk-overlay" style="display:none" onclick="if(event.target===this)closePicker()">
   <div class="pk-panel"><button class="pk-close" onclick="closePicker()">✕</button><div class="pk-body"></div></div>
 </div>
@@ -247,17 +261,24 @@
   window.addEventListener('load', initGoogleLogin);
   window.addEventListener('load', loadBoard);
   window.addEventListener('load', function () {
-    // 有平台 session 就直接登入（30 天免重登）
+    // 有平台 session 就直接登入（30 天免重登）；先用上次快取秒開，背景再刷新
     if (!TOKEN) return;
-    setStatus('⏳ 自動登入中…', false);
+    var usedCache = false;
+    try {
+      var cached = localStorage.getItem('svcWhoami');
+      if (cached) { applyResult(JSON.parse(cached), true); usedCache = true; }
+    } catch (e) { }
+    if (!usedCache) setStatus('⏳ 自動登入中…', false);
     api('whoami').then(function (res) {
       if (!res.ok) {
-        TOKEN = null; try { localStorage.removeItem('svcToken'); } catch (e) { }
+        TOKEN = null;
+        try { localStorage.removeItem('svcToken'); localStorage.removeItem('svcWhoami'); } catch (e) { }
+        if (usedCache) { location.reload(); return; } // 已用快取畫面 → 重載回登入頁
         setStatus('請點上方按鈕，用 Google 登入', false);
         return;
       }
       applyResult(res);
-    }).catch(function () { setStatus('請點上方按鈕，用 Google 登入', false); });
+    }).catch(function () { if (!usedCache) setStatus('請點上方按鈕，用 Google 登入', false); });
   });
   window.addEventListener('load', function () {
     // 登入頁也放公開工具（外部連結，不需登入）
@@ -286,7 +307,7 @@
         var lines = (s.items || []).map(function (it) {
           return '<div class="bd-line"><span class="rl">' + it.role + '</span>' + it.who + '</div>';
         }).join('');
-        return '<div class="bd-slot"><div class="bd-d">' + s.date + '（' + s.weekday + '）' + (s.session || '') +
+        return '<div class="bd-slot"><div class="bd-d">' + s.date + '（' + s.weekday + '）' + (s.session || '') + brTag(s) +
           (s.special ? ' <span class="sp">⟨' + s.special + '⟩</span>' : '') + '</div>' + lines + '</div>';
       }).join('');
     }).join('');
@@ -343,17 +364,23 @@
 
   function logout() {
     try { api('logout'); } catch (e) { }
-    try { localStorage.removeItem('svcToken'); } catch (e) { }
+    try { localStorage.removeItem('svcToken'); localStorage.removeItem('svcWhoami'); } catch (e) { }
     TOKEN = null;
     if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
     setTimeout(function () { location.reload(); }, 300);
   }
 
-  function applyResult(res) {
+  function applyResult(res, fromCache) {
     if (!res.ok) { setStatus('⚠️ ' + (res.error || '驗證失敗'), true); return; }
     if (res.sessionToken) {
       TOKEN = res.sessionToken;
       try { localStorage.setItem('svcToken', TOKEN); } catch (e) { }
+    }
+    if (!fromCache && res.matched) {
+      try {
+        var cc = {}; for (var ck in res) { if (ck !== 'sessionToken') cc[ck] = res[ck]; }
+        localStorage.setItem('svcWhoami', JSON.stringify(cc));
+      } catch (e) { }
     }
     LAST_RES = res;
     if (!res.matched) { renderUnmatched(res); return; }
@@ -411,11 +438,11 @@
     list.forEach(function (n, i) {
       var icon, body;
       if (n.action === '排入') {
-        icon = '<i class="ti ti-circle-check" style="color:var(--tl-600)"></i> 新排入';
-        body = n.date + '（' + n.weekday + '）' + n.session + '・' + n.role;
+        icon = '<i class="ti ti-circle-check" style="color:var(--tl-600)"></i> 新增';
+        body = n.date + ' ' + String(n.session || '').replace(/^第/, '') + ' ' + n.role;
       } else if (n.action === '取消') {
-        icon = '<i class="ti ti-circle-x" style="color:var(--red)"></i> 已取消';
-        body = n.date + '（' + n.weekday + '）' + n.session + '・' + n.role;
+        icon = '<i class="ti ti-circle-x" style="color:var(--red)"></i> 取消';
+        body = n.date + ' ' + String(n.session || '').replace(/^第/, '') + ' ' + n.role;
       } else if (n.action === '新人分發') {
         icon = '<i class="ti ti-user-plus" style="color:var(--tl-600)"></i> 新人分發';
         body = (n.text || '') + ' <span class="go">點我前往新人跟進 →</span>';
@@ -431,7 +458,7 @@
       }
       var clickable = (n.action === '新人分發' || n.action === '新人提醒');
       h += '<div class="nt' + (i < unseen ? ' new' : '') +
-        (clickable ? '" style="cursor:pointer" data-act="open" data-href="newcomer.html' : '') +
+        (clickable ? '" style="cursor:pointer" data-act="open" data-name="新人跟進" data-href="newcomer.html' : '') +
         '"><b>' + icon + '</b>　' + body + '<div class="t">' + n.ts + '</div></div>';
     });
     return h;
@@ -450,7 +477,11 @@
         else if (act === 'teamsel') { TEAM_IDX = Number(el.getAttribute('data-i')) || 0; renderTab(); }
         else if (act === 'gonoti') { TAB = 'noti'; renderTab(); }
         else if (act === 'board') { openChurchBoard(); }
-        else if (act === 'open') { window.open(el.getAttribute('data-href'), '_blank'); }
+        else if (act === 'open') {
+          var href = el.getAttribute('data-href');
+          if (href.indexOf('http') === 0) window.open(href, '_blank');
+          else openEmbed(href, el.getAttribute('data-name') || '');
+        }
       });
     });
   }
@@ -468,25 +499,36 @@
     var h = '', lastMon = -1;
     entries.forEach(function (e) {
       var m = monthOf(e.date);
-      if (m !== lastMon) { h += '<div class="mon">' + m + ' 月</div>'; lastMon = m; }
+      if (m !== lastMon) { h += '<div class="wkh">' + m + ' 月</div>'; lastMon = m; }
       h += '<div class="tl-row">' + dateBox(e.date, e.weekday, !!e.hot) +
         '<div class="tl-txt">' + textFn(e) + '</div></div>';
     });
     return h;
   }
 
+  function brTag(s) { return (s.branch && s.branch !== '桃園') ? '<span class="br-tag">' + s.branch + '</span>' : ''; }
+
+  function heroHtml(list) {
+    if (!list || !list.length) return '<div class="hero none">未來目前沒有排到你的服事，好好休息 😊</div>';
+    var first = boardDate(list[0].date);
+    var off = (first.getDay() - 6 + 7) % 7;
+    var ws = new Date(first); ws.setDate(first.getDate() - off); ws.setHours(0, 0, 0, 0);
+    var we = new Date(ws); we.setDate(ws.getDate() + 7);
+    var group = list.filter(function (s) {
+      var d = boardDate(s.date);
+      return d >= ws && d < we;
+    });
+    var lines = group.map(function (s) {
+      return '<div class="big" style="margin-top:8px;">' + s.date + '（' + s.weekday + '）' + (s.session || '') +
+        brTag(s) + (s.changed ? '<span class="chg">異動</span>' : '') + '</div>' +
+        '<div class="what">' + roleText(s) + '</div>';
+    }).join('');
+    return '<div class="hero"><div class="cap">你最近的服事' + (group.length > 1 ? '（' + group.length + ' 場）' : '') + '</div>' + lines + '</div>';
+  }
+
   function renderTop(res) {
     var list = res.services || [];
-    var h = '';
-    if (list.length) {
-      var nx = list[0];
-      h += '<div class="hero"><div class="cap">你的下一次服事</div>' +
-        '<div class="big">' + nx.date + '（' + nx.weekday + '）' + (nx.session || '') +
-        (nx.changed ? '<span class="chg">異動</span>' : '') + '</div>' +
-        '<div class="what">' + roleText(nx) + '</div></div>';
-    } else {
-      h += '<div class="hero none">未來目前沒有排到你的服事，好好休息 😊</div>';
-    }
+    var h = heroHtml(list);
     if (res.unseenNoti) {
       h += '<div class="noti-line" data-act="gonoti"><i class="ti ti-bell-ringing"></i> 你有 ' + res.unseenNoti + ' 則新通知，點我查看</div>';
     }
@@ -495,12 +537,12 @@
     h += '<button data-act="leave"><i class="ti ti-calendar-off"></i> 請假</button>';
     h += '<button data-act="announce"><i class="ti ti-speakerphone"></i> 公告</button>';
     QUICK_LINKS.forEach(function (l) {
-      h += '<button data-act="open" data-href="' + l.url + '"><i class="ti ' + l.icon + '"></i> ' + l.name + '</button>';
+      h += '<button data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + l.icon + '"></i> ' + l.name + '</button>';
     });
     h += '</div>';
     h += '<div class="sec"><div class="sec-h">工具與連結</div></div><div class="links">';
     TOOL_LINKS.forEach(function (l) {
-      h += '<div class="lk" data-act="open" data-href="' + l.url + '"><i class="ti ' + l.icon + '"></i>' + l.name + '</div>';
+      h += '<div class="lk" data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + l.icon + '"></i>' + l.name + '</div>';
     });
     h += '</div>';
     return h;
@@ -508,21 +550,12 @@
 
   function renderHome(res) {
     var list = res.services || [];
-    var h = '';
-    if (list.length) {
-      var nx = list[0];
-      h += '<div class="hero"><div class="cap">你的下一次服事</div>' +
-        '<div class="big">' + nx.date + '（' + nx.weekday + '）' + (nx.session || '') +
-        (nx.changed ? '<span class="chg">異動</span>' : '') + '</div>' +
-        '<div class="what">' + roleText(nx) + '</div></div>';
-    } else {
-      h += '<div class="hero none">未來目前沒有排到你的服事，好好休息 😊</div>';
-    }
+    var h = heroHtml(list);
     h += '<div class="qa"><button data-act="leave"><i class="ti ti-calendar-off"></i> 我要請假</button><button data-act="board"><i class="ti ti-calendar"></i> 全教會服事表</button></div>';
     if (list.length > 1) {
       h += '<div class="sec"><div class="sec-h">之後的服事</div>' +
         renderTimeline(list.slice(1), function (e) {
-          return (e.session || '') + '・' + roleText(e) + (e.changed ? '<span class="chg">異動</span>' : '');
+          return (e.session || '') + '・' + roleText(e) + brTag(e) + (e.changed ? '<span class="chg">異動</span>' : '');
         }) + '</div>';
     }
     return h;
@@ -552,7 +585,7 @@
       var h2 = '', lastMon = -1;
       order.forEach(function (d) {
         var m = monthOf(d);
-        if (m !== lastMon) { h2 += '<div class="mon">' + m + ' 月</div>'; lastMon = m; }
+        if (m !== lastMon) { h2 += '<div class="wkh">' + m + ' 月</div>'; lastMon = m; }
         h2 += '<div class="tl-row">' + dateBox(d, byDate[d].weekday, false) +
           '<div class="tl-txt">' + byDate[d].lines.join('<br>') + '</div></div>';
       });
@@ -617,7 +650,7 @@
           lines += '<div class="slot-line"><span class="lb">' + s.label + '</span>' + content + '</div>';
         });
         h += '<div class="tl-row">' + dateBox(d.date, d.weekday, false) +
-          '<div class="tl-txt" style="flex:1">' + (d.session || '') +
+          '<div class="tl-txt" style="flex:1">' + (d.session || '') + brTag(d) +
           (d.special ? ' <span class="sp">⟨' + d.special + '⟩</span>' : '') + lines + '</div></div>';
       });
       h += '</div>';
@@ -805,6 +838,16 @@
     btn.textContent = '✅ 已複製';
   }
   function closePicker() { document.getElementById('picker').style.display = 'none'; }
+  function openEmbed(url, title) {
+    document.getElementById('embedTitle').textContent = title || '';
+    document.getElementById('embedExt').href = url;
+    document.getElementById('embedFrame').src = url;
+    document.getElementById('embed').style.display = 'flex';
+  }
+  function closeEmbed() {
+    document.getElementById('embed').style.display = 'none';
+    document.getElementById('embedFrame').src = 'about:blank';
+  }
 </script>
 </body>
 </html>
