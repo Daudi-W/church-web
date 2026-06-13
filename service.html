@@ -302,13 +302,15 @@
       var off = (d.getDay() - 6 + 7) % 7;
       var ws = new Date(d); ws.setDate(d.getDate() - off);
       var key = ws.getMonth() + '-' + ws.getDate();
-      if (!cur || cur.key !== key) { cur = { key: key, slots: [], min: s.date, max: s.date }; groups.push(cur); }
+      if (!cur || cur.key !== key) { cur = { key: key, ws: ws, slots: [], min: s.date, max: s.date }; groups.push(cur); }
       cur.slots.push(s); cur.max = s.date;
     });
-    var TAGS = ['本週', '下週', '第三週'];
-    return groups.map(function (g, i) {
+    var t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    return groups.map(function (g) {
+      var we = new Date(g.ws); we.setDate(g.ws.getDate() + 7);
+      var isThis = (t0 >= g.ws && t0 < we);
       var rng = g.min + (g.max !== g.min ? '–' + g.max : '');
-      var wk = '<div class="wkh">' + (TAGS[i] || '第' + (i + 1) + '週') + ' <span class="rng">' + rng + '</span></div>';
+      var wk = '<div class="wkh">' + (isThis ? '本週 ' : '') + '<span class="rng">' + rng + '</span></div>';
       return wk + g.slots.map(function (s) {
         var lines = (s.items || []).map(function (it) {
           return '<div class="bd-line"><span class="rl">' + it.role + '</span>' + it.who + '</div>';
@@ -319,16 +321,36 @@
     }).join('');
   }
 
+  var BOARD = { slots: [], br: '全部' };
   function openChurchBoard() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
     var b = p.querySelector('.pk-body'); b.innerHTML = '載入全教會服事表…';
-    api('announcement', { weeks: 3 }).then(function (res) {
+    api('announcement', { weeks: 8 }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || ''); return; }
-      b.innerHTML = '<div class="pk-h"><i class="ti ti-calendar"></i> 全教會服事表（未來三週）</div>' +
-        boardHtml(res.slots || []) +
-        '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
+      BOARD = { slots: res.slots || [], br: '全部' };
+      renderBoard();
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
   }
+  function slotBranches(slots) {
+    var brs = []; slots.forEach(function (s) { var x = s.branch || '桃園'; if (brs.indexOf(x) === -1) brs.push(x); });
+    return brs;
+  }
+  function branchTabs(brs, cur, fn) {
+    if (brs.length < 2) return '';
+    return '<div class="toggle">' + ['全部'].concat(brs).map(function (t) {
+      return '<button class="' + (cur === t ? 'on' : '') + '" onclick="' + fn + '(\'' + t + '\')">' + t + '</button>';
+    }).join('') + '</div>';
+  }
+  function renderBoard() {
+    var b = document.querySelector('#picker .pk-body');
+    var brs = slotBranches(BOARD.slots);
+    var filtered = BOARD.slots.filter(function (s) { return BOARD.br === '全部' || (s.branch || '桃園') === BOARD.br; });
+    var h = '<div class="pk-h"><i class="ti ti-calendar"></i> 全教會服事表</div>' + branchTabs(brs, BOARD.br, 'setBoardBr');
+    h += boardHtml(filtered) || '<div class="empty">此堂區未來沒有服事資料。</div>';
+    h += '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
+    b.innerHTML = h;
+  }
+  function setBoardBr(br) { BOARD.br = br; renderBoard(); }
 
   function boardDate(md) {
     var p = String(md).split('/');
@@ -1185,24 +1207,43 @@
   }
 
   /* ===== 公告 ===== */
+  var ANN = { slots: [], br: '全部' };
   function openAnnouncement() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
     var b = p.querySelector('.pk-body'); b.innerHTML = '產生公告中…';
-    api('announcement', { weeks: 1 }).then(function (res) {
+    api('announcement', { weeks: 8 }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || ''); return; }
+      ANN = { slots: res.slots || [], br: '全部' };
+      renderAnnounce();
+    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
+  }
+  function renderAnnounce() {
+    var b = document.querySelector('#picker .pk-body');
+    var brs = slotBranches(ANN.slots);
+    var showBrs = (ANN.br === '全部') ? brs : [ANN.br];
+    var blocks = [];
+    showBrs.forEach(function (br) {
+      var ss = ANN.slots.filter(function (s) { return (s.branch || '桃園') === br; });
+      if (!ss.length) return;
+      var d0 = boardDate(ss[0].date); var end = new Date(d0); end.setDate(d0.getDate() + 7);
+      var wk = ss.filter(function (s) { var d = boardDate(s.date); return d >= d0 && d < end; });
       var lines = [];
-      (res.slots || []).forEach(function (s) {
+      if (showBrs.length > 1) lines.push('【' + br + '】');
+      wk.forEach(function (s) {
         lines.push('📅 ' + s.date + '（' + s.weekday + '）' + s.session + (s.special ? ' [' + s.special + ']' : ''));
         s.items.forEach(function (it) { lines.push('・' + it.role + '：' + it.who); });
         lines.push('');
       });
-      var text = lines.join('\n') || '（未來沒有排班資料）';
-      b.innerHTML = '<div class="pk-h"><i class="ti ti-speakerphone"></i> 未來一週服事公告</div>' +
-        '<div class="hint-s">可直接複製貼到 LINE。</div>' +
-        '<textarea class="draft tall" readonly>' + text + '</textarea>' +
-        '<div class="pk-btns"><button onclick="copyDraft(this)"><i class="ti ti-copy"></i> 複製</button><button onclick="closePicker()">關閉</button></div>';
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
+      blocks.push(lines.join('\n').trim());
+    });
+    var text = blocks.join('\n\n') || '（未來沒有排班資料）';
+    var h = '<div class="pk-h"><i class="ti ti-speakerphone"></i> 服事公告</div>' + branchTabs(brs, ANN.br, 'setAnnBr') +
+      '<div class="hint-s">各堂區最近一週，可直接複製貼到 LINE。</div>' +
+      '<textarea class="draft tall" readonly>' + text + '</textarea>' +
+      '<div class="pk-btns"><button onclick="copyDraft(this)"><i class="ti ti-copy"></i> 複製</button><button onclick="closePicker()">關閉</button></div>';
+    b.innerHTML = h;
   }
+  function setAnnBr(br) { ANN.br = br; renderAnnounce(); }
 
   function copyDraft(btn) {
     var ta = document.querySelector('#picker .draft'); if (!ta) return;
