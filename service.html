@@ -766,7 +766,9 @@
     setStatus('✅ 登入成功', false);
     var u = document.getElementById('uArea');
     var h = '';
-    if (res.applied && res.applyStatus === '待審') {
+    if (res.disabled) {
+      h = '<div class="ap-card">🚫 <b>帳號已停用</b><br><span class="hint-s">' + (res.note || '請聯繫教會同工。') + '</span></div>';
+    } else if (res.applied && res.applyStatus === '待審') {
       h = '<div class="ap-card">⏳ <b>帳號審核中</b><br><span class="hint-s">你的申請已送出，核准後重新登入即可使用。</span></div>';
     } else if (res.applied && res.applyStatus === '婉拒') {
       h = '<div class="ap-card">⚠️ <b>申請未通過</b><br><span class="hint-s">請與全職同工聯繫確認，或重新申請。</span>' +
@@ -1091,6 +1093,7 @@
     var h = '<div class="pk-h"><i class="ti ti-user-check"></i> 核准並設定：' + a.name + '</div>' +
       '<div class="hint-s">' + a.zone + '/' + a.group + '・' + a.email + (a.note ? '（' + a.note + '）' : '') + '</div>' +
       '<div class="lv-form">' +
+      '<label>顯示名稱（服事表上的稱呼，留空＝用全名）<input type="text" id="apvDisp" placeholder="如：沛璟"></label>' +
       '<label>牧養身份 <select id="apvRole">' + roles.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select></label>' +
       '<label>可服事崗位（選填，逗號分隔）<input type="text" id="apvSkills" placeholder="如：幼幼,招待"></label>' +
       '<label>事工團角色 <select id="apvTeamRole"><option>同工</option><option>主責</option><option>團長</option></select></label>' +
@@ -1106,6 +1109,7 @@
     document.querySelectorAll('#picker .apvTeam:checked').forEach(function (c) { teams.push(c.value); });
     var args = {
       row: row, decision: 'approve',
+      displayName: document.getElementById('apvDisp').value.trim(),
       role: document.getElementById('apvRole').value,
       teams: teams,
       teamRole: document.getElementById('apvTeamRole').value,
