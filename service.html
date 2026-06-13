@@ -576,15 +576,19 @@
     h += '<button data-act="announce"><i class="ti ti-speakerphone"></i> 公告</button>';
     h += '<button data-act="leave"><i class="ti ti-calendar-off"></i> 請假</button>';
     h += '<button data-act="survey"><i class="ti ti-checklist"></i> 服事調查' + (res.survey ? '<span class="chg">進行中</span>' : '') + '</button>';
-    h += '<button data-act="open" data-href="venue.html" data-name="場地申請"><i class="ti ti-door"></i> 場地申請</button>';
-    h += '<button data-act="open" data-href="newcomer.html" data-name="新人跟進"><i class="ti ti-user-plus"></i> 新人跟進</button>';
-    h += '</div>';
-    var genLinks = (res.links && res.links.length) ? res.links.filter(function (l) { return !(l.teams && l.teams.length); }) : TOOL_LINKS;
-    h += '<div class="sec"><div class="sec-h">工具與連結</div></div><div class="links">';
-    genLinks.forEach(function (l) {
-      h += '<div class="lk" data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + (l.icon || 'ti-link') + '"></i>' + l.name + '</div>';
+    var allLinks = (res.links && res.links.length) ? res.links : TOOL_LINKS;
+    allLinks.filter(function (l) { return l.pos === '快速查看'; }).forEach(function (l) {
+      h += '<button data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + (l.icon || 'ti-link') + '"></i> ' + l.name + '</button>';
     });
     h += '</div>';
+    var genLinks = allLinks.filter(function (l) { return !l.pos || l.pos === '首頁工具'; });
+    if (genLinks.length) {
+      h += '<div class="sec"><div class="sec-h">工具與連結</div></div><div class="links">';
+      genLinks.forEach(function (l) {
+        h += '<div class="lk" data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + (l.icon || 'ti-link') + '"></i>' + l.name + '</div>';
+      });
+      h += '</div>';
+    }
     return h;
   }
 
@@ -731,9 +735,9 @@
     var teams = (res.myTeams && res.myTeams.length) ? res.myTeams.join('、') : (res.team || '—');
     h += '<div class="kv"><span class="k">事工團</span><span class="v">' + teams + (res.teamRole ? '（' + res.teamRole + '）' : '') + '</span></div>';
     h += '</div>';
-    var tLinks = (res.links || []).filter(function (l) { return l.teams && l.teams.length; });
+    var tLinks = (res.links || []).filter(function (l) { return l.pos === '個人頁'; });
     if (tLinks.length) {
-      h += '<div class="sec"><div class="sec-h">我的事工團連結</div></div><div class="links">';
+      h += '<div class="sec"><div class="sec-h">我的專屬連結</div></div><div class="links">';
       tLinks.forEach(function (l) {
         h += '<div class="lk" data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + (l.icon || 'ti-link') + '"></i>' + l.name + '</div>';
       });
@@ -784,20 +788,21 @@
       '<div class="hint-s">填寫後送出，全職同工核准後重新登入即可使用。</div>' +
       '<div class="lv-form">' +
       '<label>姓名（全名，必填）<input type="text" id="apName" placeholder="如：王小明"></label>' +
-      '<label>區（選填）<input type="text" id="apZone" placeholder="如：沛璟區"></label>' +
-      '<label>小組（選填）<input type="text" id="apGroup" placeholder="如：約書亞小組"></label>' +
+      '<label>區（必填）<select id="apZone"><option value="">請選擇…</option>' +
+      ((LAST_RES && LAST_RES.zones) || []).map(function (z) { return '<option value="' + z + '">' + z + '</option>'; }).join('') +
+      '</select></label>' +
+      '<label>小組（必填）<input type="text" id="apGroup" placeholder="如：約書亞小組"></label>' +
       '<label>備註（選填）<input type="text" id="apNote" placeholder="如：敬拜團鼓手"></label></div>' +
       '<div class="pk-btns"><button onclick="submitApply()">送出申請</button><button onclick="closePicker()">取消</button></div>';
   }
   function submitApply() {
     var name = document.getElementById('apName').value.trim();
+    var zone = document.getElementById('apZone').value.trim();
+    var group = document.getElementById('apGroup').value.trim();
     if (!name) { alert('請填寫姓名（全名）'); return; }
-    var args = {
-      name: name,
-      zone: document.getElementById('apZone').value.trim(),
-      group: document.getElementById('apGroup').value.trim(),
-      note: document.getElementById('apNote').value.trim()
-    };
+    if (!zone) { alert('請選擇所屬區'); return; }
+    if (!group) { alert('請填寫小組'); return; }
+    var args = { name: name, zone: zone, group: group, note: document.getElementById('apNote').value.trim() };
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
     api('apply', args).then(function (res) {
       if (!res.ok) { alert('申請失敗：' + (res.error || '')); openApply(); return; }
@@ -1049,12 +1054,15 @@
   }
 
   /* ===== 審核 ===== */
+  var FOPT = null, APPS = [];
   function openReview() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
     var b = p.querySelector('.pk-body'); b.innerHTML = '讀取待審申請…';
-    api('applications').then(function (res) {
+    Promise.all([api('applications'), FOPT ? Promise.resolve({ ok: true }) : api('formOptions')]).then(function (rr) {
+      var res = rr[0];
+      if (rr[1] && rr[1].ok && rr[1].teams) FOPT = rr[1];
       if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || '無法取得'); return; }
-      var list = res.applications || [];
+      var list = res.applications || []; APPS = list;
       var h = '<div class="pk-h"><i class="ti ti-shield-check"></i> 帳號審核（' + list.length + ' 筆待審）</div>';
       if (!list.length) h += '<div class="hint-s">目前沒有待審的申請。</div>';
       list.forEach(function (a) {
@@ -1062,17 +1070,52 @@
           (a.zone ? '・' + a.zone : '') + (a.group ? '/' + a.group : '') + '<br>' +
           '<span class="hint-s">' + a.email + (a.note ? '・' + a.note : '') + '・' + a.appliedAt + '</span>' +
           '<div class="pk-btns">' +
-          '<button class="rv-ok" data-row="' + a.row + '" data-name="' + a.name + '">✅ 核准</button>' +
+          '<button class="rv-ok" data-row="' + a.row + '">核准並設定角色</button>' +
           '<button class="rv-no" data-row="' + a.row + '" data-name="' + a.name + '">婉拒</button></div></div>';
       });
       b.innerHTML = h;
       b.querySelectorAll('.rv-ok').forEach(function (btn) {
-        btn.addEventListener('click', function () { doReview(btn.getAttribute('data-row'), 'approve', btn.getAttribute('data-name')); });
+        btn.addEventListener('click', function () { openApproveForm(Number(btn.getAttribute('data-row'))); });
       });
       b.querySelectorAll('.rv-no').forEach(function (btn) {
         btn.addEventListener('click', function () { doReview(btn.getAttribute('data-row'), 'reject', btn.getAttribute('data-name')); });
       });
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
+  }
+
+  function openApproveForm(row) {
+    var a = APPS.filter(function (x) { return Number(x.row) === row; })[0] || { name: '', zone: '', group: '' };
+    var b = document.querySelector('#picker .pk-body');
+    var roles = (FOPT && FOPT.roles) || ['一般同工', '小組長', '區長', '區牧', '區督'];
+    var teams = (FOPT && FOPT.teams) || [];
+    var h = '<div class="pk-h"><i class="ti ti-user-check"></i> 核准並設定：' + a.name + '</div>' +
+      '<div class="hint-s">' + a.zone + '/' + a.group + '・' + a.email + (a.note ? '（' + a.note + '）' : '') + '</div>' +
+      '<div class="lv-form">' +
+      '<label>牧養身份 <select id="apvRole">' + roles.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select></label>' +
+      '<label>可服事崗位（選填，逗號分隔）<input type="text" id="apvSkills" placeholder="如：幼幼,招待"></label>' +
+      '<label>事工團角色 <select id="apvTeamRole"><option>同工</option><option>主責</option><option>團長</option></select></label>' +
+      '</div>' +
+      '<div class="sec-h" style="margin-top:6px">所屬事工團（可複選）</div><div class="sv-dates">' +
+      teams.map(function (t) { return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:6px 10px;cursor:pointer"><input type="checkbox" class="apvTeam" value="' + t + '">' + t + '</label>'; }).join('') +
+      '</div>' +
+      '<div class="pk-btns" style="margin-top:12px"><button onclick="submitApprove(' + row + ')">核准</button><button onclick="openReview()">返回</button></div>';
+    b.innerHTML = h;
+  }
+  function submitApprove(row) {
+    var teams = [];
+    document.querySelectorAll('#picker .apvTeam:checked').forEach(function (c) { teams.push(c.value); });
+    var args = {
+      row: row, decision: 'approve',
+      role: document.getElementById('apvRole').value,
+      teams: teams,
+      teamRole: document.getElementById('apvTeamRole').value,
+      skills: document.getElementById('apvSkills').value.trim()
+    };
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '核准設定中…';
+    api('review', args).then(function (res) {
+      if (!res.ok) { alert('核准失敗：' + (res.error || '')); openReview(); return; }
+      openReview();
+    }).catch(function (e) { alert('連線失敗：' + e); });
   }
   function doReview(row, decision, name) {
     if (decision === 'reject' && !confirm('確定婉拒「' + name + '」的申請？')) return;
