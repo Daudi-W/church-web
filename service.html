@@ -574,8 +574,7 @@
     });
     return sorder.map(function (k) {
       var c = bySes[k];
-      var t = sessionTime(c.session);
-      return (c.session || '') + (t ? ' <span class="ses-t">' + t + '</span>' : '') + ' ' + c.roles.join('、') + brTag(c);
+      return (c.session || '') + ' ' + c.roles.join('、') + brTag(c);
     }).join('<br>');
   }
 
