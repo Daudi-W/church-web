@@ -727,8 +727,11 @@
         var lines = '';
         d.slots.forEach(function (s) {
           function nm(n) {
-            return (s.leave && s.leave.indexOf(n) !== -1)
-              ? '<span style="color:var(--red);font-weight:700">' + n + '<i class="ti ti-alert-triangle"></i>請假</span>' : n;
+            if (s.leave && s.leave.indexOf(n) !== -1) {
+              var hp = (s.leaveHelpers && s.leaveHelpers[n]) ? '<span style="color:#b26a00;font-weight:400">（建議代班：' + s.leaveHelpers[n] + '）</span>' : '';
+              return '<span style="color:var(--red);font-weight:700">' + n + '<i class="ti ti-alert-triangle"></i>請假</span>' + hp;
+            }
+            return n;
           }
           var content;
           if (s.empty) content = '<span class="gap-badge">缺人</span>';
@@ -1168,7 +1171,8 @@
       '<div class="pk-h"><i class="ti ti-calendar-off"></i> 我要請假</div>' +
       '<div class="lv-form">' + whoSel + '<div id="lvDates"><label>日期 <input type="date" class="lvDate"></label></div>' +
       '<button type="button" class="add-day" onclick="addLeaveDate()">＋ 再加一天</button>' +
-      '<label>原因（選填）<input type="text" id="lvReason" placeholder="如：出差、家庭因素"></label></div>' +
+      '<label>原因（選填）<input type="text" id="lvReason" placeholder="如：出差、家庭因素"></label>' +
+      '<label>建議代班人（選填，最終由主責決定）<input type="text" id="lvHelper" placeholder="如：已請 XXX 幫忙帶班"></label></div>' +
       '<div class="pk-btns"><button onclick="submitLeave()">送出</button><button onclick="closePicker()">取消</button></div>';
   }
   function addLeaveDate() {
@@ -1187,10 +1191,12 @@
     });
     if (!mds.length) { alert('請先選日期'); return; }
     var reason = document.getElementById('lvReason').value;
+    var helperEl = document.getElementById('lvHelper');
+    var helper = helperEl ? helperEl.value : '';
     var whoEl = document.getElementById('lvWho');
     var forName = whoEl ? whoEl.value : '';
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
-    api('leave', { dates: mds, reason: reason, forName: forName }).then(function (res) {
+    api('leave', { dates: mds, reason: reason, helper: helper, forName: forName }).then(function (res) {
       if (!res.ok) { alert('請假失敗：' + (res.error || '')); openLeave(); return; }
       var hint = res.proxy
         ? '已幫「' + res.target + '」登記，系統會通知本人，排班自動避開。'
