@@ -84,6 +84,8 @@
   .lead-tag { display: inline-block; background: #b26a00; color: #fff; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; }
   .slot-line { font-size: 13px; padding: 3px 0 3px 2px; }
   .slot-line .lb { display: inline-block; min-width: 64px; color: var(--tl-600); font-weight: 700; }
+  .slot-line.bd { padding-left: 10px; }
+  .slot-line.bd .bd-r { min-width: 52px; color: var(--tl-800); }
   .grp-h { margin: 14px 0 4px; font-weight: 700; font-size: 13px; color: #6a4b9e; background: #f3edff; padding: 4px 10px; border-radius: 8px; }
   .mbr { background: #fff; border-radius: 12px; padding: 10px 12px; margin-top: 8px; font-size: 13px; }
   .mbr .nm { font-weight: 700; font-size: 14px; }
@@ -746,6 +748,14 @@
               return '<span style="color:var(--red);font-weight:700">' + n + '<i class="ti ti-alert-triangle"></i>請假</span>' + hp;
             }
             return n;
+          }
+          // 敬拜/樂團列：依崗位分列（一崗位一行，缺人標紅）
+          if (s.breakdown && s.breakdown.length) {
+            s.breakdown.forEach(function (b) {
+              var who = b.name ? nm(b.name) : '<span class="gap-badge">缺人</span>';
+              lines += '<div class="slot-line bd"><span class="lb bd-r">' + b.role + '</span>' + who + '</div>';
+            });
+            return;
           }
           var content;
           if (s.empty) content = '<span class="gap-badge">缺人</span>';
