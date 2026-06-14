@@ -196,6 +196,12 @@
   .draft { width: 100%; min-height: 90px; margin: 8px 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; font-family: inherit; resize: vertical; }
   .draft.tall { min-height: 260px; }
   .hint-s { color: var(--mut); font-size: 13px; line-height: 1.6; }
+  .ses-t { color: var(--tl-600); font-weight: 600; font-size: 0.92em; }
+  .lv-done { text-align: left; }
+  .lv-row { display: flex; gap: 10px; align-items: baseline; padding: 5px 0; font-size: 14px; line-height: 1.6; }
+  .lv-row .lv-k { flex: 0 0 40px; color: var(--mut); font-weight: 700; }
+  .lv-row .lv-v { flex: 1; color: var(--tl-800); }
+  .lv-conf { margin-top: 8px; padding: 8px 10px; background: #fdecec; border-radius: 10px; color: var(--red); font-weight: 700; font-size: 13px; line-height: 1.6; }
   .ap-card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-top: 10px; font-size: 13px; }
   .ap-card .pk-btns { margin-top: 8px; }
 </style>
@@ -550,6 +556,14 @@
 
   function brTag(s) { return (s.branch && s.branch !== '桃園') ? '<span class="br-tag">' + s.branch + '</span>' : ''; }
 
+  // 堂次對應的服事時間
+  function sessionTime(s) {
+    s = String(s || '');
+    if (s.indexOf('第一堂') !== -1) return '18:00–20:00';
+    if (s.indexOf('第二堂') !== -1) return '09:00–11:00';
+    if (s.indexOf('第三堂') !== -1) return '11:00–13:00';
+    return '';
+  }
   // 同一天的服事：先按 堂次+堂區 分組，同一堂的多個角色用頓號併在一起
   function sessionLinesHtml(items) {
     var bySes = {}, sorder = [];
@@ -560,7 +574,8 @@
     });
     return sorder.map(function (k) {
       var c = bySes[k];
-      return (c.session || '') + ' ' + c.roles.join('、') + brTag(c);
+      var t = sessionTime(c.session);
+      return (c.session || '') + (t ? ' <span class="ses-t">' + t + '</span>' : '') + ' ' + c.roles.join('、') + brTag(c);
     }).join('<br>');
   }
 
@@ -1199,16 +1214,19 @@
     api('leave', { dates: mds, reason: reason, helper: helper, forName: forName }).then(function (res) {
       if (!res.ok) { alert('請假失敗：' + (res.error || '')); openLeave(); return; }
       var hint = res.proxy
-        ? '已幫「' + res.target + '」登記，系統會通知本人，排班自動避開。'
+        ? '已幫「' + res.target + '」登記，系統會通知本人，排班時會自動避開。'
         : '排班時會自動避開你，系統已通知你的小組長。';
+      var conf = '';
       if (res.conflicts && res.conflicts.length) {
-        hint += '<br><span style="color:var(--red);font-weight:700"><i class="ti ti-alert-triangle"></i> 注意：這些日期已被排班：' +
-          res.conflicts.join('；') + '。系統已通知團長調整。</span>';
+        conf = '<div class="lv-conf"><i class="ti ti-alert-triangle"></i> 這些日期你已被排班：' +
+          res.conflicts.join('；') + '，系統已通知該團主責調整。</div>';
       }
-      b.innerHTML = '<div class="pk-h">✅ 已登記請假（' + mds.join('、') + '）</div>' +
-        '<div class="hint-s">' + hint + '</div>' +
-        '<textarea class="draft" readonly>' + res.draft + '</textarea>' +
-        '<div class="pk-btns"><button onclick="copyDraft(this)"><i class="ti ti-copy"></i> 複製</button><button onclick="closePicker();refresh()">完成</button></div>';
+      b.innerHTML = '<div class="pk-h"><i class="ti ti-calendar-check"></i> 已登記請假</div>' +
+        '<div class="lv-done">' +
+        '<div class="lv-row"><span class="lv-k">日期</span><span class="lv-v">' + mds.join('、') + '</span></div>' +
+        '<div class="lv-row"><span class="lv-k">說明</span><span class="lv-v">' + hint + '</span></div>' +
+        conf + '</div>' +
+        '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
   }
 
