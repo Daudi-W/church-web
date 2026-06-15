@@ -787,8 +787,12 @@
       '<div><div class="nm">' + (res.name || '') + '</div><div class="em">' + (res.email || '') + '</div></div></div>';
     h += '<div class="kv"><span class="k">區 / 小組</span><span class="v">' + (res.zone || '—') + (res.group ? ' / ' + res.group : '') + '</span></div>';
     h += '<div class="kv"><span class="k">牧養身份</span><span class="v">' + (res.shepherdRole || '—') + '</span></div>';
-    var teams = (res.myTeams && res.myTeams.length) ? res.myTeams.join('、') : (res.team || '—');
-    h += '<div class="kv"><span class="k">事工團</span><span class="v">' + teams + (res.teamRole ? '（' + res.teamRole + '）' : '') + '</span></div>';
+    var teamPairs = (res.teamRolePairs && res.teamRolePairs.length) ? res.teamRolePairs
+      : (res.myTeams || []).map(function (t) { return { team: t, role: '' }; });
+    var teams = teamPairs.length
+      ? teamPairs.map(function (p) { return p.team + (p.role ? '（' + p.role + '）' : ''); }).join('、')
+      : (res.team || '—');
+    h += '<div class="kv"><span class="k">事工團</span><span class="v">' + teams + '</span></div>';
     h += '</div>';
     var tLinks = (res.links || []).filter(function (l) { return l.pos === '個人頁'; });
     if (tLinks.length) {
