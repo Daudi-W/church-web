@@ -790,7 +790,7 @@
     var teamPairs = (res.teamRolePairs && res.teamRolePairs.length) ? res.teamRolePairs
       : (res.myTeams || []).map(function (t) { return { team: t, role: '' }; });
     var teams = teamPairs.length
-      ? teamPairs.map(function (p) { return p.team + (p.role ? '（' + p.role + '）' : ''); }).join('、')
+      ? teamPairs.map(function (p) { return p.team + (p.role && p.role !== '同工' ? '（' + p.role + '）' : ''); }).join('、')
       : (res.team || '—');
     h += '<div class="kv"><span class="k">事工團</span><span class="v">' + teams + '</span></div>';
     h += '</div>';
