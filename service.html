@@ -527,6 +527,7 @@
         else if (act === 'publish') openPublish();
         else if (act === 'survey') openSurvey();
         else if (act === 'surveyadmin') openSurveyAdmin();
+        else if (act === 'syncboard') openSyncBoard();
         else if (act === 'logout') logout();
         else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
         else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
@@ -813,6 +814,7 @@
         '<div class="hint-s" style="margin-top:6px;color:var(--mut)">發布前的更動不會通知大家；發布後改「已公告日期」才會跳異動通知。</div>' +
         '<button class="btn" style="margin-top:10px" data-act="publish"><i class="ti ti-speakerphone"></i> 發布服事表</button></div>';
       h += '<button class="btn" data-act="surveyadmin"><i class="ti ti-checklist"></i> 調查管理' + (res.survey ? '（進行中：' + res.survey.name + '）' : '') + '</button>';
+      h += '<button class="btn" data-act="syncboard"><i class="ti ti-table-share"></i> 同步到公告表</button>';
       h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
         (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button>';
     }
@@ -1073,6 +1075,37 @@
       if (!res.ok) { alert('匯入失敗：' + (res.error || '')); return; }
       b.innerHTML = '<div class="pk-h">✅ 已匯入 ' + res.applied + ' 人</div>' +
         '<div class="hint-s">同工資料庫的頻率與不行日期已更新，自動排班會直接採用。</div>' +
+        '<div class="pk-btns"><button onclick="closePicker()">完成</button></div>';
+    }).catch(function (e) { alert('連線失敗：' + e); });
+  }
+
+  /* ===== 同步到公告表 ===== */
+  function openSyncBoard() {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    var b = p.querySelector('.pk-body'); b.innerHTML = '產生預覽中…（約十幾秒）';
+    api('syncBoard', { weeks: 3, apply: false }).then(function (res) {
+      if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || ''); return; }
+      var total = (res.report || []).reduce(function (a, r) { return a + (r.changed || 0); }, 0);
+      var h = '<div class="pk-h"><i class="ti ti-table-share"></i> 同步到公告表（未來三週）</div>' +
+        '<div class="hint-s">把<b>正式排班表</b>的內容更新到公告試算表，共 <b>' + total + '</b> 格會變動。' +
+        '⚠️ 這會用正式表覆蓋公告表未來三週（含把正式表還沒排的格子清空），請確認正式表已排好。</div>';
+      (res.report || []).forEach(function (r) {
+        h += '<div class="ap-card" style="border:1px solid var(--line)"><b>' + r.branch + '</b>　' +
+          (r.error ? '<span class="err">' + r.error + '</span>' : r.changed + ' 格變動') +
+          ((r.samples && r.samples.length) ? '<div class="hint-s" style="margin-top:4px">' + r.samples.map(function (x) { return '・' + x; }).join('<br>') + (r.changed > r.samples.length ? '<br>…還有 ' + (r.changed - r.samples.length) + ' 筆' : '') + '</div>' : '') +
+          '</div>';
+      });
+      h += '<div class="pk-btns">' + (total ? '<button onclick="doSyncBoard()">確認同步 ' + total + ' 格</button>' : '') +
+        '<button onclick="closePicker()">' + (total ? '取消' : '關閉') + '</button></div>';
+      b.innerHTML = h;
+    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
+  }
+  function doSyncBoard() {
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '同步中…（約十幾秒）';
+    api('syncBoard', { weeks: 3, apply: true }).then(function (res) {
+      if (!res.ok) { alert('同步失敗：' + (res.error || '')); return; }
+      var total = (res.report || []).reduce(function (a, r) { return a + (r.changed || 0); }, 0);
+      b.innerHTML = '<div class="pk-h">✅ 已同步</div><div class="hint-s">公告表已更新 ' + total + ' 格，與正式排班表一致。</div>' +
         '<div class="pk-btns"><button onclick="closePicker()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
   }
