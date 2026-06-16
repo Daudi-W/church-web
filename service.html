@@ -261,6 +261,8 @@
   var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
   var LAST_RES = null, ID_TOKEN = null, TAB = 'top', CARE_VIEW = 'member', TEAM_IDX = 0;
   var TOKEN = null;
+  // 全教會服事表：暫時連到大家習慣的公告試算表（之後要切回系統彈窗，把按鈕的 data-act 改回 board 即可）
+  var CHURCH_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1XAtW7ns2r4bc6uq-CqylVYIAY1qVTbdbJvygFUjzvu0/edit?usp=sharing';
   try { TOKEN = localStorage.getItem('svcToken'); } catch (e) { }
   // 工具連結改由帳號管理表「平台連結」分頁管理（whoami 回傳）；此為未載入時的備援
   var TOOL_LINKS = [
@@ -617,7 +619,7 @@
       h += '<div class="noti-line" data-act="gonoti"><i class="ti ti-bell-ringing"></i> 你有 ' + res.unseenNoti + ' 則新通知，點我查看</div>';
     }
     h += '<div class="sec"><div class="sec-h">快速查看</div></div><div class="qa qa-wrap">';
-    h += '<button data-act="board"><i class="ti ti-calendar"></i> 全教會服事表</button>';
+    h += '<button data-act="open" data-href="' + CHURCH_SHEET_URL + '" data-name="全教會服事表"><i class="ti ti-calendar"></i> 全教會服事表</button>';
     h += '<button data-act="announce"><i class="ti ti-speakerphone"></i> 公告</button>';
     h += '<button data-act="leave"><i class="ti ti-calendar-off"></i> 請假</button>';
     h += '<button data-act="survey"><i class="ti ti-checklist"></i> 服事調查' + (res.survey ? '<span class="chg">進行中</span>' : '') + '</button>';
@@ -640,7 +642,7 @@
   function renderHome(res) {
     var list = res.services || [];
     var h = heroHtml(list);
-    h += '<div class="qa"><button data-act="leave"><i class="ti ti-calendar-off"></i> 我要請假</button><button data-act="board"><i class="ti ti-calendar"></i> 全教會服事表</button></div>';
+    h += '<div class="qa"><button data-act="leave"><i class="ti ti-calendar-off"></i> 我要請假</button><button data-act="open" data-href="' + CHURCH_SHEET_URL + '" data-name="全教會服事表"><i class="ti ti-calendar"></i> 全教會服事表</button></div>';
     if (list.length) {
       var byDate = {}, order = [];
       list.forEach(function (sv) {
