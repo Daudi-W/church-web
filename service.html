@@ -399,6 +399,13 @@
     }).then(function (r) { return r.json(); });
   }
 
+  /* 使用者自填內容（姓名/備註等）塞進 innerHTML 前先跳脫，避免 stored-XSS。 */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   function setStatus(msg, isErr) {
     var el = document.getElementById('status');
     el.textContent = msg; el.className = isErr ? 'err' : '';
@@ -674,7 +681,7 @@
       var entries = [];
       members.forEach(function (m) {
         (m.services || []).forEach(function (s) {
-          entries.push({ date: s.date, weekday: s.weekday, session: s.session, txt: m.displayName + '・' + roleText(s) });
+          entries.push({ date: s.date, weekday: s.weekday, session: s.session, txt: esc(m.displayName) + '・' + roleText(s) });
         });
       });
       entries.sort(function (a, b) { return (monthOf(a.date) * 100 + dayOf(a.date)) - (monthOf(b.date) * 100 + dayOf(b.date)); });
@@ -702,7 +709,7 @@
     order2.forEach(function (g) {
       if (!hideHdr) h += '<div class="grp-h"><i class="ti ti-map-pin"></i> ' + g + '（' + groups[g].length + '）</div>';
       groups[g].forEach(function (m) {
-        var label = '<span class="nm">' + m.displayName + '</span>' + (m.shepherdRole ? '<span class="rl">' + m.shepherdRole + '</span>' : '');
+        var label = '<span class="nm">' + esc(m.displayName) + '</span>' + (m.shepherdRole ? '<span class="rl">' + esc(m.shepherdRole) + '</span>' : '');
         var actual = {};
         (m.services || []).forEach(function (sv) { var mo = monthOf(sv.date); actual[mo] = (actual[mo] || 0) + 1; });
         var actualStr = Object.keys(actual).map(function (mo) { return mo + '月' + actual[mo] + '次'; }).join('、');
@@ -1162,12 +1169,12 @@
       var h = '<div class="pk-h"><i class="ti ti-shield-check"></i> 帳號審核（' + list.length + ' 筆待審）</div>';
       if (!list.length) h += '<div class="hint-s">目前沒有待審的申請。</div>';
       list.forEach(function (a) {
-        h += '<div class="ap-card" style="border:1px solid var(--line)"><b>' + a.name + '</b>' +
-          (a.zone ? '・' + a.zone : '') + (a.group ? '/' + a.group : '') + '<br>' +
-          '<span class="hint-s">' + a.email + (a.note ? '・' + a.note : '') + '・' + a.appliedAt + '</span>' +
+        h += '<div class="ap-card" style="border:1px solid var(--line)"><b>' + esc(a.name) + '</b>' +
+          (a.zone ? '・' + esc(a.zone) : '') + (a.group ? '/' + esc(a.group) : '') + '<br>' +
+          '<span class="hint-s">' + esc(a.email) + (a.note ? '・' + esc(a.note) : '') + '・' + esc(a.appliedAt) + '</span>' +
           '<div class="pk-btns">' +
           '<button class="rv-ok" data-row="' + a.row + '">核准並設定角色</button>' +
-          '<button class="rv-no" data-row="' + a.row + '" data-name="' + a.name + '">婉拒</button></div></div>';
+          '<button class="rv-no" data-row="' + a.row + '" data-name="' + esc(a.name) + '">婉拒</button></div></div>';
       });
       b.innerHTML = h;
       b.querySelectorAll('.rv-ok').forEach(function (btn) {
@@ -1184,8 +1191,8 @@
     var b = document.querySelector('#picker .pk-body');
     var roles = (FOPT && FOPT.roles) || ['一般同工', '小組長', '區長', '區牧', '區督'];
     var teams = (FOPT && FOPT.teams) || [];
-    var h = '<div class="pk-h"><i class="ti ti-user-check"></i> 核准並設定：' + a.name + '</div>' +
-      '<div class="hint-s">' + a.zone + '/' + a.group + '・' + a.email + (a.note ? '（' + a.note + '）' : '') + '</div>' +
+    var h = '<div class="pk-h"><i class="ti ti-user-check"></i> 核准並設定：' + esc(a.name) + '</div>' +
+      '<div class="hint-s">' + esc(a.zone) + '/' + esc(a.group) + '・' + esc(a.email) + (a.note ? '（' + esc(a.note) + '）' : '') + '</div>' +
       '<div class="lv-form">' +
       '<label>顯示名稱（服事表上的稱呼，留空＝用全名）<input type="text" id="apvDisp" placeholder="如：沛璟"></label>' +
       '<label>牧養身份 <select id="apvRole">' + roles.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select></label>' +
@@ -1255,7 +1262,7 @@
       whoSel = '<label>幫誰請假 <select id="lvWho">' +
         '<option value="">我自己</option>' +
         res.zoneMembers.map(function (m) {
-          return '<option value="' + m.displayName + '">' + m.displayName + (m.group ? '（' + m.group + '）' : '') + '</option>';
+          return '<option value="' + esc(m.displayName) + '">' + esc(m.displayName) + (m.group ? '（' + esc(m.group) + '）' : '') + '</option>';
         }).join('') + '</select></label>';
     }
     p.querySelector('.pk-body').innerHTML =
