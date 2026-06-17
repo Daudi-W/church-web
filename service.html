@@ -542,6 +542,7 @@
         else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
         else if (act === 'teamsel') { TEAM_IDX = Number(el.getAttribute('data-i')) || 0; renderTab(); }
         else if (act === 'gonoti') { TAB = 'noti'; renderTab(); }
+        else if (act === 'pushon') enablePush();
         else if (act === 'board') { openChurchBoard(); }
         else if (act === 'open') {
           var href = el.getAttribute('data-href');
@@ -630,6 +631,7 @@
     h += '<button data-act="announce"><i class="ti ti-speakerphone"></i> 公告</button>';
     h += '<button data-act="leave"><i class="ti ti-calendar-off"></i> 請假</button>';
     h += '<button data-act="survey"><i class="ti ti-checklist"></i> 服事調查' + (res.survey ? '<span class="chg">進行中</span>' : '') + '</button>';
+    h += '<button data-act="pushon" id="pushBtn"><i class="ti ti-bell"></i> 開啟手機通知</button>';
     var allLinks = (res.links && res.links.length) ? res.links : TOOL_LINKS;
     allLinks.filter(function (l) { return l.pos === '快速查看'; }).forEach(function (l) {
       h += '<button data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + (l.icon || 'ti-link') + '"></i> ' + l.name + '</button>';
@@ -1374,6 +1376,41 @@
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('sw.js').catch(function () {});
     });
+  }
+
+  // ===== 手機推播：訂閱並把門牌存到後端（綁定登入者身分）=====
+  var VAPID_PUBLIC = 'BM8nIgdXT6ab7HUW1-BRiwjPOdOYHvr5GslQxVmCn7dcTxYAybHPLTp_WPUddMmOaUXDeArnYXRHMJ6bpMpJN7E';
+  function urlB64ToUint8(base64) {
+    var pad = '='.repeat((4 - base64.length % 4) % 4);
+    var b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = atob(b64), arr = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+  function enablePush() {
+    var btn = document.getElementById('pushBtn');
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('這個環境不支援推播。iPhone 請先用 Safari「加入主畫面」，再從主畫面圖示打開。');
+      return;
+    }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-bell"></i> 設定中…'; }
+    navigator.serviceWorker.register('sw.js').then(function () { return navigator.serviceWorker.ready; })
+      .then(function (reg) {
+        return Notification.requestPermission().then(function (p) {
+          if (p !== 'granted') throw new Error('你尚未允許通知');
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) });
+        });
+      })
+      .then(function (sub) { return api('savePushSub', { subscription: JSON.parse(JSON.stringify(sub)) }); })
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.error || '儲存失敗');
+        if (btn) { btn.innerHTML = '<i class="ti ti-bell-ringing"></i> 通知已開啟'; }
+        alert('✅ 手機通知已開啟！排班異動、請假等會直接推到這支手機。');
+      })
+      .catch(function (e) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-bell"></i> 開啟手機通知'; }
+        alert('開啟失敗：' + (e && e.message ? e.message : e));
+      });
   }
 </script>
 </body>
