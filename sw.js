@@ -30,3 +30,31 @@ self.addEventListener('fetch', function (e) {
     }).catch(function () { return caches.match(req); })
   );
 });
+
+/* ===== Web Push：背景接收推播並跳通知 ===== */
+self.addEventListener('push', function (event) {
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; }
+  catch (e) { data = { title: '服事平台', body: event.data ? event.data.text() : '' }; }
+  var title = data.title || '服事平台';
+  var options = {
+    body: data.body || '',
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    data: { url: data.url || 'service.html' }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  var url = (event.notification.data && event.notification.data.url) || 'service.html';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (cs) {
+      for (var i = 0; i < cs.length; i++) {
+        if (cs[i].url.indexOf(url) !== -1 && 'focus' in cs[i]) return cs[i].focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
+  );
+});
