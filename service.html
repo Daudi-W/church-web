@@ -1189,25 +1189,47 @@
       '<div class="lv-form">' +
       '<label>顯示名稱（服事表上的稱呼，留空＝用全名）<input type="text" id="apvDisp" placeholder="如：沛璟"></label>' +
       '<label>牧養身份 <select id="apvRole">' + roles.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select></label>' +
-      '<label>可服事崗位（選填，逗號分隔）<input type="text" id="apvSkills" placeholder="如：幼幼,招待"></label>' +
       '<label>事工團角色 <select id="apvTeamRole"><option>同工</option><option>主責</option><option>團長</option></select></label>' +
       '</div>' +
       '<div class="sec-h" style="margin-top:6px">所屬事工團（可複選）</div><div class="sv-dates">' +
-      teams.map(function (t) { return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:6px 10px;cursor:pointer"><input type="checkbox" class="apvTeam" value="' + t + '">' + t + '</label>'; }).join('') +
+      teams.map(function (t) { return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:6px 10px;cursor:pointer"><input type="checkbox" class="apvTeam" value="' + t + '" onchange="renderApvSkills()">' + t + '</label>'; }).join('') +
       '</div>' +
+      '<div class="sec-h" style="margin-top:6px">可服事崗位（依事工團，可複選）</div>' +
+      '<div class="sv-dates" id="apvSkillBox"><span class="hint-s">先勾選上方事工團，再選崗位</span></div>' +
+      '<div class="lv-form" style="margin-top:6px"><label>其他崗位（選填，逗號分隔）<input type="text" id="apvSkillsExtra" placeholder="設定表沒有的特例崗位"></label></div>' +
       '<div class="pk-btns" style="margin-top:12px"><button onclick="submitApprove(' + row + ')">核准</button><button onclick="openReview()">返回</button></div>';
     b.innerHTML = h;
+  }
+  /* 依勾選的事工團（多團取聯集、去重）動態列出崗位多選；重繪時保留已勾選的崗位 */
+  function renderApvSkills() {
+    var box = document.getElementById('apvSkillBox'); if (!box) return;
+    var map = (FOPT && FOPT.teamSkills) || {};
+    var picked = {};
+    box.querySelectorAll('.apvSkill:checked').forEach(function (c) { picked[c.value] = 1; });
+    var skills = [], seen = {};
+    document.querySelectorAll('#picker .apvTeam:checked').forEach(function (c) {
+      (map[c.value] || []).forEach(function (s) { if (s && !seen[s]) { seen[s] = 1; skills.push(s); } });
+    });
+    if (!skills.length) { box.innerHTML = '<span class="hint-s">先勾選上方事工團，再選崗位</span>'; return; }
+    box.innerHTML = skills.map(function (s) {
+      return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:6px 10px;cursor:pointer"><input type="checkbox" class="apvSkill" value="' + s + '"' + (picked[s] ? ' checked' : '') + '>' + s + '</label>';
+    }).join('');
   }
   function submitApprove(row) {
     var teams = [];
     document.querySelectorAll('#picker .apvTeam:checked').forEach(function (c) { teams.push(c.value); });
+    var skillSet = {}, skillArr = [];
+    document.querySelectorAll('#picker .apvSkill:checked').forEach(function (c) { if (!skillSet[c.value]) { skillSet[c.value] = 1; skillArr.push(c.value); } });
+    (document.getElementById('apvSkillsExtra').value || '').split(/[,，、]/).forEach(function (s) {
+      s = s.trim(); if (s && !skillSet[s]) { skillSet[s] = 1; skillArr.push(s); }
+    });
     var args = {
       row: row, decision: 'approve',
       displayName: document.getElementById('apvDisp').value.trim(),
       role: document.getElementById('apvRole').value,
       teams: teams,
       teamRole: document.getElementById('apvTeamRole').value,
-      skills: document.getElementById('apvSkills').value.trim()
+      skills: skillArr.join(',')
     };
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = '核准設定中…';
     api('review', args).then(function (res) {
