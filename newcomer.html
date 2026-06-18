@@ -3,26 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0F6E56">
 <title>新人跟進系統</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --primary: #1a5276;
-  --primary-light: #2e86c1;
+  --primary: #0F6E56;
+  --primary-light: #15876a;
   --green: #22c55e;
   --yellow: #f59e0b;
   --red: #ef4444;
   --gray: #94a3b8;
-  --bg: #f0f4f8;
+  --bg: #f4f6f8;
   --card: #ffffff;
   --radius: 14px;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
   background: var(--bg);
-  color: #1a202c;
+  color: #1f2d3d;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
 }
@@ -59,7 +60,7 @@ button:active { opacity: 0.75; transform: scale(0.97); }
   font-size: 12px;
   font-weight: 600;
 }
-body.large-font #btn-font { background: #fbbf24; color: #1a202c; }
+body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
 
 #screen-loading {
   display: flex;
@@ -191,7 +192,7 @@ body.large-font #btn-font { background: #fbbf24; color: #1a202c; }
   font-size: 13px;
   font-weight: 600;
   background: #f1f5f9;
-  color: #1a5276;
+  color: #0F6E56;
   text-align: center;
 }
 
@@ -409,7 +410,7 @@ body.large-font .district-leader-sub-count { font-size: 14px; }
 
 /* 進入此區按鈕 */
 .btn-enter-district {
-  background: #1a5276;
+  background: #0F6E56;
   color: white;
   border: none;
   border-radius: 8px;
@@ -483,7 +484,7 @@ body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
 .flat-row-name {
   font-size: 15px;
   font-weight: 700;
-  color: #1a202c;
+  color: #1f2d3d;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -537,7 +538,7 @@ body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
   gap: 6px;
   flex-wrap: wrap;
 }
-.flat-row-sub a { color: #1a5276; font-weight: 600; text-decoration: none; }
+.flat-row-sub a { color: #0F6E56; font-weight: 600; text-decoration: none; }
 
 /* ─── 新增:flat 卡片底部最新一週備註預覽 ─── */
 .flat-row-latest {
@@ -627,7 +628,7 @@ body.large-font .btn-assign { font-size: 17px; padding: 14px; }
 .assign-leader-row.selected {
   border-color: var(--primary); background: #eff6ff;
 }
-.assign-leader-row .lname { font-size: 14px; font-weight: 700; color: #1a202c; }
+.assign-leader-row .lname { font-size: 14px; font-weight: 700; color: #1f2d3d; }
 .assign-leader-row .lgroup { font-size: 11px; color: #94a3b8; margin-top: 2px; }
 body.large-font .assign-chip { font-size: 16px; padding: 9px 16px; }
 body.large-font .assign-leader-row .lname { font-size: 18px; }
@@ -760,7 +761,7 @@ body.large-font .flat-row-right {
 }
 .info-item { background: #f8fafc; border-radius: 8px; padding: 8px 10px; }
 .info-item .lbl { font-size: 10px; color: #94a3b8; font-weight: 700; margin-bottom: 2px; }
-.info-item .val { font-size: 13px; font-weight: 600; color: #1a202c; }
+.info-item .val { font-size: 13px; font-weight: 600; color: #1f2d3d; }
 .note-warn  { background: #fff7ed; border-left: 3px solid #f97316; }
 .note-alert { background: #fff1f2; border-left: 3px solid #f43f5e; }
 
@@ -770,7 +771,7 @@ body.large-font .flat-row-right {
   font-size: 13px; font-weight: 600;
   display: flex; align-items: center; justify-content: center; gap: 5px;
 }
-.btn-tel { background: #1a5276; color: white; font-size: 14px; font-weight: 700; }
+.btn-tel { background: #0F6E56; color: white; font-size: 14px; font-weight: 700; }
 
 .btn-report {
   width: 100%; background: var(--primary); color: white;
@@ -792,7 +793,7 @@ body.large-font .flat-row-right {
 .detail-item { background: #f8fafc; border-radius: 8px; padding: 10px 12px; }
 .detail-item.full { grid-column: 1 / -1; }
 .detail-item .lbl { font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 3px; }
-.detail-item .val { font-size: 14px; font-weight: 600; color: #1a202c; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+.detail-item .val { font-size: 14px; font-weight: 600; color: #1f2d3d; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
 .detail-section-title {
   font-size: 11px; font-weight: 700; color: #64748b;
   letter-spacing: 0.5px; margin: 14px 0 6px;
@@ -843,7 +844,7 @@ body.large-font .flat-row-right {
 .detail-week-row[data-st=""]         .detail-week-status { background: #f1f5f9; color: #94a3b8; font-style: italic; }
 .detail-week-note {
   font-size: 14px;
-  color: #1a202c;
+  color: #1f2d3d;
   line-height: 1.55;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -955,7 +956,7 @@ input[type="text"]:focus { outline: none; border-color: var(--primary); }
 .toast {
   position: fixed; bottom: 24px; left: 50%;
   transform: translateX(-50%);
-  background: #1a202c; color: white;
+  background: #1f2d3d; color: white;
   padding: 12px 20px; border-radius: 24px;
   font-size: 14px; font-weight: 600;
   z-index: 999; white-space: nowrap;
@@ -1049,7 +1050,7 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
   #loginOverlay { position: fixed; inset: 0; background: #f0f4f8; z-index: 99999;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center; padding: 24px;
-    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", sans-serif; }
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; }
   #loginOverlay h2 { color:#2c5282; margin:8px 0; font-size:1.5rem; }
   #loginOverlay p { color:#555; margin-bottom:24px; max-width:330px; line-height:1.7; }
   #gBtn { display:flex; justify-content:center; }
@@ -1134,7 +1135,7 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
     <button id="btn-my-members" onclick="switchToMyMembers()" style="margin-top:10px;width:100%;padding:10px;border-radius:10px;background:var(--primary);color:white;font-size:14px;font-weight:700;border:none;cursor:pointer">👤 查看我的新人</button>
   </div>
   <div class="district-stats">
-    <div class="stat-chip"><div class="stat-num" id="d-stat-leaders" style="color:#1a5276">—</div><div class="stat-lbl">小組長</div></div>
+    <div class="stat-chip"><div class="stat-num" id="d-stat-leaders" style="color:#0F6E56">—</div><div class="stat-lbl">小組長</div></div>
     <div class="stat-chip"><div class="stat-num" id="d-stat-total">—</div><div class="stat-lbl">總新人</div></div>
     <div class="stat-chip"><div class="stat-num" id="d-stat-active" style="color:#f59e0b">—</div><div class="stat-lbl">跟進中</div></div>
     <div class="stat-chip"><div class="stat-num" id="d-stat-done" style="color:#22c55e">—</div><div class="stat-lbl">已結案</div></div>
@@ -1186,7 +1187,7 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
     <div class="pastor-summary">
       <h2>📊 全教會統計</h2>
       <div class="pastor-total-stats">
-        <div class="stat-chip"><div class="stat-num" id="p-stat-districts" style="color:#1a5276">—</div><div class="stat-lbl">區數</div></div>
+        <div class="stat-chip"><div class="stat-num" id="p-stat-districts" style="color:#0F6E56">—</div><div class="stat-lbl">區數</div></div>
         <div class="stat-chip"><div class="stat-num" id="p-stat-total">—</div><div class="stat-lbl">總新人</div></div>
         <div class="stat-chip"><div class="stat-num" id="p-stat-active" style="color:#f59e0b">—</div><div class="stat-lbl">跟進中</div></div>
         <div class="stat-chip"><div class="stat-num" id="p-stat-done" style="color:#22c55e">—</div><div class="stat-lbl">已結案</div></div>
