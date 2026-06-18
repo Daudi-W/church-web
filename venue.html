@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0F6E56">
   <title>旌旗教會 - 場地申請系統</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", sans-serif;
-      background: #f0f4f8;
+      font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: #f4f6f8;
       min-height: 100vh;
     }
 
@@ -22,7 +23,7 @@
 
     .header { text-align: center; margin-bottom: 20px; }
     .header .church-name { font-size: 11px; color: #8fa3b1; letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase; }
-    .header h1 { font-size: 22px; color: #1a2940; font-weight: 800; }
+    .header h1 { font-size: 22px; color: #1f2d3d; font-weight: 800; }
     .header .subtitle { font-size: 15px; color: #475569; margin-top: 6px; line-height: 1.6; }
     .divider { height: 1px; background: #edf2f7; margin: 0 0 22px; }
 
@@ -50,7 +51,7 @@
     }
     .branch-tab.active {
       background: #fff;
-      color: #1a2940;
+      color: #1f2d3d;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
 
@@ -72,15 +73,15 @@
       border: 1.5px solid #e2e8f0;
       border-radius: 12px;
       font-size: 16px;
-      color: #1a2940;
+      color: #1f2d3d;
       background: #f8fafc;
       transition: border-color 0.2s, background 0.2s;
       outline: none;
       -webkit-appearance: none;
       min-height: 52px;
     }
-    input:focus, select:focus { border-color: #48bb78; background: #fff; box-shadow: 0 0 0 3px rgba(72,187,120,0.12); }
-    input.input-ok    { border-color: #48bb78; background: #f0fff4; }
+    input:focus, select:focus { border-color: #0F6E56; background: #fff; box-shadow: 0 0 0 3px rgba(15,110,86,0.12); }
+    input.input-ok    { border-color: #0F6E56; background: #E1F5EE; }
     input.input-error { border-color: #fc8181; background: #fff5f5; }
 
     .time-row { display: flex; gap: 8px; align-items: center; }
@@ -114,10 +115,10 @@
     }
     .venue-btn:active { transform: scale(0.96); }
     .venue-btn.selected {
-      border-color: #48bb78;
-      background: #f0fff4;
-      color: #276749;
-      box-shadow: 0 0 0 3px rgba(72,187,120,0.15);
+      border-color: #0F6E56;
+      background: #E1F5EE;
+      color: #085041;
+      box-shadow: 0 0 0 3px rgba(15,110,86,0.15);
     }
     .venue-icon { font-size: 22px; display: block; margin-bottom: 4px; }
 
@@ -127,13 +128,13 @@
       display: none; padding: 8px 12px; border-radius: 8px;
     }
     .email-status.checking { background: #ebf8ff; color: #2b6cb0; display: block; }
-    .email-status.ok       { background: #f0fff4; color: #276749;  display: block; }
+    .email-status.ok       { background: #E1F5EE; color: #085041;  display: block; }
     .email-status.error    { background: #fff5f5; color: #c53030;  display: block; }
 
     .submit-btn {
       width: 100%;
       padding: 18px;
-      background: linear-gradient(135deg, #48bb78, #38a169);
+      background: linear-gradient(135deg, #0F6E56, #085041);
       color: white;
       border: none;
       border-radius: 14px;
@@ -144,7 +145,7 @@
       min-height: 58px;
       margin-top: 8px;
       -webkit-tap-highlight-color: transparent;
-      box-shadow: 0 4px 20px rgba(56,161,105,0.30);
+      box-shadow: 0 4px 20px rgba(15,110,86,0.30);
     }
     .submit-btn:active:not(:disabled) { transform: scale(0.98); opacity: 0.9; }
     .submit-btn:disabled { background: #a0aec0; cursor: not-allowed; box-shadow: none; }
@@ -152,7 +153,7 @@
     .loading { display: none; text-align: center; color: #718096; font-size: 14px; margin-top: 14px; }
     .spinner {
       display: inline-block; width: 16px; height: 16px;
-      border: 2px solid #e2e8f0; border-top-color: #48bb78;
+      border: 2px solid #e2e8f0; border-top-color: #0F6E56;
       border-radius: 50%; animation: spin 0.7s linear infinite;
       vertical-align: middle; margin-right: 6px;
     }
@@ -163,7 +164,7 @@
       border-radius: 14px; font-size: 14px;
       line-height: 1.8; white-space: pre-line; display: none;
     }
-    .result.success { background: #f0fff4; border: 1.5px solid #9ae6b4; color: #22543d; }
+    .result.success { background: #E1F5EE; border: 1.5px solid #9ae6b4; color: #22543d; }
     .result.error   { background: #fff5f5; border: 1.5px solid #feb2b2; color: #742a2a; }
 
     /* ════════════════════════════════════════════
@@ -176,7 +177,7 @@
     }
     .calendar-section h2 {
       font-size: 18px;
-      color: #1a2940;
+      color: #1f2d3d;
       font-weight: 800;
       margin-bottom: 4px;
     }
@@ -208,7 +209,7 @@
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
     }
-    .cal-branch-tab.active { background: #fff; color: #1a2940; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .cal-branch-tab.active { background: #fff; color: #1f2d3d; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
     /* 控制列:年月選擇 + 上下月 + 月/週切換 */
     .cal-controls {
@@ -275,7 +276,7 @@
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
     }
-    .cal-view-toggle button.active { background: #fff; color: #1a2940; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+    .cal-view-toggle button.active { background: #fff; color: #1f2d3d; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
 
     .cal-loading {
       text-align: center;
@@ -320,7 +321,7 @@
     }
     .month-cell.other-month { background: #f8fafc; }
     .month-cell.today .day-num {
-      background: #48bb78;
+      background: #0F6E56;
       color: #fff;
       border-radius: 50%;
       width: 20px; height: 20px;
@@ -342,7 +343,7 @@
     }
     .day-num {
       font-size: 12px;
-      color: #1a2940;
+      color: #1f2d3d;
       font-weight: 600;
       margin-bottom: 2px;
       display: inline-block;
@@ -402,7 +403,7 @@
     }
     .week-header-row .wd-num {
       font-size: 16px;
-      color: #1a2940;
+      color: #1f2d3d;
       display: inline-block;
       width: 26px; height: 26px;
       line-height: 26px;
@@ -410,7 +411,7 @@
       border-radius: 50%;
     }
     .week-header-row .wd-today .wd-num {
-      background: #48bb78;
+      background: #0F6E56;
       color: #fff;
     }
     .week-header-row .wd-holiday { background: #fefce8; color: #a16207; }
@@ -522,7 +523,7 @@
     .day-modal-title {
       font-size: 17px;
       font-weight: 800;
-      color: #1a2940;
+      color: #1f2d3d;
     }
     .day-modal-title .dm-weekday {
       font-size: 13px;
@@ -582,7 +583,7 @@
     .day-event-info { flex: 1; min-width: 0; }
     .day-event-time {
       font-size: 15px;
-      color: #1a2940;
+      color: #1f2d3d;
       font-weight: 700;
     }
     .day-event-venue {
@@ -718,10 +719,10 @@
 <!-- Google Identity Services（使用 Google 登入）-->
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
-  #loginOverlay { position: fixed; inset: 0; background: #f0f4f8; z-index: 9999;
+  #loginOverlay { position: fixed; inset: 0; background: #f4f6f8; z-index: 9999;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center; padding: 24px;
-    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", sans-serif; }
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; }
   #loginOverlay .church-name { color:#2c5282; font-weight:600; letter-spacing:1px; }
   #loginOverlay h2 { color:#2c5282; margin:8px 0; font-size:1.5rem; }
   #loginOverlay p { color:#555; margin-bottom:24px; max-width:330px; line-height:1.7; }
