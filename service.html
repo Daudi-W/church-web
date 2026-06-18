@@ -481,6 +481,7 @@
     else h = renderMe(res);
     document.getElementById('main').innerHTML = h;
     bindTabEvents();
+    if (TAB === 'me') refreshPushBtn();
     window.scrollTo(0, 0);
     if (TAB === 'noti' && res.unseenNoti) {
       api('notiSeen').catch(function () { });
@@ -635,7 +636,6 @@
     h += '<button data-act="announce"><i class="ti ti-speakerphone"></i> 公告</button>';
     h += '<button data-act="leave"><i class="ti ti-calendar-off"></i> 請假</button>';
     h += '<button data-act="survey"><i class="ti ti-checklist"></i> 服事調查' + (res.survey ? '<span class="chg">進行中</span>' : '') + '</button>';
-    h += '<button data-act="pushon" id="pushBtn"><i class="ti ti-bell"></i> 開啟手機通知</button>';
     var allLinks = (res.links && res.links.length) ? res.links : TOOL_LINKS;
     allLinks.filter(function (l) { return l.pos === '快速查看'; }).forEach(function (l) {
       h += '<button data-act="open" data-href="' + l.url + '" data-name="' + l.name + '"><i class="ti ' + (l.icon || 'ti-link') + '"></i> ' + l.name + '</button>';
@@ -833,6 +833,9 @@
       h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
         (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button>';
     }
+    h += '<div class="sec"><div class="sec-h">手機通知</div></div>';
+    h += '<button class="btn" data-act="pushon" id="pushBtn"><i class="ti ti-bell"></i> 開啟手機通知</button>';
+    h += '<div class="hint-s" style="margin:-4px 0 4px;color:var(--mut)">開啟後，排班異動、請假、新人分發等會直接推到這支手機。每支裝置要各自開啟。</div>';
     h += '<button class="btn line" data-act="logout">登出 / 換帳號</button>';
     return h;
   }
@@ -1397,6 +1400,25 @@
     var raw = atob(b64), arr = new Uint8Array(raw.length);
     for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
     return arr;
+  }
+  // 進「我的」頁時偵測這支裝置是否已訂閱推播 → 更新按鈕狀態
+  function refreshPushBtn() {
+    var btn = document.getElementById('pushBtn');
+    if (!btn) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-bell-off"></i> 此裝置不支援推播';
+      return;
+    }
+    navigator.serviceWorker.getRegistration().then(function (reg) {
+      if (!reg) return; // 還沒註冊過 → 維持「開啟手機通知」
+      return reg.pushManager.getSubscription().then(function (sub) {
+        if (sub && Notification.permission === 'granted') {
+          btn.disabled = true;
+          btn.innerHTML = '<i class="ti ti-bell-ringing"></i> 通知已開啟（這支手機）';
+        }
+      });
+    }).catch(function () { });
   }
   function enablePush() {
     var btn = document.getElementById('pushBtn');
