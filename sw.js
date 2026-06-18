@@ -52,9 +52,14 @@ self.addEventListener('notificationclick', function (event) {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (cs) {
       for (var i = 0; i < cs.length; i++) {
-        if (cs[i].url.indexOf(url) !== -1 && 'focus' in cs[i]) return cs[i].focus();
+        if (cs[i].url.indexOf('service.html') !== -1 && 'focus' in cs[i]) {
+          cs[i].postMessage({ type: 'refresh' }); // 已開著的視窗 → 叫它抓最新
+          return cs[i].focus();
+        }
       }
-      if (self.clients.openWindow) return self.clients.openWindow(url);
+      // 新開視窗 → 帶 n=1，前端會略過舊快取、直接抓最新
+      var open = url + (url.indexOf('?') > -1 ? '&' : '?') + 'n=1';
+      if (self.clients.openWindow) return self.clients.openWindow(open);
     })
   );
 });

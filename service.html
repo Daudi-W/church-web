@@ -285,13 +285,17 @@
   window.addEventListener('load', function () {
     // 有平台 session 就直接登入（30 天免重登）；先用上次快取秒開，背景再刷新
     if (!TOKEN) return;
+    // 從推播通知點進來（?n=1）→ 略過舊快取畫面，直接抓最新並要後端清快取
+    var fromNoti = /[?&]n=1/.test(location.search);
     var usedCache = false;
-    try {
-      var cached = localStorage.getItem('svcWhoami');
-      if (cached) { applyResult(JSON.parse(cached), true); usedCache = true; }
-    } catch (e) { }
-    if (!usedCache) setStatus('⏳ 自動登入中…', false);
-    api('whoami').then(function (res) {
+    if (!fromNoti) {
+      try {
+        var cached = localStorage.getItem('svcWhoami');
+        if (cached) { applyResult(JSON.parse(cached), true); usedCache = true; }
+      } catch (e) { }
+    }
+    if (!usedCache) setStatus(fromNoti ? '🔄 載入最新資料…' : '⏳ 自動登入中…', false);
+    api('whoami', fromNoti ? { fresh: true } : {}).then(function (res) {
       if (!res.ok) {
         TOKEN = null;
         try { localStorage.removeItem('svcToken'); localStorage.removeItem('svcWhoami'); } catch (e) { }
@@ -1375,6 +1379,13 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+    // 已開著的 App 被通知喚醒 → 抓最新重繪
+    navigator.serviceWorker.addEventListener('message', function (e) {
+      if (e.data && e.data.type === 'refresh' && TOKEN) {
+        setStatus('🔄 更新中…', false);
+        api('whoami', { fresh: true }).then(function (res) { if (res.ok) applyResult(res); });
+      }
     });
   }
 
