@@ -123,9 +123,15 @@
   .tabbar button { flex: 1; border: none; background: none; cursor: pointer; font-size: 11px; color: var(--hint); padding: 4px 0; position: relative; }
   .nbadge { position: absolute; top: 0; left: 55%; background: #e24b4a; color: #fff; border-radius: 999px; font-size: 10px; font-weight: 700; padding: 1px 5px; line-height: 1.3; }
   .chg { display: inline-block; background: #fdf0dc; color: #b26a00; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 6px; margin-left: 6px; }
-  .nt { background: #fff; border-radius: 12px; padding: 10px 12px; margin-top: 8px; font-size: 13px; }
+  .nt { position: relative; background: #fff; border-radius: 12px; padding: 10px 34px 10px 12px; margin-top: 8px; font-size: 13px; }
   .nt .t { color: var(--hint); font-size: 11px; margin-top: 2px; }
   .nt.new { border-left: 3px solid var(--tl-600); border-radius: 0 12px 12px 0; }
+  .nt-del { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; line-height: 22px; padding: 0;
+    border: 0; border-radius: 50%; background: transparent; color: var(--hint); font-size: 18px; cursor: pointer; }
+  .nt-del:hover { background: var(--line); color: var(--red); }
+  .noti-head { display: flex; align-items: center; justify-content: space-between; }
+  .noti-clear { border: 0; background: transparent; color: var(--mut); font-size: 13px; font-weight: 700; cursor: pointer; padding: 2px 4px; }
+  .noti-clear:hover { color: var(--red); }
   .wkh { background: var(--tl-50); color: var(--tl-800); font-weight: 700; font-size: 13px; padding: 6px 10px; border-radius: 8px; margin: 12px 0 2px; }
   .wkh .rng { font-weight: 400; color: var(--tl-600); }
   i.ti { vertical-align: -2px; }
@@ -493,8 +499,10 @@
 
   function renderNoti(res) {
     var list = res.notifications || [];
-    var h = '<div class="sec"><div class="sec-h">通知中心</div></div>';
-    if (!list.length) return h + '<div class="empty">目前沒有通知。服事異動、新人分發、跟進提醒都會出現在這裡。</div>';
+    if (!list.length) return '<div class="sec"><div class="sec-h">通知中心</div></div>' +
+      '<div class="empty">目前沒有通知。服事異動、新人分發、跟進提醒都會出現在這裡。</div>';
+    var h = '<div class="sec"><div class="noti-head"><div class="sec-h">通知中心</div>' +
+      '<button class="noti-clear" data-act="clearnoti"><i class="ti ti-trash"></i> 全部清除</button></div></div>';
     var unseen = res.unseenNoti || 0;
     list.forEach(function (n, i) {
       var icon, body;
@@ -524,17 +532,41 @@
         body = n.text || (n.date ? n.date + '（' + n.weekday + '）' + n.session + '・' + n.role : '');
       }
       var clickable = (n.action === '新人分發' || n.action === '新人提醒');
+      var del = (n.nid ? '<button class="nt-del" data-act="delnoti" data-nid="' + n.nid + '" aria-label="刪除通知">×</button>' : '');
       h += '<div class="nt' + (i < unseen ? ' new' : '') +
         (clickable ? '" style="cursor:pointer" data-act="open" data-name="新人跟進" data-href="newcomer.html' : '') +
-        '"><b>' + icon + '</b>　' + body + '<div class="t">' + n.ts + '</div></div>';
+        '">' + del + '<b>' + icon + '</b>　' + body + '<div class="t">' + n.ts + '</div></div>';
     });
     return h;
   }
 
+  function deleteNoti(nid) {
+    if (!nid) return;
+    var list = LAST_RES.notifications || [];
+    LAST_RES.notifications = list.filter(function (n) { return n.nid !== nid; }); // 樂觀移除
+    renderTab();
+    api('deleteNoti', { nid: nid }).catch(function (e) {
+      alert('刪除失敗：' + (e && e.message ? e.message : e));
+      refresh(); // 還原成伺服器最新狀態
+    });
+  }
+  function clearNoti() {
+    if (!(LAST_RES.notifications || []).length) return;
+    if (!confirm('確定要清除你的全部通知嗎？')) return;
+    LAST_RES.notifications = [];
+    renderTab();
+    api('clearNoti').catch(function (e) {
+      alert('清除失敗：' + (e && e.message ? e.message : e));
+      refresh();
+    });
+  }
+
   function bindTabEvents() {
     document.querySelectorAll('[data-act]').forEach(function (el) {
-      el.addEventListener('click', function () {
+      el.addEventListener('click', function (ev) {
         var act = el.getAttribute('data-act');
+        if (act === 'delnoti') { ev.stopPropagation(); deleteNoti(Number(el.getAttribute('data-nid'))); return; }
+        else if (act === 'clearnoti') { clearNoti(); return; }
         if (act === 'leave') openLeave();
         else if (act === 'announce') openAnnouncement();
         else if (act === 'review') openReview();
