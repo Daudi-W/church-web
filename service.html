@@ -1466,8 +1466,11 @@
       if (!reg) return; // 還沒註冊過 → 維持「開啟手機通知」
       return reg.pushManager.getSubscription().then(function (sub) {
         if (sub && Notification.permission === 'granted') {
-          btn.disabled = true;
-          btn.innerHTML = '<i class="ti ti-bell-ringing"></i> 通知已開啟（這支手機）';
+          // 自我修復：把本地訂閱重新存回後端（後端依 endpoint 去重，重存無害）。
+          // 解決「後端門牌被 reimport 洗掉、本地仍有訂閱→按鈕顯示已開啟卻收不到」的誤判。
+          api('savePushSub', { subscription: JSON.parse(JSON.stringify(sub)) }).catch(function () { });
+          // 按鈕保持可點＝手動重新同步的後路（不 disable）
+          btn.innerHTML = '<i class="ti ti-bell-ringing"></i> 通知已開啟（點可重新同步）';
         }
       });
     }).catch(function () { });
