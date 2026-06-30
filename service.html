@@ -48,10 +48,14 @@
   .err { color: var(--red); }
   .foot { margin-top: 18px; font-size: 12px; color: var(--hint); line-height: 1.7; }
   /* 主畫面 */
-  .hdr { padding: 22px 2px 6px; }
+  .hdr { padding: 22px 2px 6px; position: relative; }
   .hdr .d { font-size: 13px; color: var(--tl-600); font-weight: 700; }
   .hdr h1 { font-size: 22px; margin: 2px 0 0; }
   .hdr .badge { float: right; margin-top: 4px; }
+  .hdr .rfs { position: absolute; top: 20px; right: 2px; border: 1px solid var(--bd); background: #fff; color: var(--tl-600); border-radius: 999px; padding: 7px 13px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .hdr .rfs:active { background: var(--tl-50, #e6f3ef); }
+  .hdr .rfs.spin i { animation: rfspin .7s linear infinite; }
+  @keyframes rfspin { to { transform: rotate(360deg); } }
   .hero {
     background: var(--tl-50); border-radius: 14px; padding: 16px; margin-top: 14px;
   }
@@ -241,6 +245,7 @@
 
 <div class="wrap" id="app" style="display:none">
   <div class="hdr">
+    <button class="rfs" id="rfsBtn" onclick="manualRefresh()"><i class="ti ti-refresh"></i> 重新整理</button>
     <div class="d" id="hdrDate"></div>
     <h1 id="hdrName"></h1>
   </div>
@@ -427,6 +432,16 @@
     api('whoami').then(applyResult).catch(function () { setStatus('⚠️ 連線失敗，請稍後再試', true); });
   }
   function refresh() { api('whoami').then(applyResult).catch(function () { }); }
+  // 手動重新整理：送 fresh→後端清班表/同工快取重讀試算表，保證拿到剛改完的最新資料（解決後台改完前端慢同步）
+  function manualRefresh() {
+    var btn = document.getElementById('rfsBtn');
+    if (btn) { btn.classList.add('spin'); btn.disabled = true; }
+    api('whoami', { fresh: true }).then(function (res) {
+      if (res.ok) applyResult(res);
+    }).catch(function () { }).then(function () {
+      if (btn) { btn.classList.remove('spin'); btn.disabled = false; }
+    });
+  }
 
   function logout() {
     try { api('logout'); } catch (e) { }
@@ -487,7 +502,7 @@
     else h = renderMe(res);
     document.getElementById('main').innerHTML = h;
     bindTabEvents();
-    if (TAB === 'me') refreshPushBtn();
+    if (TAB === 'noti') refreshPushBtn();
     window.scrollTo(0, 0);
     if (TAB === 'noti' && res.unseenNoti) {
       api('notiSeen').catch(function () { });
@@ -497,11 +512,16 @@
     }
   }
 
+  function pushBlock() {
+    return '<div class="sec"><div class="sec-h">手機通知</div></div>' +
+      '<button class="btn" data-act="pushon" id="pushBtn"><i class="ti ti-bell"></i> 開啟手機通知</button>' +
+      '<div class="hint-s" style="margin:-4px 0 10px;color:var(--mut)">開啟後，服事提醒、排班異動、請假、新人分發等會直接推到這支手機。每支裝置要各自開啟。</div>';
+  }
   function renderNoti(res) {
     var list = res.notifications || [];
-    if (!list.length) return '<div class="sec"><div class="sec-h">通知中心</div></div>' +
-      '<div class="empty">目前沒有通知。服事異動、新人分發、跟進提醒都會出現在這裡。</div>';
-    var h = '<div class="sec"><div class="noti-head"><div class="sec-h">通知中心</div>' +
+    if (!list.length) return pushBlock() + '<div class="sec"><div class="sec-h">通知中心</div></div>' +
+      '<div class="empty">目前沒有通知。服事提醒、排班異動、新人分發、跟進提醒都會出現在這裡。</div>';
+    var h = pushBlock() + '<div class="sec"><div class="noti-head"><div class="sec-h">通知中心</div>' +
       '<button class="noti-clear" data-act="clearnoti"><i class="ti ti-trash"></i> 全部清除</button></div></div>';
     var unseen = res.unseenNoti || 0;
     list.forEach(function (n, i) {
@@ -526,6 +546,9 @@
         body = n.text || '';
       } else if (n.action === '新人提醒') {
         icon = '<i class="ti ti-bell-ringing" style="color:#b26a00"></i> 跟進提醒';
+        body = n.text || '';
+      } else if (n.action === '提醒') {
+        icon = '<i class="ti ti-calendar-due" style="color:var(--tl-600)"></i> 服事提醒';
         body = n.text || '';
       } else {
         icon = '<i class="ti ti-info-circle" style="color:var(--tl-600)"></i> ' + (n.action || '通知');
@@ -865,10 +888,7 @@
       h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
         (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button>';
     }
-    h += '<div class="sec"><div class="sec-h">手機通知</div></div>';
-    h += '<button class="btn" data-act="pushon" id="pushBtn"><i class="ti ti-bell"></i> 開啟手機通知</button>';
-    h += '<div class="hint-s" style="margin:-4px 0 4px;color:var(--mut)">開啟後，排班異動、請假、新人分發等會直接推到這支手機。每支裝置要各自開啟。</div>';
-    h += '<button class="btn line" data-act="logout">登出 / 換帳號</button>';
+    h += '<button class="btn line" data-act="logout" style="margin-top:14px">登出 / 換帳號</button>';
     return h;
   }
 
