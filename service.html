@@ -677,7 +677,13 @@
       return '<div class="big" style="margin-top:8px;">' + d + '（' + g.weekday + '）</div>' +
         '<div class="what">' + sessionLinesHtml(g.items) + '</div>';
     }).join('');
-    return '<div class="hero"><div class="cap">你最近的服事' + (group.length > 1 ? '（' + group.length + ' 場）' : '') + '</div>' + lines + '</div>';
+    // 場數以「不重複的堂」計（日期＋堂區＋堂次），同一堂多崗位只算一場
+    var seenSes = {}, sesCnt = 0;
+    group.forEach(function (s) {
+      var k = s.date + '｜' + (s.branch || '桃園') + '｜' + (s.session || '');
+      if (!seenSes[k]) { seenSes[k] = 1; sesCnt++; }
+    });
+    return '<div class="hero"><div class="cap">你最近的服事' + (sesCnt > 1 ? '（' + sesCnt + ' 場）' : '') + '</div>' + lines + '</div>';
   }
 
   function renderTop(res) {
