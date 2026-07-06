@@ -1457,7 +1457,7 @@
       '<label>標題（必填）<input type="text" id="nwTitle" placeholder="如：下週六服事同工集訓"></label>' +
       '<label>內容<textarea id="nwBody" rows="5" style="padding:9px;border:1px solid #cfd8e3;border-radius:9px;font-size:15px;font-family:inherit;resize:vertical"></textarea></label>' +
       '<label>分類<select id="nwCat"><option>公告</option><option>活動</option><option>提醒</option><option>代禱</option></select></label>' +
-      '<label>下架日（選填，過了自動隱藏）<input type="date" id="nwEnd"></label>' +
+      '<label>下架日（預設 30 天後；沒填也會 30 天後自動下架）<input type="date" id="nwEnd"></label>' +
       '<label>誰看得到<select id="nwWho"><option value="">所有同工</option><option value="領夜同工以上">領夜同工以上</option><option value="小組長以上">小組長以上</option><option value="區長以上">區長以上</option></select></label>' +
       '<label>限定事工團（點選，可多選；都不選＝不限）<div class="sv-opts" id="nwTeamsBox"><span class="hint-s">載入中…</span></div></label>' +
       '<label class="nw-ck"><input type="checkbox" id="nwPin"> 置頂（固定在公告欄最上面）</label>' +
@@ -1471,6 +1471,10 @@
     if (prev.content) document.getElementById('nwBody').value = prev.content;
     selSet('nwCat', prev.cat);
     if (prev.endDate) document.getElementById('nwEnd').value = prev.endDate;
+    else if (!isEdit) { // 新公告：預設 30 天後下架（看得到、可改）
+      var d30 = new Date(Date.now() + 30 * 86400000);
+      document.getElementById('nwEnd').value = d30.getFullYear() + '-' + ('0' + (d30.getMonth() + 1)).slice(-2) + '-' + ('0' + d30.getDate()).slice(-2);
+    }
     selSet('nwWho', prev.reqRole);
     document.getElementById('nwPin').checked = !!prev.pin;
     document.getElementById('nwPub').checked = !!prev.isPublic;
@@ -1525,20 +1529,31 @@
       var h = '<div class="pk-h"><i class="ti ti-speakerphone"></i> 公告管理</div>' +
         '<div class="pk-btns"><button onclick="openNewsPost()"><i class="ti ti-plus"></i> 發布新公告</button></div>';
       if (!NEWS_ADMIN.length) h += '<div class="empty">還沒有任何公告。</div>';
-      NEWS_ADMIN.forEach(function (n, i) {
+      function nCard(n, i) {
         var badge = n.status === '上架中' ? '<span class="ok-badge">上架中</span>' : '<span class="gap-badge">' + esc(n.status) + '</span>';
         var limits = [];
         if (n.teams) limits.push('限 ' + esc(n.teams));
         if (n.reqRole) limits.push(esc(n.reqRole));
         if (n.isPublic) limits.push('公開');
-        h += '<div class="ap-card" style="border:1px solid var(--line)">' +
+        return '<div class="ap-card" style="border:1px solid var(--line)">' +
           '<b>' + esc(n.title) + '</b>　' + badge +
           (n.pin ? ' <i class="ti ti-pin-filled" style="color:var(--tl-600)"></i>' : '') +
           '<div class="hint-s" style="margin-top:2px">' + (n.cat ? esc(n.cat) + '・' : '') + esc(n.ts || '') + (n.by ? '・' + esc(n.by) : '') +
           (limits.length ? '<br>' + limits.join('・') : '') + '</div>' +
           '<div class="pk-btns"><button onclick="editNews(' + i + ')"><i class="ti ti-pencil"></i> 編輯</button>' +
           '<button onclick="toggleNews(' + i + ')">' + (n.enabled ? '下架' : '重新上架') + '</button></div></div>';
+      }
+      // 只攤開「上架中／未生效」；已下架、已過期收進「歷史公告」點開才看
+      var hist = '', histN = 0;
+      NEWS_ADMIN.forEach(function (n, i) {
+        if (n.status === '上架中' || n.status === '未生效') h += nCard(n, i);
+        else { hist += nCard(n, i); histN++; }
       });
+      if (histN) {
+        h += '<button class="btn line" style="margin-top:10px" onclick="var x=document.getElementById(\'nwHist\');x.style.display=x.style.display===\'none\'?\'block\':\'none\'">' +
+          '<i class="ti ti-archive"></i> 歷史公告（' + histN + ' 則）</button><div id="nwHist" style="display:none">' + hist + '</div>';
+      }
+      h += '<div class="hint-s" style="margin-top:10px">沒填下架日的公告 30 天後自動下架；下架／過期超過 60 天會自動搬到「公告欄_歸檔」分頁。</div>';
       h += '<div class="pk-btns"><button onclick="closePicker();manualRefresh()">關閉</button></div>';
       b.innerHTML = h;
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e; });
