@@ -234,6 +234,10 @@
   .nw-ck { flex-direction: row !important; align-items: center; gap: 6px; }
   #nwTeamsBox { flex-wrap: wrap; }
   #nwTeamsBox span { flex: 0 0 auto; padding: 7px 12px; }
+  /* 請假清單（事工團頁） */
+  .lv-act { border: 1px solid var(--tl-600); background: var(--tl-600); color: #fff; border-radius: 8px; padding: 3px 10px; font-size: 12.5px; cursor: pointer; margin: 2px 0 2px 6px; }
+  .lv-act.line { background: #fff; color: var(--tl-800); border-color: var(--tl-200); }
+  .lv-skip { border: none; background: none; color: var(--mut); font-size: 12.5px; cursor: pointer; text-decoration: underline; margin-top: 6px; padding: 0; }
 </style>
 </head>
 <body>
@@ -285,6 +289,7 @@
   var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
   var LAST_RES = null, ID_TOKEN = null, TAB = 'top', CARE_VIEW = 'member', TEAM_IDX = 0;
   var NEWS_LIST = []; // 目前畫面上的公告（首頁或登入頁），openNewsView 依索引取用
+  var LEAVE_LIST = []; // 事工團頁的請假清單（一鍵補入/換別人/不用補 依索引取用）
   var TOKEN = null;
   // 全教會服事表：暫時連到大家習慣的公告試算表（之後要切回系統彈窗，把按鈕的 data-act 改回 board 即可）
   var CHURCH_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1XAtW7ns2r4bc6uq-CqylVYIAY1qVTbdbJvygFUjzvu0/edit?usp=sharing';
@@ -621,6 +626,9 @@
         else if (act === 'survey') openSurvey();
         else if (act === 'surveyadmin') openSurveyAdmin();
         else if (act === 'newsadmin') openNewsAdmin();
+        else if (act === 'lvfix') doLeaveReplace(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
+        else if (act === 'lvpick') openLeavePick(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
+        else if (act === 'lvskip') doLeaveSkip(Number(el.getAttribute('data-e')));
         else if (act === 'syncboard') openSyncBoard();
         else if (act === 'logout') logout();
         else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
@@ -835,6 +843,13 @@
       h += '<div class="qa" style="margin-top:14px"><button data-act="sheet"><i class="ti ti-external-link"></i> 開試算表排班</button></div>' +
         '<div class="empty">排班調整請在試算表進行（找替補、自動排班都在那邊）。</div>';
     }
+    // 請假清單：全部未來請假一覽（衝突可一鍵補入）
+    LEAVE_LIST = (res.leaveBoard && res.leaveBoard.entries) || [];
+    if (LEAVE_LIST.length) {
+      var pend = LEAVE_LIST.filter(function (e) { return !e.status; }).length;
+      h += '<div class="sec"><div class="sec-h">請假清單（' + LEAVE_LIST.length + ' 筆' + (pend ? '，' + pend + ' 筆待處理' : '') + '）</div></div>';
+      LEAVE_LIST.forEach(function (e, i) { h += leaveCardHtml(e, i); });
+    }
     var all = res.teamLeads || [];
     if (TEAM_IDX >= all.length) TEAM_IDX = 0;
     if (all.length > 1) {
@@ -885,6 +900,95 @@
       h += '</div>';
     });
     return h || '<div class="empty">你目前不是任何事工團的主責。</div>';
+  }
+
+  /* ===== 請假清單卡片＋一鍵補入 ===== */
+  function leaveCardHtml(e, i) {
+    var st = '';
+    if (e.status) {
+      st = '<span class="' + (e.status.indexOf('已補人') === 0 ? 'ok-badge' : 'gap-badge') + '">' + esc(e.status) + '</span>';
+    } else if (e.conflicts.length) {
+      st = '<span class="gap-badge"><i class="ti ti-alert-triangle"></i> 已排班</span>';
+    }
+    var lines = '';
+    e.conflicts.forEach(function (cf, j) {
+      lines += '<div class="slot-line"><span class="lb">' + esc(cf.session) + '</span>' + esc(cf.role) +
+        (cf.branch !== '桃園' ? '<span class="br-tag">' + esc(cf.branch) + '</span>' : '');
+      if (!e.status && cf.mine) {
+        if (cf.canFix) {
+          if (e.helper) lines += '<button class="lv-act" data-act="lvfix" data-e="' + i + '" data-c="' + j + '">一鍵補入 ' + esc(e.helper) + '</button>';
+          lines += '<button class="lv-act line" data-act="lvpick" data-e="' + i + '" data-c="' + j + '">換別人</button>';
+        } else {
+          lines += ' <span class="hint-s">（林口請到試算表調整）</span>';
+        }
+      }
+      lines += '</div>';
+    });
+    if (!e.conflicts.length) lines = '<div class="hint-s" style="margin-top:2px">當天沒有已排班，不需處理。</div>';
+    return '<div class="ap-card" style="border:1px solid var(--line)">' +
+      '<b>' + e.date + '（' + e.weekday + '）' + esc(e.name) + '</b>　' + st +
+      (e.reason ? '<div class="hint-s">原因：' + esc(e.reason) + '</div>' : '') +
+      (e.helper ? '<div class="hint-s">建議代班：' + esc(e.helper) + '</div>' : '') +
+      lines +
+      (!e.status && e.conflicts.length ? '<button class="lv-skip" data-act="lvskip" data-e="' + i + '">人力足夠，標記「不用補」</button>' : '') +
+      '</div>';
+  }
+  function doLeaveReplace(ei, ci, toName) {
+    var e = LEAVE_LIST[ei], cf = e && e.conflicts[ci];
+    if (!e || !cf) return;
+    var to = toName || e.helper;
+    if (!to) return;
+    if (!toName && !confirm('把 ' + e.date + '（' + e.weekday + '）' + cf.session + '・' + cf.role + ' 的 ' + e.name + ' 換成 ' + to + '？\n（會自動通知雙方）')) return;
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    var b = p.querySelector('.pk-body'); b.innerHTML = '檢查並補入中…';
+    api('leaveReplace', { lid: e.lid, row: cf.row, col: cf.col, to: to }).then(function (res) {
+      if (!res.ok) {
+        b.innerHTML = '<div class="pk-h">⚠️ 無法補入</div><div class="hint-s">' + esc(res.error || '') + '</div>' +
+          '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
+        return;
+      }
+      b.innerHTML = '<div class="pk-h">✅ 已補入</div>' +
+        '<div class="hint-s">' + res.date + '（' + res.weekday + '）' + esc(res.session) + '・' + esc(res.role) + '：' +
+        esc(res.from) + ' → <b>' + esc(res.to) + '</b><br>已通知 ' + esc(res.to) + '（新增服事）與 ' + esc(res.from) + '（代班已安排），請假單已標「已補人」。</div>' +
+        '<div class="pk-btns"><button onclick="closePicker();manualRefresh()">完成</button></div>';
+    }).catch(function (err) { b.innerHTML = '⚠️ 連線失敗：' + err; });
+  }
+  function openLeavePick(ei, ci) {
+    var e = LEAVE_LIST[ei], cf = e && e.conflicts[ci];
+    if (!e || !cf) return;
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    var b = p.querySelector('.pk-body'); b.innerHTML = '找可代班的人…';
+    api('candidates', { row: cf.row, col: cf.col }).then(function (res) {
+      if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
+      var h = '<div class="pk-h"><i class="ti ti-user-search"></i> 換別人：' + e.date + '（' + e.weekday + '）' + esc(cf.session) + '・' + esc(cf.role) + '</div>' +
+        '<div class="hint-s">以下是通過檢查（技能／當天有空／未撞班）的人選，點名字即補入，取代 ' + esc(e.name) + '。</div>';
+      var any = false;
+      Object.keys(res.candidatesBySkill || {}).forEach(function (sk) {
+        var list = res.candidatesBySkill[sk] || [];
+        if (!list.length) return;
+        any = true;
+        h += '<div class="sec-h" style="margin-top:10px">' + esc(sk) + '</div><div class="sv-opts" style="flex-wrap:wrap">';
+        list.forEach(function (cd) {
+          h += '<span style="flex:0 0 auto;padding:7px 12px" data-nm="' + esc(cd.name) + '">' + esc(cd.name) + (cd.sameDay ? '（同日他堂）' : '') + '</span>';
+        });
+        h += '</div>';
+      });
+      if (!any) h += '<div class="empty">沒有可用的人選，請到試算表處理。</div>';
+      h += '<div class="pk-btns"><button onclick="closePicker()">取消</button></div>';
+      b.innerHTML = h;
+      b.querySelectorAll('span[data-nm]').forEach(function (el) {
+        el.addEventListener('click', function () { doLeaveReplace(ei, ci, el.getAttribute('data-nm')); });
+      });
+    }).catch(function (err) { b.innerHTML = '⚠️ 連線失敗：' + err; });
+  }
+  function doLeaveSkip(ei) {
+    var e = LEAVE_LIST[ei];
+    if (!e) return;
+    if (!confirm(e.date + ' ' + e.name + ' 的請假標記為「不用補」？（清單上會顯示已處理）')) return;
+    api('leaveSkip', { lid: e.lid }).then(function (res) {
+      if (!res.ok) { alert('失敗：' + (res.error || '')); return; }
+      manualRefresh();
+    }).catch(function (err) { alert('連線失敗：' + err); });
   }
 
   function renderMe(res) {
