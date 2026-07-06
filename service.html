@@ -222,6 +222,16 @@
   .lv-conf { margin-top: 8px; padding: 8px 10px; background: #fdecec; border-radius: 10px; color: var(--red); font-weight: 700; font-size: 13px; line-height: 1.6; }
   .ap-card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-top: 10px; font-size: 13px; }
   .ap-card .pk-btns { margin-top: 8px; }
+  /* 公告欄 */
+  .news-card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-top: 10px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .news-card.pin { border-left: 4px solid var(--tl-600); }
+  .news-card .nc-top { display: flex; align-items: center; gap: 6px; }
+  .news-card .nc-cat { flex: none; font-size: 11px; background: #e8f3ef; color: var(--tl-600); border-radius: 6px; padding: 1px 6px; }
+  .news-card .nc-t { font-weight: 700; font-size: 15px; flex: 1; min-width: 0; }
+  .news-card .nc-new { flex: none; font-size: 11px; color: #fff; background: var(--red); border-radius: 6px; padding: 1px 6px; }
+  .news-card .nc-p { color: #555; font-size: 13px; margin-top: 4px; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .news-card .nc-ts { color: var(--mut); font-size: 12px; margin-top: 6px; }
+  .nw-ck { flex-direction: row !important; align-items: center; gap: 6px; }
 </style>
 </head>
 <body>
@@ -233,6 +243,7 @@
     <div id="gBtn"></div>
     <div id="status">請點上方按鈕，用 Google 登入</div>
     <div id="uArea"></div>
+    <div id="pubNews"></div>
     <div class="pub-links" id="pubLinks"></div>
     <p class="foot">登入只做身分驗證，資料來自服事排班試算表。<br>有問題請找全職同工。</p>
   </div>
@@ -271,6 +282,7 @@
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxavwu853Lejoco68BOJ1hEiH6MSrXMe2do171i8uUbGtQxDYBrLqk5U07H6Qas96rAWQ/exec';
   var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
   var LAST_RES = null, ID_TOKEN = null, TAB = 'top', CARE_VIEW = 'member', TEAM_IDX = 0;
+  var NEWS_LIST = []; // 目前畫面上的公告（首頁或登入頁），openNewsView 依索引取用
   var TOKEN = null;
   // 全教會服事表：暫時連到大家習慣的公告試算表（之後要切回系統彈窗，把按鈕的 data-act 改回 board 即可）
   var CHURCH_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1XAtW7ns2r4bc6uq-CqylVYIAY1qVTbdbJvygFUjzvu0/edit?usp=sharing';
@@ -395,8 +407,15 @@
     fetch(SCRIPT_URL + '?board=1', { redirect: 'follow' })
       .then(function (r) { return r.json(); })
       .then(function (res) {
-        if (!res.ok || !res.slots || !res.slots.length) return;
+        if (!res.ok) return;
         if (document.getElementById('app').style.display !== 'none') return; // 已登入就不顯示
+        if (res.news && res.news.length) {
+          NEWS_LIST = res.news;
+          document.getElementById('pubNews').innerHTML =
+            '<div class="sec-h" style="margin:14px 0 0; text-align:left">最新消息</div>' +
+            res.news.map(function (n, i) { return newsCardHtml(n, i); }).join('');
+        }
+        if (!res.slots || !res.slots.length) return;
         document.getElementById('boardArea').innerHTML = boardHtml(res.slots);
         if (res.publicLinks && res.publicLinks.length) {
           document.getElementById('pubLinks').innerHTML = res.publicLinks.map(function (l) {
@@ -532,6 +551,9 @@
       } else if (n.action === '取消') {
         icon = '<i class="ti ti-circle-x" style="color:var(--red)"></i> 取消';
         body = n.date + '（' + (n.weekday || '') + '）' + (n.session || '') + ' ' + n.role;
+      } else if (n.action === '公告') {
+        icon = '<i class="ti ti-speakerphone" style="color:var(--tl-600)"></i> 公告';
+        body = esc(n.text || '');
       } else if (n.action === '新人分發') {
         icon = '<i class="ti ti-user-plus" style="color:var(--tl-600)"></i> 新人分發';
         body = (n.text || '') + ' <span class="go">點我前往新人跟進 →</span>';
@@ -596,6 +618,7 @@
         else if (act === 'publish') openPublish();
         else if (act === 'survey') openSurvey();
         else if (act === 'surveyadmin') openSurveyAdmin();
+        else if (act === 'newspost') openNewsPost();
         else if (act === 'syncboard') openSyncBoard();
         else if (act === 'logout') logout();
         else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
@@ -691,6 +714,11 @@
     var h = heroHtml(list);
     if (res.unseenNoti) {
       h += '<div class="noti-line" data-act="gonoti"><i class="ti ti-bell-ringing"></i> 你有 ' + res.unseenNoti + ' 則新通知，點我查看</div>';
+    }
+    NEWS_LIST = res.news || [];
+    if (NEWS_LIST.length) {
+      h += '<div class="sec"><div class="sec-h">最新消息</div></div>';
+      NEWS_LIST.forEach(function (n, i) { h += newsCardHtml(n, i); });
     }
     h += '<div class="sec"><div class="sec-h">快速查看</div></div><div class="qa qa-wrap">';
     h += '<button data-act="open" data-href="' + CHURCH_SHEET_URL + '" data-name="全教會服事表"><i class="ti ti-calendar"></i> 全教會服事表</button>';
@@ -889,6 +917,7 @@
         '<div class="hint-s">' + psLine + '</div>' +
         '<div class="hint-s" style="margin-top:6px;color:var(--mut)">發布前的更動不會通知大家；發布後改「已公告日期」才會跳異動通知。</div>' +
         '<button class="btn" style="margin-top:10px" data-act="publish"><i class="ti ti-speakerphone"></i> 發布服事表</button></div>';
+      h += '<button class="btn" data-act="newspost"><i class="ti ti-speakerphone"></i> 發布公告</button>';
       h += '<button class="btn" data-act="surveyadmin"><i class="ti ti-checklist"></i> 調查管理' + (res.survey ? '（進行中：' + res.survey.name + '）' : '') + '</button>';
       h += '<button class="btn" data-act="syncboard"><i class="ti ti-table-share"></i> 同步到公告表</button>';
       h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
@@ -1378,6 +1407,76 @@
         conf + '</div>' +
         '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
+  }
+
+  /* ===== 公告欄（最新消息） ===== */
+  function newsCardHtml(n, i) {
+    var isNew = n.tsMs && (Date.now() - n.tsMs) < 7 * 86400000;
+    return '<div class="news-card' + (n.pin ? ' pin' : '') + '" onclick="openNewsView(' + i + ')">' +
+      '<div class="nc-top">' + (n.pin ? '<i class="ti ti-pin-filled" style="color:var(--tl-600)"></i>' : '') +
+      (n.cat ? '<span class="nc-cat">' + esc(n.cat) + '</span>' : '') +
+      '<span class="nc-t">' + esc(n.title) + '</span>' +
+      (isNew ? '<span class="nc-new">新</span>' : '') + '</div>' +
+      (n.content ? '<div class="nc-p">' + esc(n.content) + '</div>' : '') +
+      '<div class="nc-ts">' + esc(n.ts || '') + (n.by ? '・' + esc(n.by) : '') + '</div></div>';
+  }
+  function openNewsView(i) {
+    var n = NEWS_LIST[i]; if (!n) return;
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    p.querySelector('.pk-body').innerHTML =
+      '<div class="pk-h"><i class="ti ti-speakerphone"></i> ' + esc(n.title) + '</div>' +
+      '<div class="hint-s">' + (n.cat ? esc(n.cat) + '・' : '') + esc(n.ts || '') + (n.by ? '・' + esc(n.by) : '') + '</div>' +
+      '<div style="margin-top:10px; font-size:15px; line-height:1.8; white-space:pre-wrap;">' + esc(n.content || '') + '</div>' +
+      '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
+  }
+  function openNewsPost(prev) {
+    prev = prev || {};
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    p.querySelector('.pk-body').innerHTML =
+      '<div class="pk-h"><i class="ti ti-speakerphone"></i> 發布公告</div>' +
+      '<div class="lv-form">' +
+      '<label>標題（必填）<input type="text" id="nwTitle" placeholder="如：下週六服事同工集訓"></label>' +
+      '<label>內容<textarea id="nwBody" rows="5" style="padding:9px;border:1px solid #cfd8e3;border-radius:9px;font-size:15px;font-family:inherit;resize:vertical"></textarea></label>' +
+      '<label>分類<select id="nwCat"><option>公告</option><option>活動</option><option>提醒</option><option>代禱</option></select></label>' +
+      '<label>下架日（選填，過了自動隱藏）<input type="date" id="nwEnd"></label>' +
+      '<label>誰看得到<select id="nwWho"><option value="">所有同工</option><option value="領夜同工以上">領夜同工以上</option><option value="小組長以上">小組長以上</option><option value="區長以上">區長以上</option></select></label>' +
+      '<label>限定事工團（選填，可多個用、分隔）<input type="text" id="nwTeams" placeholder="如：敬拜團、幼幼"></label>' +
+      '<label class="nw-ck"><input type="checkbox" id="nwPin"> 置頂（固定在公告欄最上面）</label>' +
+      '<label class="nw-ck"><input type="checkbox" id="nwPub"> 公開（未登入的人在登入頁也看得到）</label>' +
+      '<label class="nw-ck"><input type="checkbox" id="nwNotify" checked> 同時通知大家（通知中心＋手機推播）</label>' +
+      '</div>' +
+      '<div class="hint-s">公告也可以直接在帳號管理表「公告欄」分頁加列／修改／下架。</div>' +
+      '<div class="pk-btns"><button onclick="submitNewsPost()">發布</button><button onclick="closePicker()">取消</button></div>';
+    if (prev.title) document.getElementById('nwTitle').value = prev.title;
+    if (prev.content) document.getElementById('nwBody').value = prev.content;
+    if (prev.cat) document.getElementById('nwCat').value = prev.cat;
+    if (prev.endDate) document.getElementById('nwEnd').value = prev.endDate;
+    if (prev.reqRole) document.getElementById('nwWho').value = prev.reqRole;
+    if (prev.teams) document.getElementById('nwTeams').value = prev.teams;
+    document.getElementById('nwPin').checked = !!prev.pin;
+    document.getElementById('nwPub').checked = !!prev.isPublic;
+    if (prev.title) document.getElementById('nwNotify').checked = !!prev.notify;
+  }
+  function submitNewsPost() {
+    var args = {
+      title: document.getElementById('nwTitle').value.trim(),
+      content: document.getElementById('nwBody').value.trim(),
+      cat: document.getElementById('nwCat').value,
+      endDate: document.getElementById('nwEnd').value,
+      reqRole: document.getElementById('nwWho').value,
+      teams: document.getElementById('nwTeams').value.trim(),
+      pin: document.getElementById('nwPin').checked,
+      isPublic: document.getElementById('nwPub').checked,
+      notify: document.getElementById('nwNotify').checked
+    };
+    if (!args.title) { alert('請填寫公告標題'); return; }
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '發布中…';
+    api('newsPost', args).then(function (res) {
+      if (!res.ok) { alert('發布失敗：' + (res.error || '')); openNewsPost(args); return; } // 保留已填內容
+      b.innerHTML = '<div class="pk-h">✅ 公告已發布</div>' +
+        '<div class="hint-s">' + (res.notified ? '已刊登在首頁，並通知 ' + res.notified + ' 位同工（通知中心＋手機推播）。' : '已刊登在首頁公告欄。') + '</div>' +
+        '<div class="pk-btns"><button onclick="closePicker();manualRefresh()">完成</button></div>';
+    }).catch(function (e) { alert('連線失敗：' + e); openNewsPost(args); });
   }
 
   /* ===== 公告 ===== */
