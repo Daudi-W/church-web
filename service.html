@@ -579,6 +579,9 @@
       } else if (n.action === '新人提醒') {
         icon = '<i class="ti ti-bell-ringing" style="color:#b26a00"></i> 跟進提醒';
         body = n.text || '';
+      } else if (n.action === '帳號申請') {
+        icon = '<i class="ti ti-shield-check" style="color:#b26a00"></i> 帳號申請';
+        body = (n.text || '') + ' <span class="go">點我前往審核 →</span>';
       } else if (n.action === '提醒') {
         icon = '<i class="ti ti-calendar-due" style="color:var(--tl-600)"></i> 服事提醒';
         body = n.text || '';
@@ -586,10 +589,11 @@
         icon = '<i class="ti ti-info-circle" style="color:var(--tl-600)"></i> ' + (n.action || '通知');
         body = n.text || (n.date ? n.date + '（' + n.weekday + '）' + n.session + '・' + n.role : '');
       }
-      var clickable = (n.action === '新人分發' || n.action === '新人提醒');
+      var clickAttr = '';
+      if (n.action === '新人分發' || n.action === '新人提醒') clickAttr = '" style="cursor:pointer" data-act="open" data-name="新人跟進" data-href="newcomer.html';
+      else if (n.action === '帳號申請') clickAttr = '" style="cursor:pointer" data-act="review';
       var del = (n.nid ? '<button class="nt-del" data-act="delnoti" data-nid="' + n.nid + '" aria-label="刪除通知">×</button>' : '');
-      h += '<div class="nt' + (i < unseen ? ' new' : '') +
-        (clickable ? '" style="cursor:pointer" data-act="open" data-name="新人跟進" data-href="newcomer.html' : '') +
+      h += '<div class="nt' + (i < unseen ? ' new' : '') + clickAttr +
         '">' + del + '<b>' + icon + '</b>　' + body + '<div class="t">' + n.ts + '</div></div>';
     });
     return h;
