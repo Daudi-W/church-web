@@ -290,6 +290,7 @@
   var LAST_RES = null, ID_TOKEN = null, TAB = 'top', CARE_VIEW = 'member', TEAM_IDX = 0;
   var NEWS_LIST = []; // 目前畫面上的公告（首頁或登入頁），openNewsView 依索引取用
   var LEAVE_LIST = []; // 事工團頁的請假清單（一鍵補入/換別人/不用補 依索引取用）
+  var LV_OPEN = null;  // 請假清單收合狀態（首次依「有無待處理」決定）
   var TOKEN = null;
   // 全教會服事表：暫時連到大家習慣的公告試算表（之後要切回系統彈窗，把按鈕的 data-act 改回 board 即可）
   var CHURCH_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1XAtW7ns2r4bc6uq-CqylVYIAY1qVTbdbJvygFUjzvu0/edit?usp=sharing';
@@ -499,7 +500,9 @@
     document.getElementById('hdrName').textContent = '平安，' + (res.displayName || res.name || '');
     var tabs = [{ id: 'top', ic: 'ti-home', lb: '首頁' }, { id: 'home', ic: 'ti-calendar-heart', lb: '服事' }];
     if (res.isLeader) tabs.push({ id: 'care', ic: 'ti-users', lb: '牧養' });
-    if (res.isTeamLead) tabs.push({ id: 'team', ic: 'ti-clipboard-list', lb: '事工團' });
+    // 事工團分頁：主責、或有請假清單可看的人（全職同工/管理者）都顯示
+    var hasLeaves = res.leaveBoard && res.leaveBoard.entries && res.leaveBoard.entries.length;
+    if (res.isTeamLead || hasLeaves) tabs.push({ id: 'team', ic: 'ti-clipboard-list', lb: '事工團' });
     tabs.push({ id: 'noti', ic: 'ti-bell', lb: '通知' });
     tabs.push({ id: 'me', ic: 'ti-user-circle', lb: '我的' });
     var tb = document.getElementById('tabbar');
@@ -629,6 +632,7 @@
         else if (act === 'lvfix') doLeaveReplace(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvpick') openLeavePick(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvskip') doLeaveSkip(Number(el.getAttribute('data-e')));
+        else if (act === 'lvtoggle') { LV_OPEN = !LV_OPEN; renderTab(); }
         else if (act === 'syncboard') openSyncBoard();
         else if (act === 'logout') logout();
         else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
@@ -843,12 +847,15 @@
       h += '<div class="qa" style="margin-top:14px"><button data-act="sheet"><i class="ti ti-external-link"></i> 開試算表排班</button></div>' +
         '<div class="empty">排班調整請在試算表進行（找替補、自動排班都在那邊）。</div>';
     }
-    // 請假清單：全部未來請假一覽（衝突可一鍵補入）
+    // 請假清單：全部未來請假一覽（衝突可一鍵補入）。可收合，首次依「有無待處理」決定
     LEAVE_LIST = (res.leaveBoard && res.leaveBoard.entries) || [];
     if (LEAVE_LIST.length) {
-      var pend = LEAVE_LIST.filter(function (e) { return !e.status; }).length;
-      h += '<div class="sec"><div class="sec-h">請假清單（' + LEAVE_LIST.length + ' 筆' + (pend ? '，' + pend + ' 筆待處理' : '') + '）</div></div>';
-      LEAVE_LIST.forEach(function (e, i) { h += leaveCardHtml(e, i); });
+      var pend = LEAVE_LIST.filter(function (e) { return !e.status && e.conflicts.length; }).length;
+      if (LV_OPEN === null) LV_OPEN = pend > 0;
+      h += '<div class="sec"><div class="sec-h" data-act="lvtoggle" style="cursor:pointer">' +
+        '<i class="ti ti-chevron-' + (LV_OPEN ? 'down' : 'right') + '"></i> 請假清單（' + LEAVE_LIST.length + ' 筆' +
+        (pend ? '，<span style="color:var(--red)">' + pend + ' 筆待處理</span>' : '') + '）</div></div>';
+      if (LV_OPEN) LEAVE_LIST.forEach(function (e, i) { h += leaveCardHtml(e, i); });
     }
     var all = res.teamLeads || [];
     if (TEAM_IDX >= all.length) TEAM_IDX = 0;
@@ -913,6 +920,7 @@
     var lines = '';
     e.conflicts.forEach(function (cf, j) {
       lines += '<div class="slot-line"><span class="lb">' + esc(cf.session) + '</span>' + esc(cf.role) +
+        (cf.instrument ? '（' + esc(cf.instrument) + '）' : '') +
         (cf.branch !== '桃園' ? '<span class="br-tag">' + esc(cf.branch) + '</span>' : '');
       if (!e.status && cf.mine) {
         if (cf.canFix) {
@@ -924,7 +932,7 @@
       }
       lines += '</div>';
     });
-    if (!e.conflicts.length) lines = '<div class="hint-s" style="margin-top:2px">當天沒有已排班，不需處理。</div>';
+    if (!e.conflicts.length) lines = '<div class="hint-s" style="margin-top:2px">當天沒有需要處理的排班。</div>';
     return '<div class="ap-card" style="border:1px solid var(--line)">' +
       '<b>' + e.date + '（' + e.weekday + '）' + esc(e.name) + '</b>　' + st +
       (e.reason ? '<div class="hint-s">原因：' + esc(e.reason) + '</div>' : '') +
@@ -958,10 +966,11 @@
     if (!e || !cf) return;
     var p = document.getElementById('picker'); p.style.display = 'flex';
     var b = p.querySelector('.pk-body'); b.innerHTML = '找可代班的人…';
-    api('candidates', { row: cf.row, col: cf.col }).then(function (res) {
+    api('candidates', { row: cf.row, col: cf.col, forName: e.name }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
-      var h = '<div class="pk-h"><i class="ti ti-user-search"></i> 換別人：' + e.date + '（' + e.weekday + '）' + esc(cf.session) + '・' + esc(cf.role) + '</div>' +
-        '<div class="hint-s">以下是通過檢查（技能／當天有空／未撞班）的人選，點名字即補入，取代 ' + esc(e.name) + '。</div>';
+      var h = '<div class="pk-h"><i class="ti ti-user-search"></i> 換別人：' + e.date + '（' + e.weekday + '）' + esc(cf.session) + '・' + esc(cf.role) +
+        (cf.instrument ? '（' + esc(cf.instrument) + '）' : '') + '</div>' +
+        '<div class="hint-s">只列 ' + esc(e.name) + ' 這個崗位可接手、且通過檢查（當天有空／未撞班）的人選，點名字即補入。</div>';
       var any = false;
       Object.keys(res.candidatesBySkill || {}).forEach(function (sk) {
         var list = res.candidatesBySkill[sk] || [];
