@@ -1381,7 +1381,8 @@
       if (!list.length) h += '<div class="hint-s">目前沒有待審的申請。</div>';
       list.forEach(function (a) {
         h += '<div class="ap-card" style="border:1px solid var(--line)"><b>' + esc(a.name) + '</b>' +
-          (a.zone ? '・' + esc(a.zone) : '') + (a.group ? '/' + esc(a.group) : '') + '<br>' +
+          (a.zone ? '・' + esc(a.zone) : '') + (a.group ? '/' + esc(a.group) : '') +
+          (a.db && a.db.found ? '　<span class="ok-badge">已在排班資料庫</span>' : '') + '<br>' +
           '<span class="hint-s">' + esc(a.email) + (a.note ? '・' + esc(a.note) : '') + '・' + esc(a.appliedAt) + '</span>' +
           '<div class="pk-btns">' +
           '<button class="rv-ok" data-row="' + a.row + '">核准並設定角色</button>' +
@@ -1402,8 +1403,12 @@
     var b = document.querySelector('#picker .pk-body');
     var roles = (FOPT && FOPT.roles) || ['一般同工', '小組長', '區長', '區牧', '區督'];
     var teams = (FOPT && FOPT.teams) || [];
+    var m = a.db || {};
     var h = '<div class="pk-h"><i class="ti ti-user-check"></i> 核准並設定：' + esc(a.name) + '</div>' +
       '<div class="hint-s">' + esc(a.zone) + '/' + esc(a.group) + '・' + esc(a.email) + (a.note ? '（' + esc(a.note) + '）' : '') + '</div>' +
+      (m.found ? '<div class="ap-card" style="background:#e8f3ef">✅ 已在排班資料庫找到' +
+        (m.displayName ? '「' + esc(m.displayName) + '」' : '此人') +
+        '，顯示名稱／崗位／事工團已自動帶入——確認沒問題可直接按核准。</div>' : '') +
       '<div class="lv-form">' +
       '<label>顯示名稱（服事表上的稱呼，留空＝用全名）<input type="text" id="apvDisp" placeholder="如：沛璟"></label>' +
       '<label>牧養身份 <select id="apvRole">' + roles.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select></label>' +
@@ -1417,6 +1422,29 @@
       '<div class="lv-form" style="margin-top:6px"><label>其他崗位（選填，逗號分隔）<input type="text" id="apvSkillsExtra" placeholder="設定表沒有的特例崗位"></label></div>' +
       '<div class="pk-btns" style="margin-top:12px"><button onclick="submitApprove(' + row + ')">核准</button><button onclick="openReview()">返回</button></div>';
     b.innerHTML = h;
+    // 排班資料庫比對到 → 預填顯示名稱／事工團（含勾選後動態列出的崗位）／團角色／牧養身份
+    if (m.found) {
+      if (m.displayName && m.displayName !== a.name) document.getElementById('apvDisp').value = m.displayName;
+      var mt = m.teams || [];
+      document.querySelectorAll('#picker .apvTeam').forEach(function (c) {
+        if (mt.some(function (t) { return c.value.indexOf(t) !== -1 || t.indexOf(c.value) !== -1; })) c.checked = true;
+      });
+      renderApvSkills();
+      var mSkills = String(m.skills || '').split(/[,，、]/).map(function (s) { return s.trim(); }).filter(Boolean);
+      var listed = {};
+      document.querySelectorAll('#picker .apvSkill').forEach(function (c) {
+        if (mSkills.indexOf(c.value) !== -1) { c.checked = true; listed[c.value] = 1; }
+      });
+      var extra = mSkills.filter(function (s) { return !listed[s]; });
+      if (extra.length) document.getElementById('apvSkillsExtra').value = extra.join(',');
+      var tr = (m.teamRoles || []).join('、');
+      if (/團長/.test(tr)) document.getElementById('apvTeamRole').value = '團長';
+      else if (/主責|負責/.test(tr)) document.getElementById('apvTeamRole').value = '主責';
+      if (m.role) {
+        var rSel = document.getElementById('apvRole');
+        if ([].some.call(rSel.options, function (o) { return o.value === m.role; })) rSel.value = m.role;
+      }
+    }
   }
   /* 依勾選的事工團（多團取聯集、去重）動態列出崗位多選；重繪時保留已勾選的崗位 */
   function renderApvSkills() {
