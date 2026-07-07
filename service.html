@@ -636,7 +636,7 @@
         else if (act === 'grouprename') openGroupRename();
         else if (act === 'lvfix') doLeaveReplace(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvpick') openLeavePick(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
-        else if (act === 'lvskip') doLeaveSkip(Number(el.getAttribute('data-e')));
+        else if (act === 'lvskipone') doLeaveSkipOne(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvreopen') doLeaveReopen(Number(el.getAttribute('data-e')));
         else if (act === 'lvtoggle') { LV_OPEN = !LV_OPEN; renderTab(); }
         else if (act === 'syncboard') openSyncBoard();
@@ -917,22 +917,40 @@
 
   /* ===== 請假清單卡片＋一鍵補入 ===== */
   function lvPending(e) { return !e.status || e.status.indexOf('處理中') === 0; }
+  // 從狀態字串解析每個堂次的處理結果：{ 第二堂: '甲', 第三堂: '不用補', … }
+  function lvCoveredMap(e) {
+    var out = {};
+    var m = String(e.status || '').match(/^(?:處理中|已補人|不用補)：(.*)$/);
+    if (!m || !m[1]) return out;
+    m[1].split('、').forEach(function (t) {
+      t = t.trim(); if (!t) return;
+      if (t.indexOf('其餘') === 0) return;
+      var i = t.indexOf('→');
+      if (i !== -1) out[t.slice(0, i).trim()] = t.slice(i + 1).trim();
+    });
+    return out;
+  }
   function leaveCardHtml(e, i) {
+    var cov = lvCoveredMap(e);
     var st = '';
     if (e.status) {
-      st = '<span class="' + (e.status.indexOf('已補人') === 0 ? 'ok-badge' : 'gap-badge') + '">' + esc(e.status) + '</span>';
+      st = '<span class="' + (lvPending(e) ? 'gap-badge' : 'ok-badge') + '">' + esc(e.status) + '</span>';
     } else if (e.conflicts.length) {
       st = '<span class="gap-badge"><i class="ti ti-alert-triangle"></i> 已排班</span>';
     }
     var lines = '';
     e.conflicts.forEach(function (cf, j) {
+      var done = cov[cf.session];
       lines += '<div class="slot-line"><span class="lb">' + esc(cf.session) + '</span>' + esc(cf.role) +
         (cf.instrument ? '（' + esc(cf.instrument) + '）' : '') +
         (cf.branch !== '桃園' ? '<span class="br-tag">' + esc(cf.branch) + '</span>' : '');
-      if (lvPending(e) && cf.mine) {
+      if (done) {
+        lines += ' <span class="ok-badge">' + (done === '不用補' ? '不用補' : '已補：' + esc(done)) + '</span>';
+      } else if (cf.mine) {
         if (cf.canFix) {
           if (e.helper) lines += '<button class="lv-act" data-act="lvfix" data-e="' + i + '" data-c="' + j + '">一鍵補入 ' + esc(e.helper) + '</button>';
           lines += '<button class="lv-act line" data-act="lvpick" data-e="' + i + '" data-c="' + j + '">換別人</button>';
+          lines += '<button class="lv-act line" data-act="lvskipone" data-e="' + i + '" data-c="' + j + '">此堂不用補</button>';
         } else {
           lines += ' <span class="hint-s">（林口請到試算表調整）</span>';
         }
@@ -945,9 +963,17 @@
       (e.reason ? '<div class="hint-s">原因：' + esc(e.reason) + '</div>' : '') +
       (e.helper ? '<div class="hint-s">建議代班：' + esc(e.helper) + '</div>' : '') +
       lines +
-      (lvPending(e) && e.conflicts.length ? '<button class="lv-skip" data-act="lvskip" data-e="' + i + '">人力足夠，標記「不用補」</button>' : '') +
-      (!lvPending(e) && e.conflicts.some(function (c) { return c.mine; }) ? '<button class="lv-skip" data-act="lvreopen" data-e="' + i + '">這天其實還有服事沒補，改回待處理</button>' : '') +
+      (!lvPending(e) && e.conflicts.some(function (c) { return c.mine; }) ? '<button class="lv-skip" data-act="lvreopen" data-e="' + i + '">全部改回待處理</button>' : '') +
       '</div>';
+  }
+  function doLeaveSkipOne(ei, ci) {
+    var e = LEAVE_LIST[ei], cf = e && e.conflicts[ci];
+    if (!e || !cf) return;
+    if (!confirm(e.date + '（' + e.weekday + '）' + cf.session + '・' + cf.role + '　' + e.name + ' 這一堂人力足夠、不用補？')) return;
+    api('leaveSkip', { lid: e.lid, session: cf.session }).then(function (res) {
+      if (!res.ok) { alert('失敗：' + (res.error || '')); return; }
+      manualRefresh();
+    }).catch(function (err) { alert('連線失敗：' + err); });
   }
   function doLeaveReopen(ei) {
     var e = LEAVE_LIST[ei];
@@ -1008,15 +1034,6 @@
         el.addEventListener('click', function () { doLeaveReplace(ei, ci, el.getAttribute('data-nm')); });
       });
     }).catch(function (err) { b.innerHTML = '⚠️ 連線失敗：' + err; });
-  }
-  function doLeaveSkip(ei) {
-    var e = LEAVE_LIST[ei];
-    if (!e) return;
-    if (!confirm(e.date + ' ' + e.name + ' 的請假標記為「不用補」？（清單上會顯示已處理）')) return;
-    api('leaveSkip', { lid: e.lid }).then(function (res) {
-      if (!res.ok) { alert('失敗：' + (res.error || '')); return; }
-      manualRefresh();
-    }).catch(function (err) { alert('連線失敗：' + err); });
   }
 
   function renderMe(res) {
