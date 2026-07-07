@@ -637,6 +637,7 @@
         else if (act === 'lvfix') doLeaveReplace(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvpick') openLeavePick(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvskip') doLeaveSkip(Number(el.getAttribute('data-e')));
+        else if (act === 'lvreopen') doLeaveReopen(Number(el.getAttribute('data-e')));
         else if (act === 'lvtoggle') { LV_OPEN = !LV_OPEN; renderTab(); }
         else if (act === 'syncboard') openSyncBoard();
         else if (act === 'logout') logout();
@@ -855,7 +856,7 @@
     // 請假清單：全部未來請假一覽（衝突可一鍵補入）。可收合，首次依「有無待處理」決定
     LEAVE_LIST = (res.leaveBoard && res.leaveBoard.entries) || [];
     if (LEAVE_LIST.length) {
-      var pend = LEAVE_LIST.filter(function (e) { return !e.status && e.conflicts.length; }).length;
+      var pend = LEAVE_LIST.filter(function (e) { return lvPending(e) && e.conflicts.length; }).length;
       if (LV_OPEN === null) LV_OPEN = pend > 0;
       h += '<div class="sec"><div class="sec-h" data-act="lvtoggle" style="cursor:pointer">' +
         '<i class="ti ti-chevron-' + (LV_OPEN ? 'down' : 'right') + '"></i> 請假清單（' + LEAVE_LIST.length + ' 筆' +
@@ -915,6 +916,7 @@
   }
 
   /* ===== 請假清單卡片＋一鍵補入 ===== */
+  function lvPending(e) { return !e.status || e.status.indexOf('處理中') === 0; }
   function leaveCardHtml(e, i) {
     var st = '';
     if (e.status) {
@@ -927,7 +929,7 @@
       lines += '<div class="slot-line"><span class="lb">' + esc(cf.session) + '</span>' + esc(cf.role) +
         (cf.instrument ? '（' + esc(cf.instrument) + '）' : '') +
         (cf.branch !== '桃園' ? '<span class="br-tag">' + esc(cf.branch) + '</span>' : '');
-      if (!e.status && cf.mine) {
+      if (lvPending(e) && cf.mine) {
         if (cf.canFix) {
           if (e.helper) lines += '<button class="lv-act" data-act="lvfix" data-e="' + i + '" data-c="' + j + '">一鍵補入 ' + esc(e.helper) + '</button>';
           lines += '<button class="lv-act line" data-act="lvpick" data-e="' + i + '" data-c="' + j + '">換別人</button>';
@@ -943,8 +945,17 @@
       (e.reason ? '<div class="hint-s">原因：' + esc(e.reason) + '</div>' : '') +
       (e.helper ? '<div class="hint-s">建議代班：' + esc(e.helper) + '</div>' : '') +
       lines +
-      (!e.status && e.conflicts.length ? '<button class="lv-skip" data-act="lvskip" data-e="' + i + '">人力足夠，標記「不用補」</button>' : '') +
+      (lvPending(e) && e.conflicts.length ? '<button class="lv-skip" data-act="lvskip" data-e="' + i + '">人力足夠，標記「不用補」</button>' : '') +
+      (!lvPending(e) && e.conflicts.some(function (c) { return c.mine; }) ? '<button class="lv-skip" data-act="lvreopen" data-e="' + i + '">這天其實還有服事沒補，改回待處理</button>' : '') +
       '</div>';
+  }
+  function doLeaveReopen(ei) {
+    var e = LEAVE_LIST[ei];
+    if (!e) return;
+    api('leaveSkip', { lid: e.lid, reopen: true }).then(function (res) {
+      if (!res.ok) { alert('失敗：' + (res.error || '')); return; }
+      manualRefresh();
+    }).catch(function (err) { alert('連線失敗：' + err); });
   }
   function doLeaveReplace(ei, ci, toName) {
     var e = LEAVE_LIST[ei], cf = e && e.conflicts[ci];
@@ -960,9 +971,12 @@
           '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
         return;
       }
+      var remainTxt = (res.remaining && res.remaining.length)
+        ? '<br><b>同日還有 ' + esc(res.remaining.join('、')) + ' 的服事待處理</b>，回清單可以繼續補（可換同一人或不同人）。'
+        : '<br>當天的服事已全部處理，請假單已標「已補人」。';
       b.innerHTML = '<div class="pk-h">✅ 已補入</div>' +
         '<div class="hint-s">' + res.date + '（' + res.weekday + '）' + esc(res.session) + '・' + esc(res.role) + '：' +
-        esc(res.from) + ' → <b>' + esc(res.to) + '</b><br>已通知 ' + esc(res.to) + '（新增服事）與 ' + esc(res.from) + '（代班已安排），請假單已標「已補人」。</div>' +
+        esc(res.from) + ' → <b>' + esc(res.to) + '</b><br>已通知 ' + esc(res.to) + '（新增服事）與 ' + esc(res.from) + '（代班已安排）。' + remainTxt + '</div>' +
         '<div class="pk-btns"><button onclick="closePicker();manualRefresh()">完成</button></div>';
     }).catch(function (err) { b.innerHTML = '⚠️ 連線失敗：' + err; });
   }
