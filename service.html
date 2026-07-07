@@ -629,6 +629,7 @@
         else if (act === 'survey') openSurvey();
         else if (act === 'surveyadmin') openSurveyAdmin();
         else if (act === 'newsadmin') openNewsAdmin();
+        else if (act === 'grouprename') openGroupRename();
         else if (act === 'lvfix') doLeaveReplace(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvpick') openLeavePick(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvskip') doLeaveSkip(Number(el.getAttribute('data-e')));
@@ -1037,6 +1038,7 @@
       h += '<button class="btn" data-act="syncboard"><i class="ti ti-table-share"></i> 同步到公告表</button>';
       h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
         (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button>';
+      h += '<button class="btn" data-act="grouprename"><i class="ti ti-users-group"></i> 小組改名 / 交棒</button>';
     }
     h += '<button class="btn line" data-act="logout" style="margin-top:14px">登出 / 換帳號</button>';
     return h;
@@ -1363,6 +1365,40 @@
       b.innerHTML = '<div class="pk-h">✅ 已發布</div>' +
         '<div class="hint-s">' + res.branch + ' 已公告到 ' + res.through +
         '。之後改這天以前的服事，系統才會通知對應的同工。</div>' +
+        '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
+    }).catch(function (e) { alert('連線失敗：' + e); });
+  }
+
+  /* ===== 小組改名 / 交棒（管理者） ===== */
+  function openGroupRename() {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    var b = p.querySelector('.pk-body'); b.innerHTML = '讀取小組清單…';
+    api('groupsList').then(function (res) {
+      if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || '無法取得小組清單') + '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>'; return; }
+      var opts = (res.groups || []).filter(function (g) { return g.enabled; }).map(function (g) {
+        return '<option value="' + g.name + '" data-leader="' + g.leader + '">' + g.name + '（' + g.zone + '・' + g.leader + '）</option>';
+      }).join('');
+      b.innerHTML = '<div class="pk-h"><i class="ti ti-users-group"></i> 小組改名 / 交棒</div>' +
+        '<div class="hint-s">改名會自動更新該組所有組員的白名單小組欄，舊名保留當別名，歷史資料不會斷。只換小組長就把新組名留空。</div>' +
+        '<div class="lv-form">' +
+        '<label>小組 <select id="grFrom">' + opts + '</select></label>' +
+        '<label>新組名（不改就留空）<input type="text" id="grTo" placeholder="例：新名A"></label>' +
+        '<label>新小組長（不換就留空）<input type="text" id="grLeader" placeholder="填姓名，例：王小明"></label></div>' +
+        '<div class="pk-btns"><button onclick="submitGroupRename()">確認</button><button onclick="closePicker()">取消</button></div>';
+    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e + '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>'; });
+  }
+  function submitGroupRename() {
+    var from = document.getElementById('grFrom').value;
+    var to = document.getElementById('grTo').value.trim();
+    var leader = document.getElementById('grLeader').value.trim();
+    if (!to && !leader) { alert('新組名、新小組長至少填一個'); return; }
+    if (!confirm('確認要把「' + from + '」' + (to ? '改名為「' + to + '」' : '') + (leader ? (to ? '並' : '') + '交棒給「' + leader + '」' : '') + '？')) return;
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '更新中…';
+    api('groupRename', { from: from, to: to, newLeader: leader }).then(function (res) {
+      if (!res.ok) { alert('更新失敗：' + (res.error || '')); openGroupRename(); return; }
+      b.innerHTML = '<div class="pk-h">✅ 已完成</div>' +
+        '<div class="hint-s">「' + res.from + '」→「' + res.to + '」，小組長：' + res.newLeader +
+        '，已同步更新 ' + res.membersUpdated + ' 位組員的白名單小組欄。</div>' +
         '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
   }
