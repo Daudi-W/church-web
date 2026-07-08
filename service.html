@@ -228,7 +228,9 @@
   .news-card .nc-cat { flex: none; font-size: 11px; background: #e8f3ef; color: var(--tl-600); border-radius: 6px; padding: 1px 6px; }
   .news-card .nc-t { font-weight: 700; font-size: 15px; flex: 1; min-width: 0; }
   .news-card .nc-new { flex: none; font-size: 11px; color: #fff; background: var(--red); border-radius: 6px; padding: 1px 6px; }
-  .news-card .nc-p { color: #555; font-size: 13px; margin-top: 4px; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .news-card .nc-p { color: #555; font-size: 13px; margin-top: 4px; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .nw-list { margin: 4px 0; padding-left: 22px; }
+  .nw-list li { margin: 2px 0; }
   .news-card .nc-ts { color: var(--mut); font-size: 12px; margin-top: 6px; }
   .nw-ck { flex-direction: row !important; align-items: center; gap: 6px; }
   #nwTeamsBox { flex-wrap: wrap; }
@@ -408,6 +410,27 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  /* 公告內容 → HTML：保留換行；行首「- 」「* 」變列點、「1. 」「1、」變編號。全程過 esc()。 */
+  function newsBodyHtml(content) {
+    var h = '', list = null;
+    function closeList() { if (list) { h += '</' + list + '>'; list = null; } }
+    String(content == null ? '' : content).split('\n').forEach(function (ln) {
+      var m;
+      if ((m = ln.match(/^\s*[-*•‧・]\s+(.*)$/))) {
+        if (list !== 'ul') { closeList(); h += '<ul class="nw-list">'; list = 'ul'; }
+        h += '<li>' + esc(m[1]) + '</li>';
+      } else if ((m = ln.match(/^\s*\d+[.、)）]\s*(.+)$/))) {
+        if (list !== 'ol') { closeList(); h += '<ol class="nw-list">'; list = 'ol'; }
+        h += '<li>' + esc(m[1]) + '</li>';
+      } else {
+        closeList();
+        h += esc(ln) + '<br>';
+      }
+    });
+    closeList();
+    return h.replace(/<br>$/, '');
+  }
+
   function setStatus(msg, isErr) {
     var el = document.getElementById('status');
     el.textContent = msg; el.className = isErr ? 'err' : '';
@@ -552,6 +575,11 @@
       var clickAttr = '';
       if (n.action === '新人分發' || n.action === '新人提醒') clickAttr = '" style="cursor:pointer" data-act="open" data-name="新人跟進" data-href="newcomer.html';
       else if (n.action === '帳號申請') clickAttr = '" style="cursor:pointer" data-act="review';
+      else if (n.action === '公告') {
+        // 比對崗位欄帶 news:<epoch>（舊通知沒有 → 用標題找）；點通知直接打開該則公告
+        var newsRef = (n.dispRole && n.dispRole.indexOf('news:') === 0) ? n.dispRole.slice(5) : '';
+        clickAttr = '" style="cursor:pointer" data-act="opennews" data-ref="' + esc(newsRef) + '" data-title="' + esc(n.text || '');
+      }
       var del = (n.nid ? '<button class="nt-del" data-act="delnoti" data-nid="' + n.nid + '" aria-label="刪除通知">×</button>' : '');
       h += '<div class="nt' + (i < unseen ? ' new' : '') + clickAttr +
         '">' + del + '<b>' + icon + '</b>　' + body + '<div class="t">' + esc(n.ts) + '</div></div>';
@@ -605,6 +633,7 @@
         else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
         else if (act === 'teamsel') { TEAM_IDX = Number(el.getAttribute('data-i')) || 0; renderTab(); }
         else if (act === 'gonoti') { TAB = 'noti'; renderTab(); }
+        else if (act === 'opennews') openNewsFromNoti(el.getAttribute('data-ref'), el.getAttribute('data-title'));
         else if (act === 'pushon') enablePush();
         else if (act === 'board') { openChurchBoard(); }
         else if (act === 'open') {
@@ -1591,8 +1620,17 @@
       (n.cat ? '<span class="nc-cat">' + esc(n.cat) + '</span>' : '') +
       '<span class="nc-t">' + esc(n.title) + '</span>' +
       (isNew ? '<span class="nc-new">新</span>' : '') + '</div>' +
-      (n.content ? '<div class="nc-p">' + esc(n.content) + '</div>' : '') +
+      (n.content ? '<div class="nc-p">' + newsBodyHtml(n.content) + '</div>' : '') +
       '<div class="nc-ts">' + esc(n.ts || '') + (n.by ? '・' + esc(n.by) : '') + '</div></div>';
+  }
+  /* 通知中心點「公告」→ 直接打開該則公告（epoch 優先、標題備援）；已下架/看不到就回首頁。 */
+  function openNewsFromNoti(ref, title) {
+    var list = (LAST_RES && LAST_RES.news) || [];
+    var idx = -1;
+    list.forEach(function (n, i) { if (idx === -1 && ref && String(n.tsMs) === String(ref)) idx = i; });
+    if (idx === -1) list.forEach(function (n, i) { if (idx === -1 && title && n.title === title) idx = i; });
+    if (idx !== -1) { NEWS_LIST = list; openNewsView(idx); }
+    else { TAB = 'top'; renderTab(); window.scrollTo(0, 0); }
   }
   function openNewsView(i) {
     var n = NEWS_LIST[i]; if (!n) return;
@@ -1600,7 +1638,7 @@
     p.querySelector('.pk-body').innerHTML =
       '<div class="pk-h"><i class="ti ti-speakerphone"></i> ' + esc(n.title) + '</div>' +
       '<div class="hint-s">' + (n.cat ? esc(n.cat) + '・' : '') + esc(n.ts || '') + (n.by ? '・' + esc(n.by) : '') + '</div>' +
-      '<div style="margin-top:10px; font-size:15px; line-height:1.8; white-space:pre-wrap;">' + esc(n.content || '') + '</div>' +
+      '<div style="margin-top:10px; font-size:15px; line-height:1.8;">' + newsBodyHtml(n.content || '') + '</div>' +
       '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
   }
   var FORM_OPTS = null; // formOptions 快取（事工團清單，發布/編輯公告的複選用）
@@ -1627,7 +1665,8 @@
       '<div class="pk-h"><i class="ti ti-speakerphone"></i> ' + (isEdit ? '編輯公告' : '發布公告') + '</div>' +
       '<div class="lv-form">' +
       '<label>標題（必填）<input type="text" id="nwTitle" placeholder="如：下週六服事同工集訓"></label>' +
-      '<label>內容<textarea id="nwBody" rows="5" style="padding:9px;border:1px solid #cfd8e3;border-radius:9px;font-size:15px;font-family:inherit;resize:vertical"></textarea></label>' +
+      '<label>內容<textarea id="nwBody" rows="5" style="padding:9px;border:1px solid #cfd8e3;border-radius:9px;font-size:15px;font-family:inherit;resize:vertical"></textarea>' +
+      '<span class="hint-s" style="font-weight:400">換行會照原樣顯示；行首用「- 」變列點、「1. 」變編號清單。</span></label>' +
       '<label>分類<select id="nwCat"><option>公告</option><option>活動</option><option>提醒</option><option>代禱</option></select></label>' +
       '<label>下架日（預設 30 天後；沒填也會 30 天後自動下架）<input type="date" id="nwEnd"></label>' +
       '<label>誰看得到<select id="nwWho"><option value="">所有同工</option><option value="領夜同工以上">領夜同工以上</option><option value="小組長以上">小組長以上</option><option value="區長以上">區長以上</option></select></label>' +
