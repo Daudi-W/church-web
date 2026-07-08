@@ -1,0 +1,40 @@
+name: JS syntax check
+
+# 防呆：service.html 等單檔頁面的 <script> 若有語法錯誤，整頁 JS 掛掉（登入鈕消失事故）。
+# push / PR 時抽出所有 .html 的 script 區塊跑 node --check，紅了就代表不能部署。
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Extract inline scripts and node --check
+        run: |
+          python3 - <<'EOF'
+          import re, glob, pathlib, subprocess, sys
+          failed = False
+          for f in glob.glob('*.html') + glob.glob('*.js'):
+              if f.endswith('.html'):
+                  blocks = re.findall(r'<script>(.*?)</script>', open(f, encoding='utf-8').read(), re.S)
+                  if not blocks:
+                      continue
+                  tmp = pathlib.Path('/tmp/check_' + f.replace('.', '_') + '.js')
+                  tmp.write_text('\n;\n'.join(blocks), encoding='utf-8')
+                  target = str(tmp)
+              else:
+                  target = f
+              r = subprocess.run(['node', '--check', target], capture_output=True, text=True)
+              if r.returncode != 0:
+                  print(f'❌ {f}\n{r.stderr}')
+                  failed = True
+              else:
+                  print(f'✅ {f}')
+          sys.exit(1 if failed else 0)
+          EOF
