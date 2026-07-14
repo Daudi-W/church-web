@@ -36,6 +36,7 @@
   .bd-d { font-size: 14px; font-weight: 700; color: var(--tl-800); }
   .bd-d .sp { color: #b26a00; font-size: 12px; font-weight: 400; }
   .bd-line { font-size: 13px; padding: 2px 0 2px 4px; color: #34465a; }
+  .bd-line.mine { background: var(--tl-50); border-radius: 7px; padding: 3px 6px; }
   .bd-line .rl { display: inline-block; min-width: 78px; color: var(--tl-600); font-weight: 700; }
   .card {
     background: #fff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.07);
@@ -388,6 +389,38 @@
   }
   function setBoardBr(br) { BOARD.br = br; renderBoard(); }
 
+  // 點某一天 → 浮窗顯示那天所有堂次的完整服事表（自己的崗位標綠底）
+  var DAY_SLOTS = null; // announcement 結果快取，多次點日期免重抓
+  function myName_() { return (LAST_RES && (LAST_RES.displayName || LAST_RES.name)) || ''; }
+  function openDayBoard(date) {
+    var p = document.getElementById('picker'); p.style.display = 'flex';
+    var b = p.querySelector('.pk-body');
+    function render() { b.innerHTML = dayBoardHtml(date, (DAY_SLOTS || []).filter(function (s) { return s.date === date; })); }
+    if (DAY_SLOTS) { render(); return; }
+    b.innerHTML = '載入 ' + esc(date) + ' 當天服事表…';
+    api('announcement', { weeks: 8 }).then(function (res) {
+      if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
+      DAY_SLOTS = res.slots || [];
+      render();
+    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+  }
+  function dayBoardHtml(date, slots) {
+    var close = '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
+    if (!slots.length) return '<div class="pk-h"><i class="ti ti-calendar"></i> ' + esc(date) + ' 當天服事表</div><div class="empty">這天沒有服事資料。</div>' + close;
+    var mine = myName_();
+    var h = '<div class="pk-h"><i class="ti ti-calendar"></i> ' + esc(date) + '（' + esc(slots[0].weekday) + '）當天服事表</div>';
+    slots.forEach(function (s) {
+      h += '<div class="bd-slot"><div class="bd-d">' + esc(s.session || '') + brTag(s) +
+        (s.special ? ' <span class="sp">⟨' + esc(s.special) + '⟩</span>' : '') + '</div>';
+      (s.items || []).forEach(function (it) {
+        var isMine = mine && String(it.who).indexOf(mine) !== -1;
+        h += '<div class="bd-line' + (isMine ? ' mine' : '') + '"><span class="rl">' + esc(it.role) + '</span>' + esc(it.who) + '</div>';
+      });
+      h += '</div>';
+    });
+    return h + close;
+  }
+
   function boardDate(md) {
     var p = String(md).split('/');
     var now = new Date();
@@ -474,6 +507,7 @@
       } catch (e) { }
     }
     LAST_RES = res;
+    DAY_SLOTS = null; // 資料刷新後，當天服事表快取失效，下次點日期重抓
     if (!res.matched) { renderUnmatched(res); return; }
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
@@ -706,7 +740,7 @@
     });
     var lines = order.map(function (d) {
       var g = byDate[d];
-      return '<div class="big" style="margin-top:8px;">' + d + '（' + g.weekday + '）</div>' +
+      return '<div class="big daylink" style="margin-top:8px;cursor:pointer" onclick="openDayBoard(\'' + d + '\')">' + d + '（' + g.weekday + '）<i class="ti ti-chevron-right" style="font-size:15px;color:var(--tl-600)"></i></div>' +
         '<div class="what">' + sessionLinesHtml(g.items) + '</div>';
     }).join('');
     // 場數以「不重複的堂」計（日期＋堂區＋堂次），同一堂多崗位只算一場
@@ -761,12 +795,13 @@
         byDate[sv.date].items.push(sv);
       });
       h += '<div class="sec"><div class="sec-h">之後的服事</div>';
+      h += '<div class="hint-s" style="margin:0 2px 4px;color:var(--tl-600)"><i class="ti ti-hand-finger"></i> 點日期看當堂完整服事表與配搭</div>';
       var lastMon = -1;
       order.forEach(function (d, i) {
         var m = monthOf(d);
         if (m !== lastMon) { h += '<div class="wkh">' + m + ' 月</div>'; lastMon = m; }
-        h += '<div class="tl-row">' + dateBox(d, byDate[d].weekday, i === 0) +
-          '<div class="tl-txt">' + sessionLinesHtml(byDate[d].items) + '</div></div>';
+        h += '<div class="tl-row" style="cursor:pointer" onclick="openDayBoard(\'' + d + '\')">' + dateBox(d, byDate[d].weekday, i === 0) +
+          '<div class="tl-txt">' + sessionLinesHtml(byDate[d].items) + '<i class="ti ti-chevron-right" style="color:var(--hint);margin-left:6px"></i></div></div>';
       });
       h += '</div>';
     }
