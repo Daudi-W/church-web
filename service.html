@@ -993,8 +993,9 @@
   function doLeaveSkipOne(ei, ci) {
     var e = LEAVE_LIST[ei], cf = e && e.conflicts[ci];
     if (!e || !cf) return;
-    if (!confirm(e.date + '（' + e.weekday + '）' + cf.session + '・' + cf.role + '　' + e.name + ' 這一堂人力足夠、不用補？')) return;
-    api('leaveSkip', { lid: e.lid, session: cf.session }).then(function (res) {
+    if (!confirm(e.date + '（' + e.weekday + '）' + cf.session + '・' + cf.role + '　' + e.name +
+      ' 這一堂不用補？\n（會把 ' + e.name + ' 從服事表這個崗位清掉，樂團改「無」、其他崗位移除名字）')) return;
+    api('leaveSkip', { lid: e.lid, session: cf.session, row: cf.row, col: cf.col }).then(function (res) {
       if (!res.ok) { alert('失敗：' + (res.error || '')); return; }
       manualRefresh();
     }).catch(function (err) { alert('連線失敗：' + err); });
