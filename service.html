@@ -725,14 +725,29 @@
 
   function heroHtml(list) {
     if (!list || !list.length) return '<div class="hero none">未來目前沒有排到你的服事，好好休息 😊</div>';
-    var first = boardDate(list[0].date);
-    var off = (first.getDay() - 6 + 7) % 7;
-    var ws = new Date(first); ws.setDate(first.getDate() - off); ws.setHours(0, 0, 0, 0);
+    // 焦點週：週六起算（涵蓋週六第一堂＋主日）；過了主日 13:00（第三堂結束）才換到下一週
+    var now = new Date();
+    var ws = new Date(now); ws.setHours(0, 0, 0, 0);
+    var off = (ws.getDay() - 6 + 7) % 7;
+    ws.setDate(ws.getDate() - off);
+    var sunEnd = new Date(ws); sunEnd.setDate(ws.getDate() + 1); sunEnd.setHours(13, 0, 0, 0);
+    if (now >= sunEnd) ws.setDate(ws.getDate() + 7);
     var we = new Date(ws); we.setDate(ws.getDate() + 7);
     var group = list.filter(function (s) {
       var d = boardDate(s.date);
       return d >= ws && d < we;
     });
+    if (!group.length) {
+      // 這週沒排到 → 明講沒有服事，附下次服事日期免得以為之後都沒排
+      var next = null;
+      for (var i = 0; i < list.length; i++) { if (boardDate(list[i].date) >= we) { next = list[i]; break; } }
+      var h = '<div class="hero none">這週沒有排到你的服事，好好休息 😊';
+      if (next) {
+        h += '<div style="margin-top:8px;cursor:pointer;color:var(--tl-800);font-weight:700" onclick="openDayBoard(\'' + next.date + '\')">下次服事：' + next.date + '（' + next.weekday + '）<i class="ti ti-chevron-right" style="font-size:14px;color:var(--tl-600)"></i></div>';
+      }
+      h += '</div>';
+      return h;
+    }
     var byDate = {}, order = [];
     group.forEach(function (s) {
       if (!byDate[s.date]) { byDate[s.date] = { weekday: s.weekday, items: [] }; order.push(s.date); }
