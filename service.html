@@ -490,23 +490,30 @@
      試算表的「最後修改時間」，不讀內容，所以很輕。版本變了才重抓 whoami。
      效果：別人在試算表改了排班、或有人請假，這個頁面開著就會自己更新，不用手動重整。
      分頁切到背景時不問（省流量），切回前景時立刻問一次。 */
-  var DATA_VER = null, VER_TIMER = null;
-  var VER_POLL_MS = 60000;
+  var DATA_VER = null, VER_TIMER = null, LAST_SYNC = 0;
+  var VER_POLL_MS = 60000;   // 多久問一次版本
+  var STALE_MS = 300000;     // 資料超過這個時間沒更新，切回前景就直接重抓
   function checkVersion() {
     if (!LAST_RES || !LAST_RES.matched || document.hidden) return;
     fetch(SCRIPT_URL + '?v=1', { redirect: 'follow' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        if (!d || !d.ok || !d.v) return;
+        if (!d || !d.ok || !d.v) return; // 後端沒有這支端點（舊版）→ 靜靜跳過
         if (DATA_VER === null) { DATA_VER = d.v; return; } // 第一次只記錄基準
         if (d.v !== DATA_VER) { DATA_VER = d.v; refresh(); }
       }).catch(function () { });
+  }
+  function onBecameVisible() {
+    if (document.hidden || !LAST_RES || !LAST_RES.matched) return;
+    // 分頁被擱置很久才切回來：畫面上的資料已經舊了，直接重抓，不必等比版本
+    if (Date.now() - LAST_SYNC > STALE_MS) { DATA_VER = null; refresh(); return; }
+    checkVersion();
   }
   function startVersionWatch() {
     if (VER_TIMER) return;
     checkVersion(); // 先記下基準版本
     VER_TIMER = setInterval(checkVersion, VER_POLL_MS);
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) checkVersion(); });
+    document.addEventListener('visibilitychange', onBecameVisible);
   }
 
   function logout() {
@@ -530,6 +537,7 @@
       } catch (e) { }
     }
     LAST_RES = res;
+    if (!fromCache) LAST_SYNC = Date.now(); // 記錄真正跟後端同步過的時間（不含開頁時的本機快取畫面）
     DAY_SLOTS = null; // 資料刷新後，當天服事表快取失效，下次點日期重抓
     if (!res.matched) { renderUnmatched(res); return; }
     startVersionWatch();
