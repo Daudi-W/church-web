@@ -486,6 +486,29 @@
     });
   }
 
+  /* 自動更新（2026-07-25）：每隔一段時間問後端一句「資料版本變了嗎？」——那支端點只讀兩張
+     試算表的「最後修改時間」，不讀內容，所以很輕。版本變了才重抓 whoami。
+     效果：別人在試算表改了排班、或有人請假，這個頁面開著就會自己更新，不用手動重整。
+     分頁切到背景時不問（省流量），切回前景時立刻問一次。 */
+  var DATA_VER = null, VER_TIMER = null;
+  var VER_POLL_MS = 60000;
+  function checkVersion() {
+    if (!LAST_RES || !LAST_RES.matched || document.hidden) return;
+    fetch(SCRIPT_URL + '?v=1', { redirect: 'follow' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok || !d.v) return;
+        if (DATA_VER === null) { DATA_VER = d.v; return; } // 第一次只記錄基準
+        if (d.v !== DATA_VER) { DATA_VER = d.v; refresh(); }
+      }).catch(function () { });
+  }
+  function startVersionWatch() {
+    if (VER_TIMER) return;
+    checkVersion(); // 先記下基準版本
+    VER_TIMER = setInterval(checkVersion, VER_POLL_MS);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) checkVersion(); });
+  }
+
   function logout() {
     try { api('logout'); } catch (e) { }
     try { localStorage.removeItem('svcToken'); localStorage.removeItem('svcWhoami'); } catch (e) { }
@@ -509,6 +532,7 @@
     LAST_RES = res;
     DAY_SLOTS = null; // 資料刷新後，當天服事表快取失效，下次點日期重抓
     if (!res.matched) { renderUnmatched(res); return; }
+    startVersionWatch();
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('tabbar').style.display = 'flex';
