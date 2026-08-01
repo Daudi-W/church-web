@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0F6E56">
-  <title>旌旗教會 - 場地申請系統</title>
+  <title>場地登記｜桃園教會服事平台</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -58,7 +58,7 @@
     .form-group { margin-bottom: 20px; }
     label {
       display: flex; align-items: center; gap: 4px;
-      font-size: 14px; font-weight: 700; color: #4a5568; margin-bottom: 8px;
+      font-size: 15px; font-weight: 700; color: #4a5568; margin-bottom: 8px;
     }
     label .required { color: #e53e3e; }
 
@@ -112,6 +112,7 @@
       justify-content: center;
       -webkit-tap-highlight-color: transparent;
       word-break: keep-all;
+      font-family: inherit;
     }
     .venue-btn:active { transform: scale(0.96); }
     .venue-btn.selected {
@@ -714,42 +715,30 @@
       .cal-controls-row.row-tools { flex: 0 0 auto; gap: 8px; }
     }
   </style>
+  <link rel="stylesheet" href="platform-module.css">
+  <script src="platform-module.js"></script>
 </head>
-<body>
-<!-- Google Identity Services（使用 Google 登入）-->
-<script src="https://accounts.google.com/gsi/client" async></script>
-<style>
-  #loginOverlay { position: fixed; inset: 0; background: #f4f6f8; z-index: 9999;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 24px;
-    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; }
-  #loginOverlay .church-name { color:#2c5282; font-weight:600; letter-spacing:1px; }
-  #loginOverlay h2 { color:#2c5282; margin:8px 0; font-size:1.5rem; }
-  #loginOverlay p { color:#555; margin-bottom:24px; max-width:330px; line-height:1.7; }
-  #gBtn { display:flex; justify-content:center; }
-  #loginStatus { margin-top:18px; color:#c0392b; min-height:22px; font-size:.95rem; line-height:1.5; }
-  #userBar { display:flex; align-items:center; justify-content:space-between; gap:8px;
-    background:#e8f0fe; color:#2c5282; padding:9px 14px; border-radius:10px; margin-bottom:14px;
-    font-size:.9rem; }
-  #userBar button { background:#fff; border:1px solid #b3c7e6; color:#2c5282; border-radius:8px;
-    padding:5px 12px; cursor:pointer; font-size:.85rem; }
-  #userBar button:hover { background:#f0f6ff; }
-</style>
-<div id="loginOverlay">
-  <div class="church-name">Taoyuan Banner Church</div>
-  <h2>場地申請系統</h2>
-  <p>請用教會登記的 Google 帳號登入。<br>系統會自動帶入並驗證你的身分,不需手動填 Email。</p>
-  <div id="gBtn"></div>
-  <div id="loginStatus"></div>
-</div>
-<div class="container">
-  <div id="userBar" style="display:none;">
-    <span id="userInfo"></span>
-    <button type="button" onclick="logout()">登出</button>
+<body class="platform-module-body">
+<header class="platform-module-bar">
+  <a class="platform-module-home" href="service.html" aria-label="回首頁">← 回首頁</a>
+  <h1 class="platform-module-title">場地登記</h1>
+  <span class="platform-module-bar-spacer" aria-hidden="true"></span>
+</header>
+
+<section class="platform-module-gate" id="moduleGate" aria-live="polite">
+  <div class="platform-module-state" id="moduleState">
+    <div class="platform-module-spinner" aria-hidden="true"></div>
+    <h2 id="moduleStateTitle">正在開啟場地登記</h2>
+    <p id="moduleStateMessage">正在確認平台登入，不需要再次登入。</p>
+    <div class="platform-module-actions" id="moduleStateActions" hidden>
+      <a class="platform-module-action is-secondary" href="service.html">回首頁</a>
+      <button class="platform-module-action" type="button" onclick="PlatformModule.retryCurrentPage()">再試一次</button>
+    </div>
   </div>
+</section>
+
+<main class="container" id="moduleContent" hidden>
   <div class="header">
-    <div class="church-name">Taoyuan Banner Church</div>
-    <h1>場地使用申請</h1>
     <div class="subtitle">請填寫以下資料，系統將確認場地是否可用，最下方可查看各場地使用情形</div>
     <div class="subtitle">❗️如遇教會活動場地衝突，將由全職同工協調場地使用，若教會已無場地時，則需自行另尋教會以外的場地❗️</div>
   </div>
@@ -798,10 +787,10 @@
     </div>
 
     <div class="form-group">
-      <label>登記人 Email（Google 登入自動帶入）</label>
+      <label>登記人 Email（平台登入自動帶入）</label>
       <input type="email" id="emailInput" readonly tabindex="-1"
              style="background:#f1f3f5;color:#555;cursor:not-allowed;">
-      <div class="email-hint">已由 Google 登入驗證身分,無法手動修改。登記成功後寄送確認信與行事曆邀請。</div>
+      <div class="email-hint">已由平台登入驗證身分，無法手動修改。登記成功後寄送確認信與行事曆邀請。</div>
       <div class="email-status" id="emailStatus" style="display:none;"></div>
     </div>
 
@@ -845,7 +834,7 @@
 
     <div class="legend" id="calLegend"></div>
   </div>
-</div>
+</main>
 
 <!-- 月檢視點日後的彈窗 -->
 <div class="day-modal-overlay" id="dayModal" onclick="closeDayModalIfBg(event)">
@@ -866,40 +855,37 @@
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqvS2gLPqkXOgCWV-130JO9cC6Oi9pvCkVf28jRMynqW1mdWyP_00J8HGu0VY3HXDT2A/exec';
 
   // ════════════════════════════════════════════
-  // Google 登入（零信任）
+  // 平台登入：只使用服事平台共用 session，不在模組內顯示第二套登入
   // ════════════════════════════════════════════
-  var CLIENT_ID  = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
-  var ID_TOKEN   = null;   // Google 簽發的身分票（JWT）
+  var ID_TOKEN   = null;   // 保留欄位以維持既有 API 格式；模組模式不直接收 Google ID token
   var USER_EMAIL = null;   // 驗證過的 email
   var SVC_TOKEN  = null;   // 服事平台 session（同網域共用，免重登）
-  try { SVC_TOKEN = localStorage.getItem('svcToken'); } catch (e) { }
+  SVC_TOKEN = PlatformModule.getToken();
+  var LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) &&
+    new URLSearchParams(location.search).get('preview') === '1';
 
-  function initGoogleLogin() {
-    if (!(window.google && google.accounts && google.accounts.id)) {
-      return setTimeout(initGoogleLogin, 100);  // 等 GIS 函式庫載入
-    }
-    google.accounts.id.initialize({
-      client_id: CLIENT_ID,
-      callback: onGoogleLogin,
-      auto_select: false
-    });
-    google.accounts.id.renderButton(document.getElementById('gBtn'),
-      { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
-  }
-  window.addEventListener('load', initGoogleLogin);
   window.addEventListener('load', function () {
-    // 從服事平台帶著 session 過來 → 自動登入，免再按 Google
-    if (!SVC_TOKEN) return;
-    document.getElementById('loginStatus').style.color = '#555';
-    document.getElementById('loginStatus').textContent = '⏳ 以平台帳號自動登入中…';
+    if (LOCAL_PREVIEW) {
+      showLocalPreview();
+      return;
+    }
+    // 沒有平台 session → 回唯一登入入口；登入後 service.html 會帶回本頁。
+    if (!SVC_TOKEN) {
+      PlatformModule.requirePlatformLogin('venue', { reason: 'login_required' });
+      return;
+    }
     doSession({ action: 'session', sessionToken: SVC_TOKEN }, true);
   });
 
-  function onGoogleLogin(response) {
-    ID_TOKEN = response.credential;
-    document.getElementById('loginStatus').style.color = '#555';
-    document.getElementById('loginStatus').textContent = '⏳ 驗證中…';
-    doSession({ action: 'session', idToken: ID_TOKEN }, false);
+  function showLocalPreview() {
+    USER_EMAIL = 'preview@example.com';
+    emailVerified = true;
+    document.getElementById('emailInput').value = USER_EMAIL;
+    document.getElementById('name').value = '測試同工';
+    document.getElementById('moduleGate').hidden = true;
+    document.getElementById('moduleContent').hidden = false;
+    document.getElementById('calContent').innerHTML =
+      '<div class="cal-loading">預覽模式：未連接正式場地資料</div>';
   }
 
   function doSession(payload, silentFail) {
@@ -910,49 +896,52 @@
     .then(function(r) { return r.json(); })
     .then(function(res) {
       if (!res.success) {
-        if (silentFail) { SVC_TOKEN = null; document.getElementById('loginStatus').textContent = '請用 Google 登入'; return; }
-        showLoginError(res.message || '登入失敗,請重試'); return;
+        if (res.code === 'NO_AUTH') {
+          if (PlatformModule.requirePlatformLogin('venue', {
+            afterRejectedToken: true,
+            reason: 'session_expired'
+          })) return;
+          PlatformModule.showGateError(
+            '目前無法確認登入',
+            '已重新登入過，但場地系統仍無法確認身分。請先回首頁，稍後再試。'
+          );
+          return;
+        }
+        PlatformModule.showGateError('場地系統暫時無法開啟', res.message || '請稍後再試，或先回首頁。');
+        return;
       }
       USER_EMAIL = res.email;
       emailVerified = !!res.allowed;
       document.getElementById('emailInput').value = res.email;
       if (!res.allowed) {
-        showLoginError((res.name ? res.name + '，' : '') + (res.message || '此帳號沒有借用權限'));
+        PlatformModule.showGateError(
+          '目前沒有場地登記權限',
+          (res.name ? res.name + '，' : '') + (res.message || '請聯繫教會同工。')
+        );
         return;  // 沒權限不放行
       }
-      // ✅ 放行進主畫面
-      document.getElementById('loginOverlay').style.display = 'none';
-      var bar = document.getElementById('userBar');
-      bar.style.display = 'flex';
-      document.getElementById('userInfo').textContent =
-        '已登入：' + (res.name ? res.name + '（' + res.email + '）' : res.email);
+      PlatformModule.markModuleAuthenticated('venue');
+      document.getElementById('moduleGate').hidden = true;
+      document.getElementById('moduleContent').hidden = false;
       loadAndRenderCalendar();  // 登入後才載入借用情形
     })
     .catch(function() {
-      if (silentFail) { document.getElementById('loginStatus').textContent = '請用 Google 登入'; return; }
-      showLoginError('連線失敗,請稍後再試');
+      PlatformModule.showGateError('連線失敗', '目前連不到場地系統，請稍後再試，或先回首頁。');
     });
-  }
-
-  function showLoginError(msg) {
-    var el = document.getElementById('loginStatus');
-    el.style.color = '#c0392b';
-    el.textContent = '⚠️ ' + msg;
   }
 
   function requireRelogin() {
     USER_EMAIL = null; ID_TOKEN = null; emailVerified = false;
-    document.getElementById('userBar').style.display = 'none';
-    var ov = document.getElementById('loginOverlay');
-    ov.style.display = 'flex';
-    showLoginError('登入逾時,請重新登入。');
-  }
-
-  function logout() {
-    if (window.google && google.accounts && google.accounts.id) {
-      google.accounts.id.disableAutoSelect();
+    document.getElementById('moduleContent').hidden = true;
+    if (!PlatformModule.requirePlatformLogin('venue', {
+      afterRejectedToken: true,
+      reason: 'session_expired'
+    })) {
+      PlatformModule.showGateError(
+        '登入狀態無法驗證',
+        '已嘗試重新登入，但場地系統仍無法確認身分。請先回首頁，稍後再試。'
+      );
     }
-    location.reload();
   }
 
   // ── 場地清單(必須與後端 VENUES 一致) ──
@@ -1023,7 +1012,7 @@
     renderVenues();
     syncCalSelectors();
     renderLegend();
-    // 借用情形改在「登入成功後」才載入（見 onGoogleLogin）
+    // 借用情形改在平台 session 驗證成功後才載入（見 doSession）
   })();
 
   // ════════════════════════════════════════════
@@ -1043,7 +1032,8 @@
     var grid = document.getElementById('venueGrid');
     grid.innerHTML = '';
     VENUES_BY_BRANCH[currentBranch].forEach(function(v) {
-      var btn = document.createElement('div');
+      var btn = document.createElement('button');
+      btn.type = 'button';
       btn.className = 'venue-btn';
       btn.innerHTML = '<span class="venue-icon">' + v.icon + '</span>' + v.name;
       btn.onclick = function() { selectVenue(v.name, btn); };
@@ -1057,8 +1047,8 @@
     el.classList.add('selected');
   }
 
-  // 身分驗證已改由 Google 登入處理（見 onGoogleLogin），此函式保留為空殼
-  function verifyEmail(val) { /* deprecated: 改用 Google 登入 */ }
+  // 身分驗證已改由平台共用 session 處理，此函式保留為空殼
+  function verifyEmail(val) { /* deprecated: 改用平台 session */ }
 
   function setSubmitting(on) {
     var btn = document.getElementById('submitBtn');

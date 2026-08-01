@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="服事平台">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<script src="platform-module.js"></script>
 <style>
   :root {
     --tl-900: #04342C; --tl-800: #085041; --tl-600: #0F6E56;
@@ -540,6 +541,8 @@
     if (!fromCache) LAST_SYNC = Date.now(); // 記錄真正跟後端同步過的時間（不含開頁時的本機快取畫面）
     DAY_SLOTS = null; // 資料刷新後，當天服事表快取失效，下次點日期重抓
     if (!res.matched) { renderUnmatched(res); return; }
+    // 從場地／新人模組回來登入：後端確認 session 有效後，再回到原功能。
+    if (!fromCache && PlatformModule.resumeRequestedModule()) return;
     startVersionWatch();
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
@@ -704,7 +707,8 @@
         else if (act === 'board') { openChurchBoard(); }
         else if (act === 'open') {
           var href = el.getAttribute('data-href');
-          if (href.indexOf('http') === 0) window.open(href, '_blank');
+          if (PlatformModule.isModuleHref(href)) location.href = href;
+          else if (href.indexOf('http') === 0) window.open(href, '_blank');
           else openEmbed(href, el.getAttribute('data-name') || '');
         }
       });
