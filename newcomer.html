@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0F6E56">
-<title>新人跟進系統</title>
+<title>新人跟進｜桃園教會服事平台</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1039,44 +1039,57 @@ body.large-font .pastor-leader-name { font-size: 19px; }
 body.large-font .pastor-summary h2 { font-size: 22px; }
 body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
 
+.platform-module-body .newcomer-toolbar {
+  position: sticky;
+  top: calc(56px + env(safe-area-inset-top));
+  z-index: 50;
+  min-height: 54px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #e3e9ef;
+  background: #fff;
+  color: #1f2d3d;
+  box-shadow: none;
+}
+.newcomer-toolbar .topbar-sub { color: #6b7a8d; font-size: 15px; font-weight: 700; opacity: 1; }
+.newcomer-toolbar #btn-back,
+.newcomer-toolbar #btn-font {
+  min-height: 44px;
+  padding: 8px 12px !important;
+  border-radius: 10px;
+  background: #E1F5EE;
+  color: #0F6E56;
+  font-size: 15px !important;
+}
 
 </style>
+<link rel="stylesheet" href="platform-module.css?v=3">
+<script src="platform-module.js?v=3"></script>
 </head>
-<body>
+<body class="platform-module-body">
+<header class="platform-module-bar">
+  <a class="platform-module-home" href="service.html" aria-label="回首頁">← 回首頁</a>
+  <h1 class="platform-module-title">新人跟進</h1>
+  <span class="platform-module-bar-spacer" aria-hidden="true"></span>
+</header>
 
-<!-- Google Identity Services（使用 Google 登入）-->
-<script src="https://accounts.google.com/gsi/client" async></script>
-<style>
-  #loginOverlay { position: fixed; inset: 0; background: #f0f4f8; z-index: 99999;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 24px;
-    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; }
-  #loginOverlay h2 { color:#2c5282; margin:8px 0; font-size:1.5rem; }
-  #loginOverlay p { color:#555; margin-bottom:24px; max-width:330px; line-height:1.7; }
-  #gBtn { display:flex; justify-content:center; }
-  #loginStatus { margin-top:18px; color:#c0392b; min-height:22px; font-size:.95rem; line-height:1.5; }
-  #logoutChip { position: fixed; right: 12px; bottom: 12px; z-index: 9000;
-    background:#fff; border:1px solid #b3c7e6; color:#2c5282; border-radius:20px;
-    padding:6px 14px; cursor:pointer; font-size:.8rem; box-shadow:0 1px 4px rgba(0,0,0,.12); }
-  #logoutChip:hover { background:#f0f6ff; }
-</style>
-<div id="loginOverlay">
-  <div style="color:#2c5282;font-weight:600;letter-spacing:1px;">旌旗教會桃園分堂</div>
-  <h2>📋 新人跟進系統</h2>
-  <p>請用教會登記的 Google 帳號登入。<br>系統會依你的身分自動帶出對應的跟進清單。</p>
-  <div id="gBtn"></div>
-  <div id="loginStatus"></div>
-</div>
-<button id="logoutChip" onclick="logout()" style="display:none;">登出</button>
-
-<div class="topbar">
-  <div>
-    <div class="topbar-title">📋 新人跟進系統</div>
-    <div class="topbar-sub" id="topbar-sub">旌旗教會桃園分堂</div>
+<section class="platform-module-gate" id="moduleGate" aria-live="polite">
+  <div class="platform-module-state" id="moduleState">
+    <div class="platform-module-spinner" aria-hidden="true"></div>
+    <h2 id="moduleStateTitle">載入中…</h2>
+    <p id="moduleStateMessage" hidden></p>
+    <div class="platform-module-actions" id="moduleStateActions" hidden>
+      <a class="platform-module-action is-secondary" href="service.html">回首頁</a>
+      <button class="platform-module-action" type="button" onclick="PlatformModule.retryCurrentPage()">再試一次</button>
+    </div>
   </div>
+</section>
+
+<div id="moduleContent" hidden>
+<div class="topbar newcomer-toolbar">
+  <div class="topbar-sub" id="topbar-sub">我的跟進清單</div>
   <div class="topbar-buttons">
     <button id="btn-font" onclick="toggleFontSize()" style="font-size: 20px; padding: 10px 20px; cursor: pointer;">🔍 大字</button>
-    <button id="btn-back" class="hidden" onclick="goBack()" style="font-size: 20px; padding: 10px 20px; cursor: pointer;">← 返回</button>
+    <button id="btn-back" class="hidden" onclick="goBack()" style="font-size: 20px; padding: 10px 20px; cursor: pointer;">返回上一層</button>
   </div>
 </div>
 
@@ -1328,27 +1341,29 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
     <button class="btn-cancel" onclick="closeModal('modal-assign')">取消</button>
   </div>
 </div>
+</div>
 <script>
 // ================================================================
-// Google 登入（零信任）+ google.script.run 替身（改走 fetch）
+// 平台登入 + google.script.run 替身（改走 fetch）
 // ================================================================
 var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAc05-vf-HfZ0VcaPaFeVo3a3nGoyZT4lgkg-7hFFEXa3J09JDHnnGVIty9eXXSaNa/exec';
-var CLIENT_ID  = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
-var ID_TOKEN   = null;   // Google 簽發的身分票
+var ID_TOKEN   = null;   // 保留欄位以維持既有 API 格式；模組模式不直接收 Google ID token
 var USER_EMAIL = null;   // 驗證過的 email
 var SVC_TOKEN  = null;   // 服事平台 session（同網域共用，免重登）
-try { SVC_TOKEN = localStorage.getItem('svcToken'); } catch (e) { }
+SVC_TOKEN = PlatformModule.getToken();
+var LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) &&
+  new URLSearchParams(location.search).get('preview') === '1';
 
 // 核心：把一個後端函式呼叫轉成帶 token 的 fetch，回傳 Promise
 function callBackend(action, args) {
-  if (!ID_TOKEN && !SVC_TOKEN) { requireRelogin(); return Promise.reject('NO_AUTH'); }
+  if (!ID_TOKEN && !SVC_TOKEN) { requireRelogin(); return Promise.reject('AUTH_REDIRECT'); }
   return fetch(SCRIPT_URL, {
     method: 'POST', redirect: 'follow',
     body: JSON.stringify({ action: action, idToken: ID_TOKEN, sessionToken: SVC_TOKEN, args: args || [] })
   })
   .then(function(r){ return r.json(); })
   .then(function(res){
-    if (res && res.__noauth) { requireRelogin(); throw 'NO_AUTH'; }
+    if (res && res.__noauth) { requireRelogin(); throw 'AUTH_REDIRECT'; }
     return res;
   });
 }
@@ -1376,71 +1391,66 @@ function callBackend(action, args) {
   window.google = window.google || {};
   window.google.script = window.google.script || {};
   Object.defineProperty(window.google.script, 'run', { configurable: true, get: function(){ return makeRunner(); } });
-})();
+  })();
 
-function initGoogleLogin() {
-  if (!(window.google && window.google.accounts && window.google.accounts.id)) {
-    return setTimeout(initGoogleLogin, 100);  // 等 GIS 函式庫載入
-  }
-  google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onGoogleLogin, auto_select: false });
-  google.accounts.id.renderButton(document.getElementById('gBtn'),
-    { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
-}
-window.addEventListener('load', initGoogleLogin);
 window.addEventListener('load', function () {
-  // 從服事平台帶 session 過來 → 自動登入
-  if (!SVC_TOKEN) return;
-  var st = document.getElementById('loginStatus');
-  if (st) { st.style.color = '#555'; st.textContent = '⏳ 以平台帳號自動登入中…'; }
-  bootLogin(true);
+  if (LOCAL_PREVIEW) {
+    showLocalPreview();
+    return;
+  }
+  if (!SVC_TOKEN) {
+    PlatformModule.requirePlatformLogin('newcomer', { reason: 'login_required' });
+    return;
+  }
+  bootLogin();
 });
 
-function onGoogleLogin(response) {
-  ID_TOKEN = response.credential;
-  var st = document.getElementById('loginStatus');
-  st.style.color = '#555'; st.textContent = '⏳ 驗證中…';
-  bootLogin(false);
+function showLocalPreview() {
+  USER_EMAIL = 'preview@example.com';
+  document.getElementById('moduleGate').hidden = true;
+  document.getElementById('moduleContent').hidden = false;
+  bootWithData({
+    success: true,
+    name: '測試小組長',
+    role: '小組長',
+    email: USER_EMAIL,
+    isStaff: false,
+    members: []
+  });
 }
 
-// 登入後第一個請求：getMyDataForFrontend（同時驗票 + 取使用者資料）
-function bootLogin(silentFail) {
+// 第一個請求同時驗證平台 session 並取得使用者的角色化資料
+function bootLogin() {
   callBackend('getMyDataForFrontend', [])
     .then(function(data){
       if (!data || data.success === false) {
-        if (silentFail) { SVC_TOKEN = null; showPlainStatus('請用 Google 登入'); return; }
-        showLoginError((data && data.error) || '登入失敗,請重試');
+        PlatformModule.showGateError('新人跟進暫時無法開啟', (data && data.error) || '請稍後再試，或先回首頁。');
         return;
       }
       USER_EMAIL = data.email;
-      document.getElementById('loginOverlay').style.display = 'none';
-      document.getElementById('logoutChip').style.display = 'block';
+      PlatformModule.markModuleAuthenticated('newcomer');
+      document.getElementById('moduleGate').hidden = true;
+      document.getElementById('moduleContent').hidden = false;
       bootWithData(data);   // 用已取得的資料直接初始化,免再打一次後端
     })
     .catch(function(err){
-      if (silentFail) { SVC_TOKEN = null; showPlainStatus('請用 Google 登入'); return; }
-      if (err === 'NO_AUTH') { showLoginError('登入逾時,請重新登入'); return; }
-      showLoginError('連線失敗,請稍後再試');
+      if (err === 'AUTH_REDIRECT') return;
+      PlatformModule.showGateError('連線失敗', '目前連不到新人跟進系統，請稍後再試，或先回首頁。');
     });
 }
 
-function showPlainStatus(msg) {
-  var el = document.getElementById('loginStatus');
-  if (el) { el.style.color = '#555'; el.textContent = msg; }
-}
-
-function showLoginError(msg) {
-  var el = document.getElementById('loginStatus');
-  el.style.color = '#c0392b'; el.textContent = '⚠️ ' + msg;
-}
 function requireRelogin() {
   ID_TOKEN = null; USER_EMAIL = null;
-  var chip = document.getElementById('logoutChip'); if (chip) chip.style.display = 'none';
-  var ov = document.getElementById('loginOverlay'); if (ov) ov.style.display = 'flex';
-  showLoginError('登入逾時,請重新登入。');
-}
-function logout() {
-  if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
-  location.reload();
+  document.getElementById('moduleContent').hidden = true;
+  if (!PlatformModule.requirePlatformLogin('newcomer', {
+    afterRejectedToken: true,
+    reason: 'session_expired'
+  })) {
+    PlatformModule.showGateError(
+      '登入狀態無法驗證',
+      '已嘗試重新登入，但新人跟進系統仍無法確認身分。請先回首頁，稍後再試。'
+    );
+  }
 }
 
 // ================================================================
@@ -1500,7 +1510,7 @@ let collapsedFlatGroups = new Set();   // 記錄使用者收合的分群 key
 // ================================================================
 // 初始化
 // ================================================================
-// 改由「Google 登入成功後」呼叫（見 onGoogleLogin），資料已取得直接初始化
+// 改由平台 session 驗證成功後呼叫，資料已取得直接初始化
 function bootWithData(data) {
   if (!data.success) { showError(data.error || '載入失敗'); return; }
   currentUser = { name: data.name, role: data.role, email: data.email, isStaff: !!data.isStaff };
