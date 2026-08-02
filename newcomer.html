@@ -522,10 +522,11 @@ body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
   background: #f1f5f9;
   border: none;
   border-radius: 8px;
-  padding: 5px 8px;
+  width: 44px; height: 44px; padding: 0;
   font-size: 14px;
   cursor: pointer;
   flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 .flat-row-icon-btn.btn-write { background: #e0e7ff; }
 .flat-row-icon-btn:active { opacity: 0.7; }
@@ -786,6 +787,18 @@ body.large-font .flat-row-right {
   font-size: 13px; font-weight: 700;
 }
 
+.detail-trigger {
+  width: 44px; height: 44px;
+  margin: -12px -4px -12px 2px;
+  border: 0; border-radius: 50%;
+  background: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 19px; line-height: 1;
+  cursor: pointer; vertical-align: middle;
+  transition: background 0.15s, transform 0.15s;
+}
+.detail-trigger:active { background: #e2e8f0; transform: scale(0.94); }
+
 .detail-grid {
   display: grid; grid-template-columns: 1fr 1fr;
   gap: 8px; margin-bottom: 12px;
@@ -872,6 +885,8 @@ body.large-font .detail-week-note.empty { font-size: 15px; }
   padding: 20px 20px 36px;
   width: 100%; max-width: 480px;
   max-height: 90vh; overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   animation: slideUp 0.3s ease;
 }
 @keyframes slideUp {
@@ -885,6 +900,34 @@ body.large-font .detail-week-note.empty { font-size: 15px; }
 }
 .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
 .modal-sub   { font-size: 12px; color: #94a3b8; margin-bottom: 20px; }
+
+.detail-modal {
+  padding: 0 20px calc(24px + env(safe-area-inset-bottom));
+}
+.detail-modal-header {
+  position: sticky; top: 0; z-index: 5;
+  background: white;
+  padding: 8px 0 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.detail-modal-header .modal-handle { margin-bottom: 6px; }
+.detail-modal-heading {
+  min-height: 44px;
+  display: flex; align-items: center; gap: 12px;
+}
+.detail-modal-copy { flex: 1; min-width: 0; }
+.detail-modal-header .modal-title,
+.detail-modal-header .modal-sub { margin-bottom: 0; }
+.modal-close {
+  flex: 0 0 44px;
+  width: 44px; height: 44px;
+  border: 0; border-radius: 50%;
+  background: #f1f5f9; color: #334155;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 30px; font-weight: 300; line-height: 1;
+  cursor: pointer;
+}
+.modal-close:active { background: #e2e8f0; transform: scale(0.95); }
 
 .modal.compact .modal-title  { font-size: 15px; }
 .modal.compact .section-label { font-size: 11px; }
@@ -1285,11 +1328,18 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
 </div>
 
 <!-- 詳細資訊 Modal -->
-<div id="modal-detail" class="modal-overlay hidden">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="detail-name"></div>
-    <div class="modal-sub"   id="detail-sub"></div>
+<div id="modal-detail" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="detail-name">
+  <div class="modal detail-modal">
+    <div class="detail-modal-header">
+      <div class="modal-handle"></div>
+      <div class="detail-modal-heading">
+        <div class="detail-modal-copy">
+          <div class="modal-title" id="detail-name"></div>
+          <div class="modal-sub" id="detail-sub"></div>
+        </div>
+        <button type="button" class="modal-close" onclick="closeModal('modal-detail')" aria-label="關閉新人詳細資訊">×</button>
+      </div>
+    </div>
     <div id="detail-content"></div>
     <div id="detail-actions" style="display:flex;gap:8px;margin:14px 0 10px"></div>
     <button class="btn-cancel" onclick="closeModal('modal-detail')">關閉</button>
@@ -1415,7 +1465,23 @@ function showLocalPreview() {
     role: '小組長',
     email: USER_EMAIL,
     isStaff: false,
-    members: []
+    members: [{
+      rowIndex: 999,
+      name: '測試新人', fillDate: '2026/08/02', service: '第二堂',
+      gender: '男', age: '22', identity: '學生', occupation: '大學',
+      inviter: '測試邀請人', reason: '朋友邀請', phone: '0900-000-000',
+      email: 'preview-member@example.com', contactTime: '晚上', address: '測試地址',
+      isChristian: '否', prevChurch: '', assignDate: '2026/08/02',
+      interviewer: '測試同工', leader: '測試小組長', group: '測試小組',
+      interviewNote: '這是本機介面測試用的假資料。',
+      weeks: [
+        { week: 1, status: '跟進中', note: '第一次聯絡完成。' },
+        { week: 2, status: '聯絡不上', note: '晚點再聯絡。' },
+        { week: 3, status: '', note: '' },
+        { week: 4, status: '', note: '' }
+      ],
+      conclusion: '', groupJoined: ''
+    }]
   });
 }
 
@@ -2088,7 +2154,7 @@ function _renderFlatMemberCard(m, leaderName, districtName) {
   if (!isConcluded) {
     actionBtns += '<button class="flat-row-icon-btn btn-write" onclick="openReportFromFlat(' + m.rowIndex + ')" title="填寫跟進">✍️</button>';
   }
-  actionBtns += '<button class="flat-row-icon-btn" onclick="openDetailFromFlat(' + m.rowIndex + ')" title="詳細資訊">🔍</button>';
+  actionBtns += '<button class="flat-row-icon-btn" onclick="openDetailFromFlat(' + m.rowIndex + ')" title="詳細資訊" aria-label="查看新人詳細資訊">🔍</button>';
 
   // 屬於誰 + 日期 + 電話
   var subParts = [];
@@ -2509,7 +2575,7 @@ function renderMembers() {
       }
     }
 
-    var detailBtn = '<button onclick="openDetail(' + idx + ')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 0 0 6px;vertical-align:middle">🔍</button>';
+    var detailBtn = '<button class="detail-trigger" onclick="openDetail(' + idx + ')" aria-label="查看 ' + esc(m.name) + ' 的詳細資訊">🔍</button>';
 
     return '<div class="member-card' + (isConcluded ? ' concluded' : '') + newClass + '" data-last="' + ls + '">' +
       '<div class="card-top">' +
@@ -2806,6 +2872,8 @@ function openDetailDirect(m, scrollTo) {
       '<button class="btn-conclude" style="flex:1;margin-top:0" onclick="_detailJumpConclude(' + m.rowIndex + ')">📋 填寫結案</button>';
   }
 
+  var detailModal = document.querySelector('#modal-detail .modal');
+  detailModal.scrollTop = 0;
   document.getElementById('modal-detail').classList.remove('hidden');
   if (scrollTo === 'weeks') {
     setTimeout(function() {
@@ -3150,6 +3218,11 @@ function esc(str) {
 
 document.querySelectorAll('.modal-overlay').forEach(function(el) {
   el.addEventListener('click', function(e) { if (e.target === el) closeModal(el.id); });
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  var openModal = document.querySelector('.modal-overlay:not(.hidden)');
+  if (openModal) closeModal(openModal.id);
 });
 </script>
 </body>
