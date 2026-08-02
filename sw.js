@@ -2,9 +2,10 @@
  * 策略：network-first（永遠先抓最新，離線才用快取），避免版本卡住。
  * 只快取 GET 的同源靜態資源；對 GAS 的 POST API 不攔截。
  */
-const CACHE = 'svc-v4';
+const CACHE = 'svc-v5';
 const SHELL = [
-  'service.html', 'venue.html', 'platform-module.css?v=3', 'platform-module.js?v=3',
+  'service.html', 'venue.html', 'newcomer.html',
+  'platform-module.css?v=3', 'platform-module.js?v=3',
   'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'
 ];
 
