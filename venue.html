@@ -715,8 +715,8 @@
       .cal-controls-row.row-tools { flex: 0 0 auto; gap: 8px; }
     }
   </style>
-  <link rel="stylesheet" href="platform-module.css?v=2">
-  <script src="platform-module.js?v=2"></script>
+  <link rel="stylesheet" href="platform-module.css?v=3">
+  <script src="platform-module.js?v=3"></script>
 </head>
 <body class="platform-module-body">
 <header class="platform-module-bar">
@@ -728,8 +728,8 @@
 <section class="platform-module-gate" id="moduleGate" aria-live="polite">
   <div class="platform-module-state" id="moduleState">
     <div class="platform-module-spinner" aria-hidden="true"></div>
-    <h2 id="moduleStateTitle">正在開啟場地登記</h2>
-    <p id="moduleStateMessage">正在確認平台登入，不需要再次登入。</p>
+    <h2 id="moduleStateTitle">載入中…</h2>
+    <p id="moduleStateMessage" hidden></p>
     <div class="platform-module-actions" id="moduleStateActions" hidden>
       <a class="platform-module-action is-secondary" href="service.html">回首頁</a>
       <button class="platform-module-action" type="button" onclick="PlatformModule.retryCurrentPage()">再試一次</button>

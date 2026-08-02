@@ -99,7 +99,10 @@
     if (gate) gate.hidden = false;
     if (card) card.classList.add('is-error');
     if (titleEl) titleEl.textContent = title || '目前無法開啟';
-    if (messageEl) messageEl.textContent = message || '請稍後再試，或先回首頁。';
+    if (messageEl) {
+      messageEl.textContent = message || '請稍後再試，或先回首頁。';
+      messageEl.hidden = false;
+    }
     if (actions) actions.hidden = false;
   }
 
