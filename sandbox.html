@@ -1459,7 +1459,11 @@
     var branch = document.getElementById('pubBranch').value;
     var state = publishStateFor(branch);
     var currentIso = String(state.through || '').replace(/\//g, '-');
-    var weeks = publishWeeksFor(branch).filter(function (w) { return !currentIso || w.value >= currentIso; });
+    var weeks = publishWeeksFor(branch).slice();
+    if (currentIso && !weeks.some(function (w) { return w.value === currentIso; })) {
+      weeks.unshift({ value: currentIso, label: String(state.through || '').replace(/^\d{4}\//, '') + '（目前已公告，補同步）' });
+    }
+    weeks = weeks.filter(function (w) { return !currentIso || w.value >= currentIso; });
     var select = document.getElementById('pubDate');
     select.innerHTML = weeks.map(function (w) {
       return '<option value="' + esc(w.value) + '"' + (w.value === currentIso ? ' selected' : '') + '>' + esc(w.label) + '</option>';
