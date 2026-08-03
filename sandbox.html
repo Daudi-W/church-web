@@ -704,7 +704,6 @@
         else if (act === 'clearnoti') { clearNoti(); return; }
         if (act === 'leave') openLeave();
         else if (act === 'announce') openAnnouncement();
-        else if (act === 'seasonshare') openSeasonShare();
         else if (act === 'review') openReview();
         else if (act === 'publish') openPublish();
         else if (act === 'survey') openSurvey();
@@ -716,7 +715,6 @@
         else if (act === 'lvskipone') doLeaveSkipOne(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvreopen') doLeaveReopen(Number(el.getAttribute('data-e')));
         else if (act === 'lvtoggle') { LV_OPEN = !LV_OPEN; renderTab(); }
-        else if (act === 'syncboard') openSyncBoard();
         else if (act === 'logout') logout();
         else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
         else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
@@ -1162,12 +1160,10 @@
       h += '<div class="me-card" style="margin-top:14px"><div style="font-weight:700;font-size:16px;margin-bottom:4px">' +
         '<i class="ti ti-rosette-discount-check" style="color:var(--tl-600)"></i> 服事表發布</div>' +
         '<div class="hint-s">' + psLine + '</div>' +
-        '<div class="hint-s" style="margin-top:6px;color:var(--mut)">發布前的更動不會通知大家；發布後改「已公告日期」才會跳異動通知。</div>' +
-        '<button class="btn" style="margin-top:10px" data-act="publish"><i class="ti ti-speakerphone"></i> 發布服事表</button></div>';
+        '<div class="hint-s" style="margin-top:6px;color:var(--mut)">未公告日期不會進公告表，也不會通知；確認公告後的異動才同步並通知。</div>' +
+        '<button class="btn" style="margin-top:10px" data-act="publish"><i class="ti ti-table-share"></i> 公告服事表（測試）</button></div>';
       h += '<button class="btn" data-act="newsadmin"><i class="ti ti-speakerphone"></i> 公告管理</button>';
-      h += '<button class="btn" data-act="seasonshare"><i class="ti ti-photo-share"></i> 整季分享（測試）</button>';
       h += '<button class="btn" data-act="surveyadmin"><i class="ti ti-checklist"></i> 調查管理' + (res.survey ? '（進行中：' + esc(res.survey.name) + '）' : '') + '</button>';
-      h += '<button class="btn" data-act="syncboard"><i class="ti ti-table-share"></i> 同步到公告表</button>';
       h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
         (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button>';
       h += '<button class="btn" data-act="grouprename"><i class="ti ti-users-group"></i> 小組改名 / 交棒</button>';
@@ -1433,72 +1429,81 @@
     }).catch(function (e) { alert('連線失敗：' + e); });
   }
 
-  /* ===== 同步到公告表 ===== */
-  function openSyncBoard() {
+  /* ===== 公告服事表：補日期欄＋同步＋發布水位 ===== */
+  var PUBLISH_DRAFT = null;
+  function publishStateFor(branch) {
+    return (LAST_RES.publishState || []).filter(function (x) { return x.branch === branch; })[0] || {};
+  }
+  function publishWeeksFor(branch) {
+    return ((LAST_RES.publishWeeks || []).filter(function (x) { return x.branch === branch; })[0] || {}).weeks || [];
+  }
+  function openPublish() {
+    PUBLISH_DRAFT = null;
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '產生預覽中…（約十幾秒）';
-    api('syncBoard', { weeks: 3, apply: false }).then(function (res) {
-      if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
-      var total = (res.report || []).reduce(function (a, r) { return a + (r.changed || 0); }, 0);
-      var h = '<div class="pk-h"><i class="ti ti-table-share"></i> 同步到公告表（未來三週）</div>' +
-        '<div class="hint-s">把<b>正式排班表</b>的內容更新到公告試算表，共 <b>' + total + '</b> 格會變動。' +
-        '⚠️ 這會用正式表覆蓋公告表未來三週（含把正式表還沒排的格子清空），請確認正式表已排好。</div>';
-      (res.report || []).forEach(function (r) {
-        h += '<div class="ap-card" style="border:1px solid var(--line)"><b>' + esc(r.branch) + '</b>　' +
-          (r.error ? '<span class="err">' + esc(r.error) + '</span>' : r.changed + ' 格變動') +
-          ((r.samples && r.samples.length) ? '<div class="hint-s" style="margin-top:4px">' + r.samples.map(function (x) { return '・' + x; }).join('<br>') + (r.changed > r.samples.length ? '<br>…還有 ' + (r.changed - r.samples.length) + ' 筆' : '') + '</div>' : '') +
-          '</div>';
-      });
-      h += '<div class="pk-btns">' + (total ? '<button onclick="doSyncBoard()">確認同步 ' + total + ' 格</button>' : '') +
-        '<button onclick="closePicker()">' + (total ? '取消' : '關閉') + '</button></div>';
+    var opts = (LAST_RES.publishState || []).map(function (b) {
+      return '<option value="' + esc(b.branch) + '">' + esc(b.branch) + '</option>';
+    }).join('');
+    p.querySelector('.pk-body').innerHTML =
+      '<div class="pk-h"><i class="ti ti-table-share"></i> 公告服事表（沙盒測試）</div>' +
+      '<div class="hint-s">選擇堂區與公告週。系統會先預覽，再補齊公告表日期欄、同步內容，最後才設定發布水位。第一次公告不會逐人發異動通知。</div>' +
+      '<div class="lv-form">' +
+      '<label>堂區 <select id="pubBranch">' + opts + '</select></label>' +
+      '<label>公告至哪一週 <select id="pubDate"></select></label></div>' +
+      '<div id="pubCurrent" class="hint-s"></div>' +
+      '<div class="pk-btns"><button onclick="previewPublish()">產生公告預覽</button><button onclick="closePicker()">取消</button></div>';
+    var sel = document.getElementById('pubBranch');
+    sel.addEventListener('change', fillPublishWeeks); fillPublishWeeks();
+  }
+
+  function fillPublishWeeks() {
+    var branch = document.getElementById('pubBranch').value;
+    var state = publishStateFor(branch);
+    var currentIso = String(state.through || '').replace(/\//g, '-');
+    var weeks = publishWeeksFor(branch).filter(function (w) { return !currentIso || w.value >= currentIso; });
+    var select = document.getElementById('pubDate');
+    select.innerHTML = weeks.map(function (w) {
+      return '<option value="' + esc(w.value) + '"' + (w.value === currentIso ? ' selected' : '') + '>' + esc(w.label) + '</option>';
+    }).join('');
+    if (!weeks.length) select.innerHTML = '<option value="">班表沒有可公告的未來週次</option>';
+    document.getElementById('pubCurrent').innerHTML = branch + '目前' +
+      (state.through ? '已公告到 <b>' + esc(state.through) + '</b>' : '<b>尚未公告</b>') +
+      '。未公告日期仍只留在排班表。';
+  }
+
+  function previewPublish() {
+    var branch = document.getElementById('pubBranch').value;
+    var date = document.getElementById('pubDate').value;
+    if (!date) { alert('目前沒有可公告的週次'); return; }
+    PUBLISH_DRAFT = { branch: branch, date: date };
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '產生預覽中…（不會寫入）';
+    api('publish', { branch: branch, date: date, apply: false }).then(function (res) {
+      if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || '') + '<div class="pk-btns"><button onclick="openPublish()">返回</button></div>'; return; }
+      var h = '<div class="pk-h"><i class="ti ti-search"></i> ' + esc(res.branch) + '公告預覽</div>' +
+        '<div class="ap-card" style="border:1px solid var(--line)"><b>公告至 ' + esc(res.through) + '</b><br>' +
+        '<span class="hint-s">服事場次：' + Number(res.slots || 0) + ' 欄<br>' +
+        '需新增日期欄：' + Number(res.addedColumns || 0) + ' 欄<br>' +
+        '內容異動：' + Number(res.changed || 0) + ' 格<br>' +
+        '來源空白：' + Number(res.blankCells || 0) + ' 格（包含不需排人的崗位，不等於全部都是缺口）</span></div>';
+      if (res.addedLabels && res.addedLabels.length) h += '<div class="hint-s"><b>將新增：</b>' + res.addedLabels.map(esc).join('、') + '</div>';
+      if (res.unmatched && res.unmatched.length) h += '<div class="hint-s" style="color:var(--red)"><b>公告表找不到對應崗位：</b>' + res.unmatched.map(esc).join('、') + '</div>';
+      if (res.samples && res.samples.length) h += '<div class="hint-s" style="margin-top:8px"><b>異動範例：</b><br>' + res.samples.map(function (x) { return '・' + esc(x); }).join('<br>') + '</div>';
+      h += '<div class="hint-s" style="margin-top:10px">確認後才會寫入沙盒公告表；發布完成前不會更新公告水位。</div>' +
+        '<div class="pk-btns"><button onclick="confirmPublish()">確認公告</button><button onclick="openPublish()">返回修改</button></div>';
       b.innerHTML = h;
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
   }
-  function doSyncBoard() {
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '同步中…（約十幾秒）';
-    api('syncBoard', { weeks: 3, apply: true }).then(function (res) {
-      if (!res.ok) { alert('同步失敗：' + (res.error || '')); return; }
-      var total = (res.report || []).reduce(function (a, r) { return a + (r.changed || 0); }, 0);
-      b.innerHTML = '<div class="pk-h">✅ 已同步</div><div class="hint-s">公告表已更新 ' + total + ' 格，與正式排班表一致。</div>' +
-        '<div class="pk-btns"><button onclick="closePicker()">完成</button></div>';
-    }).catch(function (e) { alert('連線失敗：' + e); });
-  }
 
-  /* ===== 發布服事表 ===== */
-  function openPublish() {
-    var res = LAST_RES;
-    var ps = res.publishState || [];
-    var lastMap = {};
-    (res.scheduleLastDates || []).forEach(function (x) { lastMap[x.branch] = x.last; });
-    var p = document.getElementById('picker'); p.style.display = 'flex';
-    var opts = ps.map(function (b, i) {
-      return '<option value="' + esc(b.branch) + '">' + esc(b.branch) + '（' +
-        (b.through ? '目前已公告到 ' + b.through : '尚未發布') + '）</option>';
-    }).join('');
-    p.querySelector('.pk-body').innerHTML =
-      '<div class="pk-h"><i class="ti ti-speakerphone"></i> 發布服事表</div>' +
-      '<div class="hint-s">把某堂區的服事表「公告到指定日期」。這天（含）以前的更動才會通知同工，之後的當作草稿、不打擾。</div>' +
-      '<div class="lv-form">' +
-      '<label>堂區 <select id="pubBranch">' + opts + '</select></label>' +
-      '<label>公告到（含當天）<input type="date" id="pubDate"></label></div>' +
-      '<div class="pk-btns"><button onclick="submitPublish()">確認發布</button><button onclick="closePicker()">取消</button></div>';
-    // 預設帶該堂區目前排到的最後一天
-    var sel = document.getElementById('pubBranch');
-    function fill() { var d = lastMap[sel.value]; if (d) document.getElementById('pubDate').value = d; }
-    sel.addEventListener('change', fill); fill();
-  }
-  function submitPublish() {
-    var branch = document.getElementById('pubBranch').value;
-    var date = document.getElementById('pubDate').value;
-    if (!date) { alert('請選擇公告到哪一天'); return; }
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '發布中…';
-    api('publish', { branch: branch, date: date }).then(function (res) {
-      if (!res.ok) { alert('發布失敗：' + (res.error || '')); openPublish(); return; }
-      b.innerHTML = '<div class="pk-h">✅ 已發布</div>' +
-        '<div class="hint-s">' + esc(res.branch) + ' 已公告到 ' + esc(res.through) +
-        '。之後改這天以前的服事，系統才會通知對應的同工。</div>' +
-        '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
-    }).catch(function (e) { alert('連線失敗：' + e); });
+  function confirmPublish() {
+    if (!PUBLISH_DRAFT) { openPublish(); return; }
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '正在補欄、同步並發布…';
+    api('publish', { branch: PUBLISH_DRAFT.branch, date: PUBLISH_DRAFT.date, apply: true }).then(function (res) {
+      if (!res.ok) { b.innerHTML = '⚠️ 發布失敗：' + esc(res.error || '') + '<div class="pk-btns"><button onclick="openPublish()">返回</button></div>'; return; }
+      b.innerHTML = '<div class="pk-h">✅ 沙盒公告完成</div>' +
+        '<div class="hint-s"><b>' + esc(res.branch) + '</b>已公告到 ' + esc(res.through) + '，新增 ' + Number(res.addedColumns || 0) +
+        ' 欄、更新 ' + Number(res.changed || 0) + ' 格。之後這個範圍內的單格異動才會同步並通知。</div>' +
+        '<div class="pk-btns"><button onclick="window.open(\'' + esc(res.boardUrl || '') + '\',\'_blank\')">查看沙盒公告表</button>' +
+        '<button onclick="closePicker();refresh()">完成</button></div>';
+    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
   }
 
   /* ===== 小組改名 / 交棒（管理者） ===== */
