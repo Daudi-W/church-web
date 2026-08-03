@@ -1485,6 +1485,13 @@
         '內容異動：' + Number(res.changed || 0) + ' 格<br>' +
         '來源空白：' + Number(res.blankCells || 0) + ' 格（包含不需排人的崗位，不等於全部都是缺口）</span></div>';
       if (res.addedLabels && res.addedLabels.length) h += '<div class="hint-s"><b>將新增：</b>' + res.addedLabels.map(esc).join('、') + '</div>';
+      if (res.formatting) {
+        var colorMonths = (res.formatting.months || []).map(function (m) {
+          return '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px"><i style="display:inline-block;width:12px;height:12px;border:1px solid #cbd5e1;border-radius:3px;background:' + esc(m.color) + '"></i>' + esc(m.label) + '</span>';
+        }).join('');
+        h += '<div class="hint-s" style="margin-top:8px"><b>公告表套色：</b>共 ' + Number(res.formatting.weeks || 0) +
+          ' 週，其中 ' + Number(res.formatting.grayWeeks || 0) + ' 週使用「淺灰色 2」；跨月週依主日月份。<br>' + colorMonths + '</div>';
+      }
       if (res.unmatched && res.unmatched.length) h += '<div class="hint-s" style="color:var(--red)"><b>公告表找不到對應崗位：</b>' + res.unmatched.map(esc).join('、') + '</div>';
       if (res.samples && res.samples.length) h += '<div class="hint-s" style="margin-top:8px"><b>異動範例：</b><br>' + res.samples.map(function (x) { return '・' + esc(x); }).join('<br>') + '</div>';
       h += '<div class="hint-s" style="margin-top:10px">確認後才會寫入沙盒公告表；發布完成前不會更新公告水位。</div>' +
