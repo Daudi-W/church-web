@@ -271,7 +271,7 @@
   <div class="embed-bar">
     <button onclick="closeEmbed()">← 返回平台</button>
     <span class="et" id="embedTitle"></span>
-    <a id="embedExt" href="#" target="_blank">在新視窗開啟 ↗</a>
+    <a id="embedExt" href="#" target="_blank" rel="noopener noreferrer">在新視窗開啟 ↗</a>
   </div>
   <iframe id="embedFrame" style="flex:1; border:none; width:100%;"></iframe>
 </div>
@@ -348,7 +348,7 @@
       var we = new Date(g.ws); we.setDate(g.ws.getDate() + 7);
       var isThis = (t0 >= g.ws && t0 < we);
       var rng = g.min + (g.max !== g.min ? '–' + g.max : '');
-      var wk = '<div class="wkh">' + (isThis ? '本週 ' : '') + '<span class="rng">' + rng + '</span></div>';
+      var wk = '<div class="wkh">' + (isThis ? '本週 ' : '') + '<span class="rng">' + esc(rng) + '</span></div>';
       return wk + g.slots.map(function (s) {
         var lines = (s.items || []).map(function (it) {
           return '<div class="bd-line"><span class="rl">' + esc(it.role) + '</span>' + esc(it.who) + '</div>';
@@ -373,20 +373,26 @@
     var brs = []; slots.forEach(function (s) { var x = s.branch || '桃園'; if (brs.indexOf(x) === -1) brs.push(x); });
     return brs;
   }
-  function branchTabs(brs, cur, fn) {
+  function branchTabs(brs, cur) {
     if (brs.length < 2) return '';
     return '<div class="toggle">' + ['全部'].concat(brs).map(function (t) {
-      return '<button class="' + (cur === t ? 'on' : '') + '" onclick="' + fn + '(\'' + t + '\')">' + t + '</button>';
+      return '<button class="' + (cur === t ? 'on' : '') + '" data-branch-value="' + esc(t) + '">' + esc(t) + '</button>';
     }).join('') + '</div>';
+  }
+  function bindBranchTabs(container, setter) {
+    container.querySelectorAll('[data-branch-value]').forEach(function (btn) {
+      btn.addEventListener('click', function () { setter(btn.getAttribute('data-branch-value')); });
+    });
   }
   function renderBoard() {
     var b = document.querySelector('#picker .pk-body');
     var brs = slotBranches(BOARD.slots);
     var filtered = BOARD.slots.filter(function (s) { return BOARD.br === '全部' || (s.branch || '桃園') === BOARD.br; });
-    var h = '<div class="pk-h"><i class="ti ti-calendar"></i> 全教會服事表</div>' + branchTabs(brs, BOARD.br, 'setBoardBr');
+    var h = '<div class="pk-h"><i class="ti ti-calendar"></i> 全教會服事表</div>' + branchTabs(brs, BOARD.br);
     h += boardHtml(filtered) || '<div class="empty">此堂區未來沒有服事資料。</div>';
     h += '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
     b.innerHTML = h;
+    bindBranchTabs(b, setBoardBr);
   }
   function setBoardBr(br) { BOARD.br = br; renderBoard(); }
 
@@ -442,6 +448,25 @@
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // 後端管理的工具連結只允許 HTTPS；避免 javascript:／data: 等主動內容協定。
+  function safeExternalUrl(raw) {
+    try {
+      var parsed = new URL(String(raw || ''), window.location.href);
+      return parsed.protocol === 'https:' ? parsed.href : '';
+    } catch (e) { return ''; }
+  }
+  function openSafeExternal(raw) {
+    var href = safeExternalUrl(raw);
+    if (!href) { alert('這個連結格式不安全，已停止開啟。'); return false; }
+    var opened = window.open(href, '_blank', 'noopener');
+    if (opened) opened.opener = null;
+    return true;
+  }
+  function safeDayKey(raw) {
+    var value = String(raw || '');
+    return /^\d{1,2}\/\d{1,2}$/.test(value) ? value : '';
   }
 
   /* 公告內容 → HTML：保留換行；行首「- 」「* 」變列點、「1. 」「1、」變編號。全程過 esc()。 */
@@ -559,7 +584,7 @@
     tabs.push({ id: 'me', ic: 'ti-user-circle', lb: '我的' });
     var tb = document.getElementById('tabbar');
     tb.innerHTML = tabs.map(function (t) {
-      var bd = (t.id === 'noti' && res.unseenNoti) ? '<span class="nbadge">' + res.unseenNoti + '</span>' : '';
+      var bd = (t.id === 'noti' && res.unseenNoti) ? '<span class="nbadge">' + Number(res.unseenNoti || 0) + '</span>' : '';
       return '<button data-tab="' + t.id + '">' + bd + '<i class="ti ' + t.ic + ' ic"></i>' + t.lb + '</button>';
     }).join('');
     tb.querySelectorAll('button').forEach(function (btn) {
@@ -698,7 +723,7 @@
         else if (act === 'lvtoggle') { LV_OPEN = !LV_OPEN; renderTab(); }
         else if (act === 'syncboard') openSyncBoard();
         else if (act === 'logout') logout();
-        else if (act === 'sheet') window.open(LAST_RES.scheduleUrl, '_blank');
+        else if (act === 'sheet') openSafeExternal(LAST_RES.scheduleUrl);
         else if (act === 'careview') { CARE_VIEW = el.getAttribute('data-v'); renderTab(); }
         else if (act === 'teamsel') { TEAM_IDX = Number(el.getAttribute('data-i')) || 0; renderTab(); }
         else if (act === 'gonoti') { TAB = 'noti'; renderTab(); }
@@ -708,8 +733,7 @@
         else if (act === 'open') {
           var href = el.getAttribute('data-href');
           if (PlatformModule.isModuleHref(href)) location.href = href;
-          else if (href.indexOf('http') === 0) window.open(href, '_blank');
-          else openEmbed(href, el.getAttribute('data-name') || '');
+          else openSafeExternal(href);
         }
       });
     });
@@ -779,7 +803,7 @@
       for (var i = 0; i < list.length; i++) { if (boardDate(list[i].date) >= we) { next = list[i]; break; } }
       var h = '<div class="hero none">這週沒有排到你的服事，好好休息 😊';
       if (next) {
-        h += '<div style="margin-top:8px;cursor:pointer;color:var(--tl-800);font-weight:700" onclick="openDayBoard(\'' + next.date + '\')">下次服事：' + next.date + '（' + next.weekday + '）<i class="ti ti-chevron-right" style="font-size:14px;color:var(--tl-600)"></i></div>';
+        h += '<div style="margin-top:8px;cursor:pointer;color:var(--tl-800);font-weight:700" onclick="openDayBoard(\'' + safeDayKey(next.date) + '\')">下次服事：' + esc(next.date) + '（' + esc(next.weekday) + '）<i class="ti ti-chevron-right" style="font-size:14px;color:var(--tl-600)"></i></div>';
       }
       h += '</div>';
       return h;
@@ -791,7 +815,7 @@
     });
     var lines = order.map(function (d) {
       var g = byDate[d];
-      return '<div class="big daylink" style="margin-top:8px;cursor:pointer" onclick="openDayBoard(\'' + d + '\')">' + d + '（' + g.weekday + '）<i class="ti ti-chevron-right" style="font-size:15px;color:var(--tl-600)"></i></div>' +
+      return '<div class="big daylink" style="margin-top:8px;cursor:pointer" onclick="openDayBoard(\'' + safeDayKey(d) + '\')">' + esc(d) + '（' + esc(g.weekday) + '）<i class="ti ti-chevron-right" style="font-size:15px;color:var(--tl-600)"></i></div>' +
         '<div class="what">' + sessionLinesHtml(g.items) + '</div>';
     }).join('');
     // 場數以「不重複的堂」計（日期＋堂區＋堂次），同一堂多崗位只算一場
@@ -807,7 +831,7 @@
     var list = res.services || [];
     var h = heroHtml(list);
     if (res.unseenNoti) {
-      h += '<div class="noti-line" data-act="gonoti"><i class="ti ti-bell-ringing"></i> 你有 ' + res.unseenNoti + ' 則新通知，點我查看</div>';
+      h += '<div class="noti-line" data-act="gonoti"><i class="ti ti-bell-ringing"></i> 你有 ' + Number(res.unseenNoti || 0) + ' 則新通知，點我查看</div>';
     }
     NEWS_LIST = res.news || [];
     if (NEWS_LIST.length) {
@@ -851,7 +875,7 @@
       order.forEach(function (d, i) {
         var m = monthOf(d);
         if (m !== lastMon) { h += '<div class="wkh">' + m + ' 月</div>'; lastMon = m; }
-        h += '<div class="tl-row" style="cursor:pointer" onclick="openDayBoard(\'' + d + '\')">' + dateBox(d, byDate[d].weekday, i === 0) +
+        h += '<div class="tl-row" style="cursor:pointer" onclick="openDayBoard(\'' + safeDayKey(d) + '\')">' + dateBox(d, byDate[d].weekday, i === 0) +
           '<div class="tl-txt">' + sessionLinesHtml(byDate[d].items) + '<i class="ti ti-chevron-right" style="color:var(--hint);margin-left:6px"></i></div></div>';
       });
       h += '</div>';
@@ -1034,7 +1058,7 @@
     });
     if (!e.conflicts.length) lines = '<div class="hint-s" style="margin-top:2px">當天沒有需要處理的排班。</div>';
     return '<div class="ap-card" style="border:1px solid var(--line)">' +
-      '<b>' + e.date + '（' + e.weekday + '）' + esc(e.name) + '</b>　' + st +
+      '<b>' + esc(e.date) + '（' + esc(e.weekday) + '）' + esc(e.name) + '</b>　' + st +
       (e.reason ? '<div class="hint-s">原因：' + esc(e.reason) + '</div>' : '') +
       (e.helper ? '<div class="hint-s">建議代班：' + esc(e.helper) + '</div>' : '') +
       lines +
@@ -1077,7 +1101,7 @@
         ? '<br><b>同日還有 ' + esc(res.remaining.join('、')) + ' 的服事待處理</b>，回清單可以繼續補（可換同一人或不同人）。'
         : '<br>當天的服事已全部處理，請假單已標「已補人」。';
       b.innerHTML = '<div class="pk-h">✅ 已補入</div>' +
-        '<div class="hint-s">' + res.date + '（' + res.weekday + '）' + esc(res.session) + '・' + esc(res.role) + '：' +
+        '<div class="hint-s">' + esc(res.date) + '（' + esc(res.weekday) + '）' + esc(res.session) + '・' + esc(res.role) + '：' +
         esc(res.from) + ' → <b>' + esc(res.to) + '</b><br>已通知 ' + esc(res.to) + '（新增服事）與 ' + esc(res.from) + '（代班已安排）。' + remainTxt + '</div>' +
         '<div class="pk-btns"><button onclick="closePicker();manualRefresh()">完成</button></div>';
     }).catch(function (err) { b.innerHTML = '⚠️ 連線失敗：' + esc(err); });
@@ -1089,7 +1113,7 @@
     var b = p.querySelector('.pk-body'); b.innerHTML = '找可代班的人…';
     api('candidates', { row: cf.row, col: cf.col, forName: e.name }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
-      var h = '<div class="pk-h"><i class="ti ti-user-search"></i> 換別人：' + e.date + '（' + e.weekday + '）' + esc(cf.session) + '・' + esc(cf.role) +
+      var h = '<div class="pk-h"><i class="ti ti-user-search"></i> 換別人：' + esc(e.date) + '（' + esc(e.weekday) + '）' + esc(cf.session) + '・' + esc(cf.role) +
         (cf.instrument ? '（' + esc(cf.instrument) + '）' : '') + '</div>' +
         '<div class="hint-s">只列 ' + esc(e.name) + ' 這個崗位可接手、且通過檢查（當天有空／未撞班）的人選，點名字即補入。</div>';
       var any = false;
@@ -1147,7 +1171,7 @@
       h += '<button class="btn" data-act="newsadmin"><i class="ti ti-speakerphone"></i> 公告管理</button>';
       h += '<button class="btn" data-act="surveyadmin"><i class="ti ti-checklist"></i> 調查管理' + (res.survey ? '（進行中：' + esc(res.survey.name) + '）' : '') + '</button>';
       h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
-        (res.pendingApplications ? '（' + res.pendingApplications + ' 筆待審）' : '（無待審）') + '</button>';
+        (res.pendingApplications ? '（' + Number(res.pendingApplications || 0) + ' 筆待審）' : '（無待審）') + '</button>';
       h += '<button class="btn" data-act="grouprename"><i class="ti ti-users-group"></i> 小組改名 / 交棒</button>';
     }
     h += '<button class="btn line" data-act="logout" style="margin-top:14px">登出 / 換帳號</button>';
@@ -1378,7 +1402,7 @@
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = '開啟並通知全體中…（約需十幾秒）';
     api('surveyOpen', args).then(function (res) {
       if (!res.ok) { alert('開啟失敗：' + (res.error || '')); return; }
-      b.innerHTML = '<div class="pk-h">✅ 調查已開啟</div><div class="hint-s">已通知 ' + res.notified + ' 位同工。</div>' +
+      b.innerHTML = '<div class="pk-h">✅ 調查已開啟</div><div class="hint-s">已通知 ' + Number(res.notified || 0) + ' 位同工。</div>' +
         '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
   }
@@ -1390,14 +1414,14 @@
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = '產生預覽…';
     api('surveyImport', { apply: false }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
-      var h = '<div class="pk-h"><i class="ti ti-database-import"></i> 匯入預覽（' + res.count + ' 人）</div>';
+      var h = '<div class="pk-h"><i class="ti ti-database-import"></i> 匯入預覽（' + Number(res.count || 0) + ' 人）</div>';
       (res.preview || []).slice(0, 30).forEach(function (pr) {
         h += '<div class="ap-card" style="border:1px solid var(--line)"><b>' + esc(pr.name) + '</b><br>' +
           '<span class="hint-s">頻率：' + esc(pr.oldFreq || '（空）') + ' → <b>' + esc(pr.freq) + '</b>' +
           (pr.unav ? '<br>不行日期：' + esc(pr.unav) : '') + '</span></div>';
       });
       if (res.misses && res.misses.length) h += '<div class="hint-s" style="color:var(--red)">同工資料庫找不到：' + esc(res.misses.join('、')) + '（這些人要手動處理）</div>';
-      h += '<div class="pk-btns"><button onclick="surveyImportApply()">確認匯入 ' + res.count + ' 人</button><button onclick="openSurveyAdmin()">返回</button></div>';
+      h += '<div class="pk-btns"><button onclick="surveyImportApply()">確認匯入 ' + Number(res.count || 0) + ' 人</button><button onclick="openSurveyAdmin()">返回</button></div>';
       b.innerHTML = h;
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
   }
@@ -1405,7 +1429,7 @@
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = '匯入中…';
     api('surveyImport', { apply: true }).then(function (res) {
       if (!res.ok) { alert('匯入失敗：' + (res.error || '')); return; }
-      b.innerHTML = '<div class="pk-h">✅ 已匯入 ' + res.applied + ' 人</div>' +
+      b.innerHTML = '<div class="pk-h">✅ 已匯入 ' + Number(res.applied || 0) + ' 人</div>' +
         '<div class="hint-s">同工資料庫的頻率與不行日期已更新，自動排班會直接採用。</div>' +
         '<div class="pk-btns"><button onclick="closePicker()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
@@ -1498,8 +1522,10 @@
       b.innerHTML = '<div class="pk-h">✅ ' + (res.mode === 'backfill' ? '補同步完成' : '公告完成') + '</div>' +
         '<div class="hint-s"><b>' + esc(res.branch) + '</b>已公告到 ' + esc(res.through) + '，新增 ' + Number(res.addedColumns || 0) +
         ' 欄、更新 ' + Number(res.changed || 0) + ' 格。' + (res.mode === 'backfill' ? '公告水位不變，本次不補發通知。' : '之後這個範圍內的單格異動才會同步並通知。') + '</div>' +
-        '<div class="pk-btns"><button onclick="window.open(\'' + esc(res.boardUrl || '') + '\',\'_blank\')">查看公告服事表</button>' +
+        '<div class="pk-btns"><button id="pubBoardLink">查看公告服事表</button>' +
         '<button onclick="closePicker();refresh()">完成</button></div>';
+      var boardBtn = document.getElementById('pubBoardLink');
+      if (boardBtn) boardBtn.addEventListener('click', function () { openSafeExternal(res.boardUrl); });
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
   }
 
@@ -1508,7 +1534,7 @@
     var p = document.getElementById('picker'); p.style.display = 'flex';
     var b = p.querySelector('.pk-body'); b.innerHTML = '讀取小組清單…';
     api('groupsList').then(function (res) {
-      if (!res.ok) { b.innerHTML = '⚠️ ' + (res.error || '無法取得小組清單') + '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>'; return; }
+      if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || '無法取得小組清單') + '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>'; return; }
       var opts = (res.groups || []).filter(function (g) { return g.enabled; }).map(function (g) {
         return '<option value="' + esc(g.name) + '" data-leader="' + esc(g.leader) + '">' + esc(g.name) + '（' + esc(g.zone) + '・' + esc(g.leader) + '）</option>';
       }).join('');
@@ -1519,7 +1545,7 @@
         '<label>新組名（不改就留空）<input type="text" id="grTo" placeholder="例：新名A"></label>' +
         '<label>新小組長（不換就留空）<input type="text" id="grLeader" placeholder="填姓名，例：王小明"></label></div>' +
         '<div class="pk-btns"><button onclick="submitGroupRename()">確認</button><button onclick="closePicker()">取消</button></div>';
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + e + '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>'; });
+    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e) + '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>'; });
   }
   function submitGroupRename() {
     var from = document.getElementById('grFrom').value;
@@ -1532,7 +1558,7 @@
       if (!res.ok) { alert('更新失敗：' + (res.error || '')); openGroupRename(); return; }
       b.innerHTML = '<div class="pk-h">✅ 已完成</div>' +
         '<div class="hint-s">「' + esc(res.from) + '」→「' + esc(res.to) + '」，小組長：' + esc(res.newLeader) +
-        '，已同步更新 ' + res.membersUpdated + ' 位組員的白名單小組欄。</div>' +
+        '，已同步更新 ' + Number(res.membersUpdated || 0) + ' 位組員的白名單小組欄。</div>' +
         '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); });
   }
@@ -1555,8 +1581,8 @@
           (a.db && a.db.found ? '　<span class="ok-badge">已在排班資料庫</span>' : '') + '<br>' +
           '<span class="hint-s">' + esc(a.email) + (a.note ? '・' + esc(a.note) : '') + '・' + esc(a.appliedAt) + '</span>' +
           '<div class="pk-btns">' +
-          '<button class="rv-ok" data-row="' + a.row + '">核准並設定角色</button>' +
-          '<button class="rv-no" data-row="' + a.row + '" data-name="' + esc(a.name) + '">婉拒</button></div></div>';
+          '<button class="rv-ok" data-row="' + Number(a.row || 0) + '">核准並設定角色</button>' +
+          '<button class="rv-no" data-row="' + Number(a.row || 0) + '" data-name="' + esc(a.name) + '">婉拒</button></div></div>';
       });
       b.innerHTML = h;
       b.querySelectorAll('.rv-ok').forEach(function (btn) {
@@ -1581,7 +1607,7 @@
         '，顯示名稱／崗位／事工團已自動帶入——確認沒問題可直接按核准。</div>' : '') +
       '<div class="lv-form">' +
       '<label>顯示名稱（服事表上的稱呼，留空＝用全名）<input type="text" id="apvDisp" placeholder="如：沛璟"></label>' +
-      '<label>牧養身份 <select id="apvRole">' + roles.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select></label>' +
+      '<label>牧養身份 <select id="apvRole">' + roles.map(function (r) { return '<option>' + esc(r) + '</option>'; }).join('') + '</select></label>' +
       '<label>事工團角色 <select id="apvTeamRole"><option>同工</option><option>主責</option><option>團長</option></select></label>' +
       '</div>' +
       '<div class="sec-h" style="margin-top:6px">所屬事工團（可複選）</div><div class="sv-dates">' +
@@ -1590,7 +1616,7 @@
       '<div class="sec-h" style="margin-top:6px">可服事崗位（依事工團，可複選）</div>' +
       '<div class="sv-dates" id="apvSkillBox"><span class="hint-s">先勾選上方事工團，再選崗位</span></div>' +
       '<div class="lv-form" style="margin-top:6px"><label>其他崗位（選填，逗號分隔）<input type="text" id="apvSkillsExtra" placeholder="設定表沒有的特例崗位"></label></div>' +
-      '<div class="pk-btns" style="margin-top:12px"><button onclick="submitApprove(' + row + ')">核准</button><button onclick="openReview()">返回</button></div>';
+      '<div class="pk-btns" style="margin-top:12px"><button onclick="submitApprove(' + Number(row || 0) + ')">核准</button><button onclick="openReview()">返回</button></div>';
     b.innerHTML = h;
     // 排班資料庫比對到 → 預填顯示名稱／事工團（含勾選後動態列出的崗位）／團角色／牧養身份
     if (m.found) {
@@ -1836,7 +1862,7 @@
     api(nid ? 'newsUpdate' : 'newsPost', args).then(function (res) {
       if (!res.ok) { alert((nid ? '儲存' : '發布') + '失敗：' + (res.error || '')); openNewsPost(args, nid); return; } // 保留已填內容
       b.innerHTML = '<div class="pk-h">✅ ' + (nid ? '公告已更新' : '公告已發布') + '</div>' +
-        '<div class="hint-s">' + (res.notified ? '已通知 ' + res.notified + ' 位同工（通知中心＋手機推播）。' : '已更新首頁公告欄。') + '</div>' +
+        '<div class="hint-s">' + (res.notified ? '已通知 ' + Number(res.notified || 0) + ' 位同工（通知中心＋手機推播）。' : '已更新首頁公告欄。') + '</div>' +
         '<div class="pk-btns">' + (nid ? '<button onclick="openNewsAdmin()">返回列表</button>' : '') +
         '<button onclick="closePicker();manualRefresh()">完成</button></div>';
     }).catch(function (e) { alert('連線失敗：' + e); openNewsPost(args, nid); });
@@ -1920,11 +1946,12 @@
       blocks.push(lines.join('\n').trim());
     });
     var text = blocks.join('\n\n') || '（未來沒有排班資料）';
-    var h = '<div class="pk-h"><i class="ti ti-speakerphone"></i> 服事公告</div>' + branchTabs(brs, ANN.br, 'setAnnBr') +
+    var h = '<div class="pk-h"><i class="ti ti-speakerphone"></i> 服事公告</div>' + branchTabs(brs, ANN.br) +
       '<div class="hint-s">各堂區最近一週，可直接複製貼到 LINE。</div>' +
       '<textarea class="draft tall" readonly>' + esc(text) + '</textarea>' +
       '<div class="pk-btns"><button onclick="copyDraft(this)"><i class="ti ti-copy"></i> 複製</button><button onclick="closePicker()">關閉</button></div>';
     b.innerHTML = h;
+    bindBranchTabs(b, setAnnBr);
   }
   function setAnnBr(br) { ANN.br = br; renderAnnounce(); }
 
@@ -1936,9 +1963,11 @@
   }
   function closePicker() { document.getElementById('picker').style.display = 'none'; }
   function openEmbed(url, title) {
+    var href = safeExternalUrl(url);
+    if (!href) { alert('這個連結格式不安全，已停止開啟。'); return; }
     document.getElementById('embedTitle').textContent = title || '';
-    document.getElementById('embedExt').href = url;
-    document.getElementById('embedFrame').src = url;
+    document.getElementById('embedExt').href = href;
+    document.getElementById('embedFrame').src = href;
     document.getElementById('embed').style.display = 'flex';
   }
   function closeEmbed() {

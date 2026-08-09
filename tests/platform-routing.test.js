@@ -127,3 +127,49 @@ test('過期 session 最多自動重登一次，且不刪除無關儲存值', ()
   assert.equal(ctx.sessionStorage.getItem('svcModuleReauth:venue'), null);
   assert.equal(ctx.api.requirePlatformLogin('unknown'), false);
 });
+
+test('外部連結只接受 HTTPS，危險主動內容協定一律拒絕', () => {
+  const service = read('service.html');
+  const helper = service.match(/(function safeExternalUrl\(raw\) \{[\s\S]*?)\n  function openSafeExternal/);
+  assert.ok(helper, 'service.html 必須保留集中式外部網址驗證');
+  const context = {
+    URL,
+    window: { location: { href: 'https://daudi-w.github.io/church-web/service.html' } }
+  };
+  vm.runInNewContext(helper[1], context);
+  assert.equal(context.safeExternalUrl('https://docs.google.com/test'), 'https://docs.google.com/test');
+  assert.equal(context.safeExternalUrl('/church-web/venue.html'), 'https://daudi-w.github.io/church-web/venue.html');
+  assert.equal(context.safeExternalUrl('javascript:alert(1)'), '');
+  assert.equal(context.safeExternalUrl('data:text/html,<script>alert(1)</script>'), '');
+  assert.doesNotMatch(service, /window\.open\(LAST_RES\.scheduleUrl/);
+  assert.doesNotMatch(service, /href\.indexOf\('http'\)/);
+  assert.doesNotMatch(service, /onclick="window\.open\([^\n]*boardUrl/);
+  assert.match(service, /boardBtn\.addEventListener\('click',[\s\S]*?openSafeExternal\(res\.boardUrl\)/);
+});
+
+test('動態 HTML 不把後端文字拼進 inline JavaScript 或未跳脫錯誤訊息', () => {
+  const service = read('service.html');
+  const venue = read('venue.html');
+  const newcomer = read('newcomer.html');
+
+  assert.match(venue, /escapeHtml\(\(res && res\.message\) \|\| '載入失敗'\)/);
+  assert.match(service, /esc\(res\.error \|\| '無法取得小組清單'\)/);
+  assert.match(service, /data-branch-value="' \+ esc\(t\)/);
+  assert.doesNotMatch(service, /branchTabs\(brs, cur, fn\)/);
+
+  assert.doesNotMatch(newcomer, /JSON\.stringify\(w\)\.replace/);
+  assert.match(newcomer, /pills\.querySelectorAll\('\.week-pill'\)[\s\S]*?addEventListener\('click'/);
+  assert.match(newcomer, /data-group-key="' \+ esc\(groupKey\)/);
+  assert.match(newcomer, /data-group-key="' \+ esc\(districtKey\)/);
+  assert.doesNotMatch(newcomer, /toggleFlatGroup\(\\'' \+ (?:groupKey|districtKey)/);
+  assert.equal((newcomer.match(/function openAssign\(idx\)/g) || []).length, 1);
+
+  const escSource = newcomer.match(/(function esc\(str\) \{[\s\S]*?)\n\}\n\ndocument\.querySelectorAll/);
+  assert.ok(escSource, 'newcomer.html 必須保留集中式 HTML escaping');
+  const context = {};
+  vm.runInNewContext(escSource[1] + '\n}', context);
+  assert.equal(
+    context.esc(`<img src=x onerror="alert(1)"> O'Reilly`),
+    '&lt;img src=x onerror=&quot;alert(1)&quot;&gt; O&#39;Reilly'
+  );
+});

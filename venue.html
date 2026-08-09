@@ -1259,7 +1259,7 @@
     .then(function(res) {
       if (res && res.code === 'NO_AUTH') { requireRelogin(); return; }
       if (!res || !res.success) {
-        content.innerHTML = '<div class="cal-error">' + ((res && res.message) || '載入失敗') + '</div>';
+        content.innerHTML = '<div class="cal-error">' + escapeHtml((res && res.message) || '載入失敗') + '</div>';
         return;
       }
       calCache[cacheKey] = res;

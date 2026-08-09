@@ -34,6 +34,7 @@
 - 所有 HTML 行內 JavaScript 與 `.js` 檔的語法檢查。
 - 正式／沙盒 GAS 端點隔離、模組 allowlist、登入返回與單次重登防迴圈測試。
 - Service Worker 對平台入口、場地、新人與共用模組資源的預快取接線檢查。
+- 外部網址 HTTPS allowlist、動態錯誤文字跳脫，以及新人週備註／小組名稱不得拼進 inline JavaScript 的安全回歸檢查。
 
 本機可執行 `npm test`；測試只讀靜態檔並使用假的瀏覽器儲存空間，不會呼叫正式 API 或讀寫教會資料。
 

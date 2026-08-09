@@ -1995,7 +1995,7 @@ function renderDistrictFlatList() {
     var doneCnt = filtered.filter(function(m) { return m.conclusion; }).length;
     var selfTag = l.isSelf ? '<span class="flat-group-self-tag">👑 我的</span>' : '';
     return '<div class="flat-group">' +
-      '<div class="flat-group-header" onclick="toggleFlatGroup(\'' + groupKey + '\')">' +
+      '<div class="flat-group-header" data-group-key="' + esc(groupKey) + '" onclick="toggleFlatGroup(this.dataset.groupKey)">' +
         '<div class="flat-group-title">👤 ' + esc(l.leaderName) + selfTag + '</div>' +
         '<div class="flat-group-badges">' +
           '<span class="badge">' + filtered.length + ' 人</span>' +
@@ -2095,7 +2095,7 @@ function renderPastorFlatList() {
     var diIdx = allDistricts.indexOf(d);
 
     return '<div class="district-group">' +
-      '<div class="district-group-header" onclick="toggleFlatGroup(\'' + districtKey + '\')">' +
+      '<div class="district-group-header" data-group-key="' + esc(districtKey) + '" onclick="toggleFlatGroup(this.dataset.groupKey)">' +
         '<div class="district-group-title">🏘 ' + esc(d) + '</div>' +
         '<div class="district-group-badges">' +
           '<span class="badge">' + districtMembers + ' 人</span>' +
@@ -2137,8 +2137,8 @@ function _renderFlatMemberCard(m, leaderName, districtName) {
   var isConcluded = !!m.conclusion;
 
   var dotsHtml = m.weeks.map(function(w) {
-    var cls = w.status ? ('dot-' + w.status) : 'dot-empty';
-    return '<div class="flat-row-mini-dot ' + cls + '" title="' + (w.status || '未填') + '">W' + w.week + '</div>';
+    var cls = w.status ? ('dot-' + esc(w.status)) : 'dot-empty';
+    return '<div class="flat-row-mini-dot ' + cls + '" title="' + esc(w.status || '未填') + '">W' + Number(w.week || 0) + '</div>';
   }).join('');
 
   var newBadge = isThisWeek(m.fillDate) ? '<span class="badge-new">本週新人</span>' : '';
@@ -2147,19 +2147,19 @@ function _renderFlatMemberCard(m, leaderName, districtName) {
   // 狀態小標(結案 vs 一般狀態)
   var statusBadge = isConcluded
     ? '<span class="flat-row-status-mini" style="background:#dcfce7;color:#14532d">結案</span>'
-    : '<span class="flat-row-status-mini pill-' + ls + '">' + ls + '</span>';
+    : '<span class="flat-row-status-mini pill-' + esc(ls) + '">' + esc(ls) + '</span>';
 
   // 按鈕:結案的只有 🔍,未結案的有 ✍️ + 🔍
   var actionBtns = '';
   if (!isConcluded) {
-    actionBtns += '<button class="flat-row-icon-btn btn-write" onclick="openReportFromFlat(' + m.rowIndex + ')" title="填寫跟進">✍️</button>';
+    actionBtns += '<button class="flat-row-icon-btn btn-write" onclick="openReportFromFlat(' + Number(m.rowIndex || 0) + ')" title="填寫跟進">✍️</button>';
   }
-  actionBtns += '<button class="flat-row-icon-btn" onclick="openDetailFromFlat(' + m.rowIndex + ')" title="詳細資訊" aria-label="查看新人詳細資訊">🔍</button>';
+  actionBtns += '<button class="flat-row-icon-btn" onclick="openDetailFromFlat(' + Number(m.rowIndex || 0) + ')" title="詳細資訊" aria-label="查看新人詳細資訊">🔍</button>';
 
   // 屬於誰 + 日期 + 電話
   var subParts = [];
   if (m.fillDate)   subParts.push('📅 ' + esc(m.fillDate));
-  if (m.phone)      subParts.push('<a href="tel:' + m.phone + '">📞 ' + esc(m.phone) + '</a>');
+  if (m.phone)      subParts.push('<a href="tel:' + esc(m.phone) + '">📞 ' + esc(m.phone) + '</a>');
   var belongsTag = '<span class="member-belongs">👤 ' + esc(leaderName) + (districtName ? '・' + esc(districtName) : '') + '</span>';
 
   // ─── 新增:最新一週備註預覽(只在未結案 + 有任何週紀錄時顯示) ───
@@ -2171,14 +2171,14 @@ function _renderFlatMemberCard(m, leaderName, districtName) {
       var noteText = latest.week.note ? _truncate(latest.week.note, 40) : '（無備註）';
       var noteClass = latest.week.note ? 'latest-text' : 'latest-text';
       var noteStyle = latest.week.note ? '' : 'color:#94a3b8;font-style:italic';
-      latestHtml = '<div class="flat-row-latest clickable" data-st="' + st + '" onclick="openDetailFromLatest(' + m.rowIndex + ')">' +
+      latestHtml = '<div class="flat-row-latest clickable" data-st="' + esc(st) + '" onclick="openDetailFromLatest(' + Number(m.rowIndex || 0) + ')">' +
         '<span class="latest-tag">W' + latest.week.week + '・' + esc(st) + '</span>' +
         '<span class="' + noteClass + '" style="' + noteStyle + '">' + esc(noteText) + '</span>' +
       '</div>';
     }
   }
 
-  return '<div class="flat-row' + (isConcluded ? ' concluded' : '') + newClass + '" data-last="' + ls + '">' +
+  return '<div class="flat-row' + (isConcluded ? ' concluded' : '') + newClass + '" data-last="' + esc(ls) + '">' +
     '<div class="flat-row-top">' +
       '<div class="flat-row-name">' + esc(m.name) + newBadge + '</div>' +
       '<div class="flat-row-right">' +
@@ -2515,8 +2515,8 @@ function renderMembers() {
     var nextW       = nextWeekIndex(m);
 
     var dotsHtml = m.weeks.map(function(w) {
-      var cls = w.status ? ('dot-' + w.status) : 'dot-empty';
-      return '<div class="dot ' + cls + '" title="' + (w.status || '未填') + '">W' + w.week + '</div>';
+      var cls = w.status ? ('dot-' + esc(w.status)) : 'dot-empty';
+      return '<div class="dot ' + cls + '" title="' + esc(w.status || '未填') + '">W' + Number(w.week || 0) + '</div>';
     }).join('');
 
     var noteHtml = m.interviewNote
@@ -2527,12 +2527,12 @@ function renderMembers() {
     for (var w = 3; w >= 0; w--) {
       if (m.weeks[w].status && m.weeks[w].note) {
         var cls2 = m.weeks[w].status === '聯絡不上' ? 'note-box note-alert' : 'note-box note-warn';
-        latestNoteHtml = '<div class="' + cls2 + ' clickable" onclick="openDetailFromCard(' + idx + ')"><div class="note-tag">W' + m.weeks[w].week + ' 備註 🔍</div>' + esc(m.weeks[w].note) + '</div>';
+        latestNoteHtml = '<div class="' + cls2 + ' clickable" onclick="openDetailFromCard(' + idx + ')"><div class="note-tag">W' + Number(m.weeks[w].week || 0) + ' 備註 🔍</div>' + esc(m.weeks[w].note) + '</div>';
         break;
       }
     }
 
-    var tel = m.phone ? '<a href="tel:' + m.phone + '" class="btn-contact btn-tel">📞 ' + esc(m.phone) + '</a>' : '';
+    var tel = m.phone ? '<a href="tel:' + esc(m.phone) + '" class="btn-contact btn-tel">📞 ' + esc(m.phone) + '</a>' : '';
     var idx = allMembers.indexOf(m);
     var newBadge = isThisWeek(m.fillDate) ? '<span class="badge-new">本週新人</span>' : '';
     var newClass = isThisWeek(m.fillDate) ? ' new-this-week' : '';
@@ -2577,11 +2577,11 @@ function renderMembers() {
 
     var detailBtn = '<button class="detail-trigger" onclick="openDetail(' + idx + ')" aria-label="查看 ' + esc(m.name) + ' 的詳細資訊">🔍</button>';
 
-    return '<div class="member-card' + (isConcluded ? ' concluded' : '') + newClass + '" data-last="' + ls + '">' +
+    return '<div class="member-card' + (isConcluded ? ' concluded' : '') + newClass + '" data-last="' + esc(ls) + '">' +
       '<div class="card-top">' +
         '<div><div class="card-name">' + esc(m.name) + newBadge + detailBtn + '</div>' +
         '<div class="card-sub">' + (m.fillDate ? '📅 ' + esc(m.fillDate) + (m.service ? '・' + esc(m.service) : '') : '') + '</div></div>' +
-        '<span class="status-pill pill-' + ls + '">' + ls + '</span>' +
+        '<span class="status-pill pill-' + esc(ls) + '">' + esc(ls) + '</span>' +
       '</div>' +
       infoGrid +
       (tel ? '<div style="margin:8px 0">' + tel + '</div>' : '') +
@@ -2612,10 +2612,15 @@ function openReportForMember(m) {
 
   var pills = document.getElementById('week-pills');
   pills.innerHTML = m.weeks.map(function(w, i) {
-    return '<button class="week-pill" data-week="' + i +
-      '" onclick="selectWeek(this,' + i + ',' + JSON.stringify(w).replace(/"/g, "'") + ')">' +
-      '第 ' + w.week + ' 週' + (w.status ? '<br><small>' + w.status + '</small>' : '') + '</button>';
+    return '<button class="week-pill" data-week="' + i + '">' +
+      '第 ' + Number(w.week || (i + 1)) + ' 週' + (w.status ? '<br><small>' + esc(w.status) + '</small>' : '') + '</button>';
   }).join('');
+  pills.querySelectorAll('.week-pill').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var weekIndex = Number(btn.dataset.week);
+      selectWeek(btn, weekIndex, reportTarget.member.weeks[weekIndex] || {});
+    });
+  });
 
   var nextW = nextWeekIndex(m);
   if (nextW !== null) {
@@ -2834,7 +2839,7 @@ function openDetailDirect(m, scrollTo) {
     var statusText = st || '尚未填寫';
     var noteText = weekData.note ? esc(weekData.note) : '（無備註）';
     var noteCls = weekData.note ? 'detail-week-note' : 'detail-week-note empty';
-    html += '<div class="detail-week-row" data-st="' + st + '">' +
+    html += '<div class="detail-week-row" data-st="' + esc(st) + '">' +
       '<div class="detail-week-top">' +
         '<span class="detail-week-label">W' + (w + 1) + '</span>' +
         '<span class="detail-week-status">' + esc(statusText) + '</span>' +
@@ -2868,8 +2873,8 @@ function openDetailDirect(m, scrollTo) {
   } else {
     actionsEl.style.display = 'flex';
     actionsEl.innerHTML =
-      '<button class="btn-report" style="flex:1" onclick="_detailJumpReport(' + m.rowIndex + ')">✍️ 填寫跟進</button>' +
-      '<button class="btn-conclude" style="flex:1;margin-top:0" onclick="_detailJumpConclude(' + m.rowIndex + ')">📋 填寫結案</button>';
+      '<button class="btn-report" style="flex:1" onclick="_detailJumpReport(' + Number(m.rowIndex || 0) + ')">✍️ 填寫跟進</button>' +
+      '<button class="btn-conclude" style="flex:1;margin-top:0" onclick="_detailJumpConclude(' + Number(m.rowIndex || 0) + ')">📋 填寫結案</button>';
   }
 
   var detailModal = document.querySelector('#modal-detail .modal');
@@ -2912,16 +2917,6 @@ function openDetailFromCard(idx) {
 function openAssign(idx) {
   assignTarget = allMembers[idx];
   if (!assignTarget) return;
-  assignSelected = { district: null, leader: null, group: null };
-
-  document.getElementById('assign-name').textContent = assignTarget.name + ' — 指派小組長';
-
-  // 先重置 UI
-  document.getElementById('assign-leader-list').innerHTML =
-    '<div class="assign-empty">請先選擇區</div>';
-  function openAssign(idx) {
-  assignTarget = allMembers[idx];
-  if (!assignTarget) return;
   assignSelected = { district: null, leader: null, group: null, conclusion: null, concludeNote: '' };
 
   document.getElementById('assign-name').textContent = assignTarget.name + ' — 指派 / 結案';
@@ -2937,35 +2932,6 @@ function openAssign(idx) {
 
   var submitBtn = document.querySelector('#modal-assign .btn-submit');
   submitBtn.innerHTML = '✅ 確認';
-  submitBtn.disabled = false;
-
-  document.getElementById('modal-assign').classList.remove('hidden');
-
-  // 載入(或重用)選項
-  if (assignOptions) {
-    renderAssignDistricts();
-  } else {
-    document.getElementById('assign-district-list').innerHTML =
-      '<div class="assign-empty">載入中⋯</div>';
-    google.script.run
-      .withSuccessHandler(function(res) {
-        if (!res.success) {
-          document.getElementById('assign-district-list').innerHTML =
-            '<div class="assign-empty" style="color:#ef4444">' + esc(res.error || '載入失敗') + '</div>';
-          return;
-        }
-        assignOptions = res;
-        renderAssignDistricts();
-      })
-      .withFailureHandler(function() {
-        document.getElementById('assign-district-list').innerHTML =
-          '<div class="assign-empty" style="color:#ef4444">網路錯誤</div>';
-      })
-      .getAssignOptionsForFrontend();
-  }
-}
-  var submitBtn = document.querySelector('#modal-assign .btn-submit');
-  submitBtn.innerHTML = '✅ 確認指派';
   submitBtn.disabled = false;
 
   document.getElementById('modal-assign').classList.remove('hidden');
@@ -3213,7 +3179,9 @@ function showToast(msg) {
 }
 
 function esc(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 document.querySelectorAll('.modal-overlay').forEach(function(el) {
