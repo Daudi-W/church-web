@@ -25,7 +25,17 @@
 | 檔案 | 對應系統 | 後端 repo（私有）|
 | :--- | :--- | :--- |
 | `venue.html` | 場地申請 | `Daudi-W/Church-Venue` |
-| （未來）`newcomer.html` | 新人跟進 | `Daudi-W/newcomer-followup` |
+| `newcomer.html` | 新人跟進 | `Daudi-W/newcomer-followup` |
+
+## 自動檢查
+
+推送或開 Pull Request 時，GitHub Actions 會執行：
+
+- 所有 HTML 行內 JavaScript 與 `.js` 檔的語法檢查。
+- 正式／沙盒 GAS 端點隔離、模組 allowlist、登入返回與單次重登防迴圈測試。
+- Service Worker 對平台入口、場地、新人與共用模組資源的預快取接線檢查。
+
+本機可執行 `npm test`；測試只讀靜態檔並使用假的瀏覽器儲存空間，不會呼叫正式 API 或讀寫教會資料。
 
 ## 網址
 

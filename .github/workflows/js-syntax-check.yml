@@ -1,4 +1,4 @@
-name: JS syntax check
+name: Frontend checks
 
 # 防呆：service.html 等單檔頁面的 <script> 若有語法錯誤，整頁 JS 掛掉（登入鈕消失事故）。
 # push / PR 時抽出所有 .html 的 script 區塊跑 node --check，紅了就代表不能部署。
@@ -11,10 +11,10 @@ jobs:
   syntax:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
       - name: Extract inline scripts and node --check
         run: |
           python3 - <<'EOF'
@@ -38,3 +38,5 @@ jobs:
                   print(f'✅ {f}')
           sys.exit(1 if failed else 0)
           EOF
+      - name: Test platform routing and deployment wiring
+        run: npm test
