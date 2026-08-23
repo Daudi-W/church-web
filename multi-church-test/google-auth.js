@@ -82,6 +82,17 @@
       if (tokenIsFresh(token)) return Promise.resolve(token);
       token = '';
       showGate();
+      if (root.location && /^(localhost|127\.0\.0\.1)$/.test(root.location.hostname)) {
+        if (message) message.textContent = 'Google OAuth 不接受這個本機網址，請改用已核准的線上測試入口。';
+        if (button && !button.querySelector('a')) {
+          var link = document.createElement('a');
+          link.className = 'oauth-link';
+          link.href = 'https://daudi-w.github.io/church-web/multi-church-test/';
+          link.textContent = '開啟線上測試入口';
+          button.replaceChildren(link);
+        }
+        return new Promise(function () {});
+      }
       return initialize().then(function () {
         return new Promise(function (resolve, reject) {
           waitingResolve = resolve;

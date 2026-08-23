@@ -26,6 +26,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .login-card { width: min(440px, 100%); padding: 30px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); text-align: center; }
 .login-card .eyebrow { text-align: center; }
 .google-login-button { display: flex; justify-content: center; min-height: 44px; margin: 22px 0 14px; }
+.oauth-link { display: inline-flex; align-items: center; min-height: 44px; padding: 9px 16px; border-radius: 10px; background: var(--green); color: #fff; font-weight: 700; text-decoration: none; }
 .error-text { color: var(--red); }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }

@@ -37,3 +37,10 @@ test('登入憑證不寫入瀏覽器儲存空間', () => {
   assert.doesNotMatch(auth, /localStorage|sessionStorage|indexedDB/);
   assert.match(auth, /token = response\.credential/);
 });
+
+test('本機網址不再啟動不可能成功的 OAuth 流程', () => {
+  const auth = read('google-auth.js');
+  assert.match(auth, /\^\(localhost\|127\\\.0\\\.0\\\.1\)\$/);
+  assert.match(auth, /https:\/\/daudi-w\.github\.io\/church-web\/multi-church-test\//);
+  assert.match(auth, /開啟線上測試入口/);
+});
