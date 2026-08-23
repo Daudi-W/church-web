@@ -68,6 +68,7 @@
             waitingResolve = null;
             waitingReject = null;
           },
+          hd: '*',
           auto_select: false,
           cancel_on_tap_outside: false
         });

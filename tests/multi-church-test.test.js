@@ -44,3 +44,9 @@ test('本機網址不再啟動不可能成功的 OAuth 流程', () => {
   assert.match(auth, /https:\/\/daudi-w\.github\.io\/church-web\/multi-church-test\//);
   assert.match(auth, /開啟線上測試入口/);
 });
+
+test('登入選單只提示 Google Workspace 工作帳號', () => {
+  const auth = read('google-auth.js');
+  assert.match(auth, /hd:\s*'\*'/);
+  assert.match(auth, /auto_select:\s*false/);
+});
