@@ -26,6 +26,7 @@
 | :--- | :--- | :--- |
 | `venue.html` | 場地申請 | `Daudi-W/Church-Venue` |
 | `newcomer.html` | 新人跟進 | `Daudi-W/newcomer-followup` |
+| `multi-church-test/` | 多教會四模組測試入口 | Vault `multi-church-service-prototype/apps-script-backend` |
 
 ## 自動檢查
 
@@ -42,3 +43,5 @@
 
 GitHub Pages：`https://daudi-w.github.io/church-web/`
 OAuth「已授權 JavaScript 來源」填：`https://daudi-w.github.io`
+
+多教會四模組測試：`https://daudi-w.github.io/church-web/multi-church-test/`。本機 `localhost` 不在這組 OAuth 的允許來源，因此登入驗收一律使用這個 Pages 網址。

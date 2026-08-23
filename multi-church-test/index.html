@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>多教會事工平台｜四模組測試</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section class="login-gate" id="login-gate">
+    <div class="login-card">
+      <p class="eyebrow">四模組連線測試</p>
+      <h1>登入教會事工平台</h1>
+      <p id="login-message">請使用已列入白名單的 Google 帳號登入。</p>
+      <div id="google-login-button" class="google-login-button"></div>
+      <p class="muted small">登入後才會讀取教會自己的服事表、帳號名單、新人跟進與場地借用資料。</p>
+    </div>
+  </section>
+
+  <div class="app-shell" hidden>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">教會獨立資料測試</p>
+        <h1 id="church-title">示範教會事工平台</h1>
+      </div>
+      <div class="top-actions">
+        <span class="safe-label" id="save-status">等待 Google 登入</span>
+        <button type="button" class="secondary" id="reset-demo" hidden>重設假資料</button>
+      </div>
+    </header>
+
+    <nav class="main-nav" aria-label="主要功能">
+      <button type="button" data-view="home" aria-current="page">首頁</button>
+      <button type="button" data-view="accounts">帳號管理</button>
+      <button type="button" data-view="schedule">服事排班</button>
+      <button type="button" data-view="newcomers">新人跟進</button>
+      <button type="button" data-view="venues">場地借用</button>
+      <button type="button" data-view="setup">系統設定</button>
+    </nav>
+
+    <main id="app" tabindex="-1"></main>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </div>
+  <script src="runtime-config.js"></script>
+  <script src="google-auth.js"></script>
+  <script src="domain.js"></script>
+  <script src="modules.js"></script>
+  <script src="storage.js"></script>
+  <script src="data-adapter.js"></script>
+  <script src="apps-script-transport.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
