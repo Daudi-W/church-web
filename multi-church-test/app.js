@@ -181,7 +181,7 @@
     { title: '事工與崗位', note: '崗位名稱、人數與排序不寫死在程式裡。' },
     { title: '人員與權限', note: '人員編號由系統建立，管理者只看到名稱。' },
     { title: '規則與提示', note: '平衡模式已套用，可再依教會調整。' },
-    { title: '公告與測試', note: '先以假資料預覽，不會真正發送。' }
+    { title: '公告與測試', note: isAppsScript ? '先以測試資料預覽，不會真正發送。' : '先以假資料預覽，不會真正發送。' }
   ];
 
   function escapeHtml(value) {
@@ -261,7 +261,7 @@
       '<article class="module-card"><div class="module-icon">服</div><div><h2>服事排班</h2><p>週表、候選側欄、提示規則與 LINE 公告。</p></div><div class="metric-row"><span><strong>' + summary.publishedAssignments + '</strong> 筆已發布</span><span><strong>' + state.events.length + '</strong> 場聚會</span></div><button type="button" class="secondary" data-go="schedule">進入排班</button></article>' +
       '<article class="module-card"><div class="module-icon">新</div><div><h2>新人跟進</h2><p>新人名單、分派、下一步與聯繫紀錄。</p></div><div class="metric-row"><span class="attention"><strong>' + summary.newcomerAttention + '</strong> 筆需處理</span><span><strong>' + state.followups.length + '</strong> 筆紀錄</span></div><button type="button" class="secondary" data-go="newcomers">管理跟進</button></article>' +
       '<article class="module-card"><div class="module-icon">地</div><div><h2>場地借用</h2><p>場地、時段、申請審核與撞期提示。</p></div><div class="metric-row"><span class="attention"><strong>' + summary.venuePending + '</strong> 筆待審</span><span><strong>' + state.venues.length + '</strong> 個場地</span></div><button type="button" class="secondary" data-go="venues">管理場地</button></article>' +
-      '</section><section class="panel compact-panel"><div class="section-head"><div><h2>資料與移交</h2><p>目前仍是無個資瀏覽器沙盒；正式版才連各教會自己的四份 Google Sheets。</p></div><button type="button" class="ghost" data-go="handoff">查看漸進式移交</button></div></section>';
+      '</section><section class="panel compact-panel"><div class="section-head"><div><h2>資料與移交</h2><p>' + (isAppsScript ? '目前已連線這間測試教會自己的四份 Google Sheets；其他教會會使用各自的獨立資料。' : '目前是無個資瀏覽器沙盒；正式版才連各教會自己的四份 Google Sheets。') + '</p></div><button type="button" class="ghost" data-go="handoff">查看漸進式移交</button></div></section>';
     bindModuleLinks();
   }
 
@@ -280,8 +280,8 @@
         '<label>跟進者<select data-entity="newcomers" data-id="' + item.id + '" data-field="ownerPersonId">' + personOptions(item.ownerPersonId, true) + '</select></label>' +
         '<label>狀態<select data-entity="newcomers" data-id="' + item.id + '" data-field="status"><option ' + (item.status === '待分派' ? 'selected' : '') + '>待分派</option><option ' + (item.status === '跟進中' ? 'selected' : '') + '>跟進中</option><option ' + (item.status === '已連結' ? 'selected' : '') + '>已連結</option><option ' + (item.status === '暫停跟進' ? 'selected' : '') + '>暫停跟進</option></select></label>' +
         '<label>下次跟進<input type="date" data-entity="newcomers" data-id="' + item.id + '" data-field="nextFollowupDate" value="' + escapeHtml(item.nextFollowupDate) + '"></label>' +
-        '</div><div class="row-foot"><span class="badge ' + (item.status === '待分派' ? 'warn' : 'neutral') + '">' + escapeHtml(item.status) + '</span><button type="button" class="danger" data-remove="newcomers" data-id="' + item.id + '">移除假新人</button></div></article>';
-    }).join('') + '</div><button type="button" class="secondary add-row" data-add="newcomer">＋新增假新人</button>';
+        '</div><div class="row-foot"><span class="badge ' + (item.status === '待分派' ? 'warn' : 'neutral') + '">' + escapeHtml(item.status) + '</span><button type="button" class="danger" data-remove="newcomers" data-id="' + item.id + '">' + (isAppsScript ? '移除新人' : '移除假新人') + '</button></div></article>';
+    }).join('') + '</div><button type="button" class="secondary add-row" data-add="newcomer">＋' + (isAppsScript ? '新增新人' : '新增假新人') + '</button>';
   }
 
   function renderFollowupEditors() {
@@ -297,7 +297,7 @@
   }
 
   function renderNewcomers() {
-    app.innerHTML = '<section class="panel"><div class="section-head"><div><p class="eyebrow">03 新人跟進</p><h2>新人名單與分派</h2><p>姓名只留在新人資料；跟進者直接選共用白名單。</p></div><span class="badge neutral">假資料</span></div>' + renderNewcomerEditors() + '</section>' +
+    app.innerHTML = '<section class="panel"><div class="section-head"><div><p class="eyebrow">03 新人跟進</p><h2>新人名單與分派</h2><p>姓名只留在新人資料；跟進者直接選共用白名單。</p></div><span class="badge neutral">' + (isAppsScript ? '測試資料' : '假資料') + '</span></div>' + renderNewcomerEditors() + '</section>' +
       '<section class="panel"><div class="section-head"><div><h2>跟進紀錄</h2><p>每次聯繫獨立留下結果與下一步。</p></div></div>' + renderFollowupEditors() + '</section>';
     bindSetupEditors();
   }
@@ -329,7 +329,7 @@
   }
 
   function renderVenues() {
-    app.innerHTML = '<section class="panel"><div class="section-head"><div><p class="eyebrow">04 場地借用</p><h2>場地設定</h2><p>各教會自行建立場地與容量，不寫死桃園名稱。</p></div><span class="badge neutral">假資料</span></div>' + renderVenueEditors() + '</section>' +
+    app.innerHTML = '<section class="panel"><div class="section-head"><div><p class="eyebrow">04 場地借用</p><h2>場地設定</h2><p>各教會自行建立場地與容量，不寫死桃園名稱。</p></div><span class="badge neutral">' + (isAppsScript ? '測試資料' : '假資料') + '</span></div>' + renderVenueEditors() + '</section>' +
       '<section class="panel"><div class="section-head"><div><h2>借用申請與審核</h2><p>同場地、同日期、時段重疊會立即標出。</p></div></div>' + renderRequestEditors() + '</section>';
     bindSetupEditors();
   }
@@ -431,7 +431,7 @@
     } else {
       content = renderAnnouncementSettings();
     }
-    return '<section class="panel"><div class="section-head"><div><h2>' + (setupStep + 1) + '. ' + step.title + '</h2><p>' + step.note + '</p></div><span class="badge">自動保存草稿</span></div>' + content +
+    return '<section class="panel"><div class="section-head"><div><h2>' + (setupStep + 1) + '. ' + step.title + '</h2><p>' + step.note + '</p></div><span class="badge">' + (isAppsScript ? '變更自動同步' : '自動保存草稿') + '</span></div>' + content +
       '<div class="actions" style="margin-top:18px"><button type="button" class="secondary" id="setup-prev" ' + (setupStep === 0 ? 'disabled' : '') + '>上一步</button><button type="button" id="setup-next">' + (setupStep === 5 ? '前往排班原型' : '下一步') + '</button></div></section>';
   }
 
@@ -569,7 +569,7 @@
     });
     app.querySelectorAll('[data-remove]').forEach(function (button) {
       button.addEventListener('click', function () {
-        var labels = { events: '這個聚會場次及相關假排班', roles: '這個崗位及相關假排班', people: '這位白名單人員及其關聯資料', newcomers: '這筆假新人及跟進紀錄', followups: '這筆跟進紀錄', venues: '這個場地及借用申請', venueRequests: '這筆借用申請' };
+        var labels = { events: '這個聚會場次及相關排班', roles: '這個崗位及相關排班', people: '這位白名單人員及其關聯資料', newcomers: '這筆新人及跟進紀錄', followups: '這筆跟進紀錄', venues: '這個場地及借用申請', venueRequests: '這筆借用申請' };
         if (window.confirm('確定要移除' + labels[button.dataset.remove] + '嗎？')) removeRecord(button.dataset.remove, button.dataset.id);
       });
     });
@@ -627,7 +627,7 @@
 
   function renderSchedule() {
     var issues = D.scheduleIssues(state);
-    app.innerHTML = serviceTabs('schedule') + '<section class="panel"><div class="section-head"><div><p class="eyebrow">02 服事排班</p><h2>排班工作台</h2><p>點選空缺或已排人員，右側只顯示相關候選與規則。</p></div><div class="status-row"><span class="badge neutral">草稿／示範</span><span class="badge ' + (issues.blocks.length ? 'block' : '') + '">' + issues.blocks.length + ' 個發布阻擋</span></div></div>' +
+    app.innerHTML = serviceTabs('schedule') + '<section class="panel"><div class="section-head"><div><p class="eyebrow">02 服事排班</p><h2>排班工作台</h2><p>點選空缺或已排人員，右側只顯示相關候選與規則。</p></div><div class="status-row"><span class="badge neutral">' + (isAppsScript ? '測試環境' : '草稿／示範') + '</span><span class="badge ' + (issues.blocks.length ? 'block' : '') + '">' + issues.blocks.length + ' 個發布阻擋</span></div></div>' +
       '<div class="toolbar"><div class="filters"><label>期間<select><option>' + escapeHtml(displayDate(state.events[0] && state.events[0].date)) + ' 這一週</option></select></label><label>事工團<select><option>全部</option>' + uniqueTeams().map(function (team) { return '<option>' + escapeHtml(team) + '</option>'; }).join('') + '</select></label></div><div class="actions"><button type="button" class="secondary" id="copy-last">複製上期</button><button type="button" id="check-schedule">' + (!issues.blocks.length && state.assignments.some(function (item) { return item.status === 'draft'; }) ? '模擬發布' : '檢查班表') + '</button></div></div>' +
       '<div class="schedule-layout ' + (selectedCell ? 'drawer-open' : '') + '"><div class="schedule-table-wrap"><table class="schedule-table"><thead><tr><th>事工／崗位</th>' + state.events.map(function (event) { return '<th>' + escapeHtml(event.name) + '<span class="muted small" style="display:block">' + escapeHtml(displayDate(event.date) + ' ' + event.start) + '</span></th>'; }).join('') + '</tr></thead><tbody>' + state.roles.map(function (role) {
         return '<tr><th>' + escapeHtml(role.team) + '<span class="muted small" style="display:block">' + escapeHtml(role.name) + '</span></th>' + state.events.map(function (event) { return '<td>' + cellButton(event, role) + '</td>'; }).join('') + '</tr>';
@@ -655,14 +655,14 @@
         if (drafts.length) {
           drafts.forEach(function (item) { item.status = 'published'; });
           persistState();
-          flash('已完成假資料發布，不會外送通知');
+          flash('已完成發布預覽，不會外送通知');
           renderSchedule();
         } else {
           flash('班表檢查通過');
         }
       }
     });
-    document.getElementById('copy-last').addEventListener('click', function () { flash('示範：已預覽 6 筆，未修改來源期間'); });
+    document.getElementById('copy-last').addEventListener('click', function () { flash('已預覽 6 筆，未修改來源期間'); });
     bindModuleLinks();
   }
 
@@ -717,12 +717,12 @@
     var issues = D.scheduleIssues(state);
     var text = D.generateLineText(state);
     var reminder = state.settings.announcement;
-    app.innerHTML = serviceTabs('announcement') + '<section class="panel"><div class="section-head"><div><h2>LINE 公告預覽</h2><p>同一份已發布資料產生文字；第一版只複製，不自動發送。</p></div><span class="badge neutral">未外送</span></div><div class="announcement-layout"><div><label for="line-text">公告文字<textarea id="line-text" readonly>' + escapeHtml(text) + '</textarea></label><div class="actions" style="margin-top:12px"><button type="button" id="preview-publish">發布前檢查</button><button type="button" class="secondary" id="copy-line">複製 LINE 文字</button></div></div><aside class="checklist"><div class="check-item"><span class="checkmark">✓</span><span>只含已發布資料</span></div><div class="check-item"><span class="checkmark">✓</span><span>不含 email、請假原因與內部編號</span></div><div class="check-item"><span class="checkmark">⚙</span><span>公告範圍：未來 ' + reminder.weeksAhead + ' 週</span></div><div class="check-item"><span class="checkmark">⚙</span><span>每週提醒：' + (reminder.weeklyEnabled ? reminder.weeklyDay + ' ' + reminder.weeklyTime : '關閉') + '<br>前一天提醒：' + (reminder.tomorrowEnabled ? reminder.tomorrowTime : '關閉') + '</span></div><div class="check-item"><span class="' + (issues.blocks.length ? 'badge block' : 'checkmark') + '">' + (issues.blocks.length ? issues.blocks.length : '✓') + '</span><span>' + (issues.blocks.length ? '個發布阻擋尚未處理' : '發布檢查通過') + '</span></div>' + (publishPreview ? '<div class="preview-box"><strong>預覽完成</strong><p class="small">這只是示範，不會提高發布水位或發送訊息。</p></div>' : '') + '</aside></div></section>';
+    app.innerHTML = serviceTabs('announcement') + '<section class="panel"><div class="section-head"><div><h2>LINE 公告預覽</h2><p>同一份已發布資料產生文字；第一版只複製，不自動發送。</p></div><span class="badge neutral">未外送</span></div><div class="announcement-layout"><div><label for="line-text">公告文字<textarea id="line-text" readonly>' + escapeHtml(text) + '</textarea></label><div class="actions" style="margin-top:12px"><button type="button" id="preview-publish">發布前檢查</button><button type="button" class="secondary" id="copy-line">複製 LINE 文字</button></div></div><aside class="checklist"><div class="check-item"><span class="checkmark">✓</span><span>只含已發布資料</span></div><div class="check-item"><span class="checkmark">✓</span><span>不含 email、請假原因與內部編號</span></div><div class="check-item"><span class="checkmark">⚙</span><span>公告範圍：未來 ' + reminder.weeksAhead + ' 週</span></div><div class="check-item"><span class="checkmark">⚙</span><span>每週提醒：' + (reminder.weeklyEnabled ? reminder.weeklyDay + ' ' + reminder.weeklyTime : '關閉') + '<br>前一天提醒：' + (reminder.tomorrowEnabled ? reminder.tomorrowTime : '關閉') + '</span></div><div class="check-item"><span class="' + (issues.blocks.length ? 'badge block' : 'checkmark') + '">' + (issues.blocks.length ? issues.blocks.length : '✓') + '</span><span>' + (issues.blocks.length ? '個發布阻擋尚未處理' : '發布檢查通過') + '</span></div>' + (publishPreview ? '<div class="preview-box"><strong>預覽完成</strong><p class="small">這只是預覽，不會提高發布水位或發送訊息。</p></div>' : '') + '</aside></div></section>';
     document.getElementById('preview-publish').addEventListener('click', function () { publishPreview = true; renderAnnouncement(); flash('已完成無外送預覽'); });
     document.getElementById('copy-line').addEventListener('click', function () {
       var area = document.getElementById('line-text');
       area.select();
-      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(area.value).then(function () { flash('已複製示範文字'); });
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(area.value).then(function () { flash('已複製公告文字'); });
       else flash('已選取文字，可手動複製');
     });
     bindModuleLinks();
