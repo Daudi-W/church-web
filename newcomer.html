@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0F6E56">
-<title>新人跟進｜桃園教會服事平台</title>
+<title>新人跟進｜教會服事平台</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1106,6 +1106,8 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
 
 </style>
 <link rel="stylesheet" href="platform-module.css?v=3">
+<script src="service-runtime-config.js"></script>
+<script src="service-config.js"></script>
 <script src="platform-module.js?v=3"></script>
 </head>
 <body class="platform-module-body">
@@ -1396,7 +1398,9 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
 // ================================================================
 // 平台登入 + google.script.run 替身（改走 fetch）
 // ================================================================
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAc05-vf-HfZ0VcaPaFeVo3a3nGoyZT4lgkg-7hFFEXa3J09JDHnnGVIty9eXXSaNa/exec';
+var SERVICE_CONFIG = window.ChurchServiceConfig || {};
+var SCRIPT_URL = SERVICE_CONFIG.newcomerEndpoint || '';
+document.title = '新人跟進｜' + (SERVICE_CONFIG.platformName || '教會服事平台');
 var ID_TOKEN   = null;   // 保留欄位以維持既有 API 格式；模組模式不直接收 Google ID token
 var USER_EMAIL = null;   // 驗證過的 email
 var SVC_TOKEN  = null;   // 服事平台 session（同網域共用，免重登）

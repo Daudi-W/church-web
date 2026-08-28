@@ -28,6 +28,12 @@
 | `newcomer.html` | 新人跟進 | `Daudi-W/newcomer-followup` |
 | `multi-church-test/` | 多教會四模組測試入口 | Vault `multi-church-service-prototype/apps-script-backend` |
 
+## 多教會部署設定
+
+`service.html`、`venue.html`、`newcomer.html` 共用成熟前台，不為每間教會複製一套程式。每次部署只替換 `service-runtime-config.js`，可設定教會名稱、OAuth Client ID、三個 GAS 端點、全教會服事表、堂區、工具捷徑與 Web Push 公鑰；欄位範本見 `service-runtime-config.example.js`。
+
+這份設定只可放瀏覽器本來就會看見的公開座標。Client Secret、VAPID 私鑰、白名單、個資與私人 Sheet ID 清單不得放入 repo。日常的「平台連結」仍以帳號管理表回傳內容為優先，runtime 裡的工具連結只是在後端尚未載入時備援。
+
 ## 自動檢查
 
 推送或開 Pull Request 時，GitHub Actions 會執行：

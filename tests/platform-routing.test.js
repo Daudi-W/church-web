@@ -20,6 +20,12 @@ function scriptUrl(file) {
   return match[1];
 }
 
+function productionRuntime() {
+  const context = {};
+  vm.runInNewContext(read('service-runtime-config.js'), context);
+  return context.MultiChurchRuntimeConfig;
+}
+
 function makeStorage(initial = {}) {
   const data = new Map(Object.entries(initial));
   return {
@@ -50,18 +56,23 @@ function loadPlatform(search = '') {
 }
 
 test('正式頁面固定連到各自正式 GAS，沙盒不會混入正式端點', () => {
-  for (const [file, endpoint] of Object.entries(FORMAL_ENDPOINTS)) {
-    assert.equal(scriptUrl(file), endpoint);
-    assert.notEqual(scriptUrl(file), SANDBOX_ENDPOINT);
-  }
+  const runtime = productionRuntime();
+  assert.equal(runtime.endpoint, FORMAL_ENDPOINTS['service.html']);
+  assert.equal(runtime.frontend.venueEndpoint, FORMAL_ENDPOINTS['venue.html']);
+  assert.equal(runtime.frontend.newcomerEndpoint, FORMAL_ENDPOINTS['newcomer.html']);
+  for (const endpoint of Object.values(FORMAL_ENDPOINTS)) assert.notEqual(endpoint, SANDBOX_ENDPOINT);
+  assert.match(read('service.html'), /SERVICE_CONFIG\.serviceEndpoint/);
+  assert.match(read('venue.html'), /SERVICE_CONFIG\.venueEndpoint/);
+  assert.match(read('newcomer.html'), /SERVICE_CONFIG\.newcomerEndpoint/);
   assert.equal(scriptUrl('sandbox.html'), SANDBOX_ENDPOINT);
-  assert.ok(!Object.values(FORMAL_ENDPOINTS).includes(scriptUrl('sandbox.html')));
+  assert.ok(!Object.values(FORMAL_ENDPOINTS).includes(SANDBOX_ENDPOINT));
 });
 
 test('平台首頁只以同源頁面開啟場地與新人模組', () => {
   const service = read('service.html');
-  assert.match(service, /name:\s*'場地申請'[\s\S]*?url:\s*'venue\.html'/);
-  assert.match(service, /name:\s*'新人跟進'[\s\S]*?url:\s*'newcomer\.html'/);
+  const links = productionRuntime().frontend.fallbackLinks;
+  assert.ok(links.some((link) => link.name === '場地申請' && link.url === 'venue.html'));
+  assert.ok(links.some((link) => link.name === '新人跟進' && link.url === 'newcomer.html'));
   assert.match(service, /PlatformModule\.isModuleHref\(href\)\) location\.href = href/);
 
   for (const file of ['venue.html', 'newcomer.html']) {
@@ -79,6 +90,8 @@ test('Service Worker 預快取正式入口、兩個模組與同版共用資源',
     'service.html',
     'venue.html',
     'newcomer.html',
+    'service-runtime-config.js',
+    'service-config.js',
     'platform-module.css?v=3',
     'platform-module.js?v=3'
   ]) {

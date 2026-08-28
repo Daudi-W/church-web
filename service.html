@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>桃園教會服事平台</title>
+<title>教會服事平台</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0F6E56">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -12,6 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="服事平台">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<script src="service-runtime-config.js"></script>
+<script src="service-config.js"></script>
 <script src="platform-module.js?v=3"></script>
 <style>
   :root {
@@ -247,12 +249,12 @@
 
 <div class="login-screen" id="loginScreen">
   <div class="card">
-    <h1>桃園教會服事平台</h1>
+    <h1 id="loginTitle">教會服事平台</h1>
     <p class="sub">服事查詢、請假、場地申請、新人跟進，一個帳號全搞定。用 Google 登入即可開始。</p>
     <div id="gBtn"></div>
     <div id="status">請點上方按鈕，用 Google 登入</div>
     <div id="uArea"></div>
-    <p class="foot">登入只做身分驗證，資料來自服事排班試算表。<br>有問題請找全職同工。</p>
+    <p class="foot">登入只做身分驗證，資料來自教會自己的服事排班試算表。<br>有問題請找教會平台管理者。</p>
   </div>
 </div>
 
@@ -281,27 +283,36 @@
 </div>
 
 <script>
-  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxavwu853Lejoco68BOJ1hEiH6MSrXMe2do171i8uUbGtQxDYBrLqk5U07H6Qas96rAWQ/exec';
-  var CLIENT_ID = '1074124628352-lvvlgdr0vm4u35u48htt0ctg18n6ciju.apps.googleusercontent.com';
+  var SERVICE_CONFIG = window.ChurchServiceConfig || {};
+  var SCRIPT_URL = SERVICE_CONFIG.serviceEndpoint || '';
+  var CLIENT_ID = SERVICE_CONFIG.googleClientId || '';
   var LAST_RES = null, ID_TOKEN = null, TAB = 'top', CARE_VIEW = 'member', TEAM_IDX = 0;
   var NEWS_LIST = []; // 目前畫面上的公告（首頁或登入頁），openNewsView 依索引取用
   var LEAVE_LIST = []; // 事工團頁的請假清單（一鍵補入/換別人/不用補 依索引取用）
   var LV_OPEN = null;  // 請假清單收合狀態（首次依「有無待處理」決定）
   var TOKEN = null;
-  // 全教會服事表：暫時連到大家習慣的公告試算表（之後要切回系統彈窗，把按鈕的 data-act 改回 board 即可）
-  var CHURCH_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1XAtW7ns2r4bc6uq-CqylVYIAY1qVTbdbJvygFUjzvu0/edit?usp=sharing';
+  var CHURCH_SHEET_URL = SERVICE_CONFIG.scheduleUrl || '';
+  var DEFAULT_BRANCH = SERVICE_CONFIG.defaultBranch || '本堂';
+  var PLATFORM_URL = SERVICE_CONFIG.platformUrl || window.location.href.split(/[?#]/)[0];
   try { TOKEN = localStorage.getItem('svcToken'); } catch (e) { }
   // 工具連結改由帳號管理表「平台連結」分頁管理（whoami 回傳）；此為未載入時的備援
-  var TOOL_LINKS = [
-    { name: '歌詞 PPT 系統', icon: 'ti-presentation', url: 'https://worshiplyrics.onrender.com' },
-    { name: '節拍器疊片', icon: 'ti-music', url: 'https://daudi-w.github.io/metronome-tool/' },
-    { name: '即時問答', icon: 'ti-bulb', url: 'https://church-quiz-26060378.web.app' },
-    { name: '場地申請', icon: 'ti-door', url: 'venue.html' },
-    { name: '新人跟進', icon: 'ti-user-plus', url: 'newcomer.html' }
-  ];
+  var TOOL_LINKS = SERVICE_CONFIG.fallbackLinks || [];
   var WD_TODAY = ['日', '一', '二', '三', '四', '五', '六'];
 
+  function applyDeploymentBranding() {
+    var title = SERVICE_CONFIG.platformName || '教會服事平台';
+    document.title = title;
+    var loginTitle = document.getElementById('loginTitle');
+    if (loginTitle) loginTitle.textContent = title;
+  }
+  applyDeploymentBranding();
+
   function initGoogleLogin() {
+    var configCheck = window.ChurchServiceConfigTools && ChurchServiceConfigTools.validate(SERVICE_CONFIG);
+    if (configCheck && !configCheck.ok) {
+      setStatus('⚠️ 部署設定未完成：' + configCheck.errors.join('、'), true);
+      return;
+    }
     if (!(window.google && google.accounts && google.accounts.id)) return setTimeout(initGoogleLogin, 100);
     google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onGoogleLogin, auto_select: false });
     google.accounts.id.renderButton(document.getElementById('gBtn'),
@@ -370,7 +381,7 @@
     }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
   }
   function slotBranches(slots) {
-    var brs = []; slots.forEach(function (s) { var x = s.branch || '桃園'; if (brs.indexOf(x) === -1) brs.push(x); });
+    var brs = []; slots.forEach(function (s) { var x = s.branch || DEFAULT_BRANCH; if (brs.indexOf(x) === -1) brs.push(x); });
     return brs;
   }
   function branchTabs(brs, cur) {
@@ -387,7 +398,7 @@
   function renderBoard() {
     var b = document.querySelector('#picker .pk-body');
     var brs = slotBranches(BOARD.slots);
-    var filtered = BOARD.slots.filter(function (s) { return BOARD.br === '全部' || (s.branch || '桃園') === BOARD.br; });
+    var filtered = BOARD.slots.filter(function (s) { return BOARD.br === '全部' || (s.branch || DEFAULT_BRANCH) === BOARD.br; });
     var h = '<div class="pk-h"><i class="ti ti-calendar"></i> 全教會服事表</div>' + branchTabs(brs, BOARD.br);
     h += boardHtml(filtered) || '<div class="empty">此堂區未來沒有服事資料。</div>';
     h += '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
@@ -759,7 +770,7 @@
     return h;
   }
 
-  function brTag(s) { return (s.branch && s.branch !== '桃園') ? '<span class="br-tag">' + esc(s.branch) + '</span>' : ''; }
+  function brTag(s) { return (s.branch && s.branch !== DEFAULT_BRANCH) ? '<span class="br-tag">' + esc(s.branch) + '</span>' : ''; }
 
   // 堂次對應的服事時間
   function sessionTime(s) {
@@ -773,7 +784,7 @@
   function sessionLinesHtml(items) {
     var bySes = {}, sorder = [];
     items.forEach(function (s) {
-      var key = (s.branch || '桃園') + '｜' + (s.session || '');
+      var key = (s.branch || DEFAULT_BRANCH) + '｜' + (s.session || '');
       if (!bySes[key]) { bySes[key] = { session: s.session || '', branch: s.branch, roles: [] }; sorder.push(key); }
       bySes[key].roles.push(roleText(s) + (s.changed ? '<span class="chg">異動</span>' : ''));
     });
@@ -821,7 +832,7 @@
     // 場數以「不重複的堂」計（日期＋堂區＋堂次），同一堂多崗位只算一場
     var seenSes = {}, sesCnt = 0;
     group.forEach(function (s) {
-      var k = s.date + '｜' + (s.branch || '桃園') + '｜' + (s.session || '');
+      var k = s.date + '｜' + (s.branch || DEFAULT_BRANCH) + '｜' + (s.session || '');
       if (!seenSes[k]) { seenSes[k] = 1; sesCnt++; }
     });
     return '<div class="hero"><div class="cap">你最近的服事' + (sesCnt > 1 ? '（' + sesCnt + ' 場）' : '') + '</div>' + lines + '</div>';
@@ -1042,7 +1053,7 @@
       var done = cov[cf.session];
       lines += '<div class="slot-line"><span class="lb">' + esc(cf.session) + '</span>' + esc(cf.role) +
         (cf.instrument ? '（' + esc(cf.instrument) + '）' : '') +
-        (cf.branch !== '桃園' ? '<span class="br-tag">' + esc(cf.branch) + '</span>' : '');
+        (cf.branch && cf.branch !== DEFAULT_BRANCH ? '<span class="br-tag">' + esc(cf.branch) + '</span>' : '');
       if (done) {
         lines += ' <span class="ok-badge">' + (done === '不用補' ? '不用補' : '已補：' + esc(done)) + '</span>';
       } else if (cf.mine) {
@@ -1051,7 +1062,7 @@
           lines += '<button class="lv-act line" data-act="lvpick" data-e="' + i + '" data-c="' + j + '">換別人</button>';
           lines += '<button class="lv-act line" data-act="lvskipone" data-e="' + i + '" data-c="' + j + '">此堂不用補</button>';
         } else {
-          lines += ' <span class="hint-s">（林口請到試算表調整）</span>';
+          lines += ' <span class="hint-s">（請到試算表調整）</span>';
         }
       }
       lines += '</div>';
@@ -1361,7 +1372,7 @@
       (res.stats || []).forEach(function (st) { st.unfilled.forEach(function (n) { if (un.indexOf(n) === -1) un.push(n); }); });
       if (un.length) {
         h += '<textarea class="draft" readonly>提醒大家 🙌「' + esc(res.name) + '」服事調查' + (res.deadline ? ' ' + esc(res.deadline) + ' 截止' : '') +
-          '，還沒填的請到服事平台首頁點「服事調查」：\nhttps://daudi-w.github.io/church-web/service.html\n尚未填寫：' + esc(un.join('、')) + '</textarea>' +
+          '，還沒填的請到服事平台首頁點「服事調查」：\n' + esc(PLATFORM_URL) + '\n尚未填寫：' + esc(un.join('、')) + '</textarea>' +
           '<div class="pk-btns"><button onclick="copyDraft(this)"><i class="ti ti-copy"></i> 複製催繳訊息</button><button onclick="openSurvey()">返回</button></div>';
       } else {
         h += '<div class="pk-btns"><button onclick="openSurvey()">返回</button></div>';
@@ -1932,7 +1943,7 @@
     var showBrs = (ANN.br === '全部') ? brs : [ANN.br];
     var blocks = [];
     showBrs.forEach(function (br) {
-      var ss = ANN.slots.filter(function (s) { return (s.branch || '桃園') === br; });
+      var ss = ANN.slots.filter(function (s) { return (s.branch || DEFAULT_BRANCH) === br; });
       if (!ss.length) return;
       var d0 = boardDate(ss[0].date); var end = new Date(d0); end.setDate(d0.getDate() + 7);
       var wk = ss.filter(function (s) { var d = boardDate(s.date); return d >= d0 && d < end; });
@@ -1989,7 +2000,7 @@
   }
 
   // ===== 手機推播：訂閱並把門牌存到後端（綁定登入者身分）=====
-  var VAPID_PUBLIC = 'BM8nIgdXT6ab7HUW1-BRiwjPOdOYHvr5GslQxVmCn7dcTxYAybHPLTp_WPUddMmOaUXDeArnYXRHMJ6bpMpJN7E';
+  var VAPID_PUBLIC = SERVICE_CONFIG.vapidPublicKey || '';
   function urlB64ToUint8(base64) {
     var pad = '='.repeat((4 - base64.length % 4) % 4);
     var b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
@@ -2001,6 +2012,11 @@
   function refreshPushBtn() {
     var btn = document.getElementById('pushBtn');
     if (!btn) return;
+    if (!SERVICE_CONFIG.webPushEnabled || !VAPID_PUBLIC) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-bell-off"></i> 此教會尚未啟用推播';
+      return;
+    }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       btn.disabled = true;
       btn.innerHTML = '<i class="ti ti-bell-off"></i> 此裝置不支援推播';
@@ -2021,6 +2037,10 @@
   }
   function enablePush() {
     var btn = document.getElementById('pushBtn');
+    if (!SERVICE_CONFIG.webPushEnabled || !VAPID_PUBLIC) {
+      alert('這個部署尚未啟用手機推播，請洽教會平台管理者。');
+      return;
+    }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       alert('這個環境不支援推播。iPhone 請先用 Safari「加入主畫面」，再從主畫面圖示打開。');
       return;
