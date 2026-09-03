@@ -2,17 +2,17 @@
  * 策略：network-first（永遠先抓最新，離線才用快取），避免版本卡住。
  * 只快取 GET 的同源靜態資源；對 GAS 的 POST API 不攔截。
  */
-const CACHE = 'svc-v7';
+const CACHE = 'svc-v8';
 const SHELL = [
   'service.html', 'venue.html', 'newcomer.html',
-  'service-runtime-config.js', 'service-config.js',
+  'runtime-config.js', 'service-config.js',
   'platform-module.css?v=3', 'platform-module.js?v=3',
   'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'
 ];
 
 self.addEventListener('install', function (e) {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL).catch(function () {}); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }));
 });
 
 self.addEventListener('activate', function (e) {
