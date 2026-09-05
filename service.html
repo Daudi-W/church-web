@@ -328,7 +328,7 @@
     if (!fromNoti) {
       try {
         var cached = localStorage.getItem('svcWhoami');
-        if (cached) { applyResult(JSON.parse(cached), true); usedCache = true; }
+        if (cached) { var cc = JSON.parse(cached); if (cc.cachedAt && Date.now() - cc.cachedAt < 86400000 && cc.sessionTag === TOKEN.slice(-16)) { applyResult(cc, true); usedCache = true; } else { localStorage.removeItem('svcWhoami'); } }
       } catch (e) { }
     }
     if (!usedCache) setStatus(fromNoti ? '🔄 載入最新資料…' : '⏳ 自動登入中…', false);
@@ -451,7 +451,17 @@
     return fetch(SCRIPT_URL, {
       method: 'POST', redirect: 'follow',
       body: JSON.stringify({ action: action, idToken: ID_TOKEN, sessionToken: TOKEN, args: args || {} })
-    }).then(function (r) { return r.json(); });
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (!res.ok && /^(SESSION_EXPIRED|ACCOUNT_DISABLED_OR_UNLISTED)$/.test(res.error || '')) {
+        TOKEN = null; ID_TOKEN = null; LAST_RES = null;
+        try { localStorage.removeItem('svcToken'); localStorage.removeItem('svcWhoami'); } catch (e) { }
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('tabbar').style.display = 'none';
+        document.getElementById('loginScreen').style.display = '';
+        setStatus('登入已失效或帳號已停用，請重新登入或聯絡管理員', true);
+      }
+      return res;
+    });
   }
 
   /* 使用者自填內容（姓名/備註等）塞進 innerHTML 前先跳脫，避免 stored-XSS。 */
@@ -567,9 +577,17 @@
       TOKEN = res.sessionToken;
       try { localStorage.setItem('svcToken', TOKEN); } catch (e) { }
     }
+    if (!fromCache && !res.matched) {
+      try { localStorage.removeItem('svcWhoami'); if (res.disabled) localStorage.removeItem('svcToken'); } catch (e) { }
+      if (res.disabled) TOKEN = null;
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('tabbar').style.display = 'none';
+      document.getElementById('loginScreen').style.display = '';
+    }
     if (!fromCache && res.matched) {
       try {
         var cc = {}; for (var ck in res) { if (ck !== 'sessionToken') cc[ck] = res[ck]; }
+        cc.cachedAt = Date.now(); cc.sessionTag = TOKEN ? TOKEN.slice(-16) : '';
         localStorage.setItem('svcWhoami', JSON.stringify(cc));
       } catch (e) { }
     }
@@ -1217,12 +1235,12 @@
       '<div class="pk-h"><i class="ti ti-pencil"></i> 申請帳號</div>' +
       '<div class="hint-s">填寫後送出，全職同工核准後重新登入即可使用。</div>' +
       '<div class="lv-form">' +
-      '<label>姓名（全名，必填）<input type="text" id="apName" placeholder="如：王小明"></label>' +
+      '<label>姓名（全名，必填）<input type="text" id="apName" placeholder="填寫服事表使用的稱呼"></label>' +
       '<label>區（必填）<select id="apZone"><option value="">請選擇…</option>' +
       ((LAST_RES && LAST_RES.zones) || []).map(function (z) { return '<option value="' + esc(z) + '">' + esc(z) + '</option>'; }).join('') +
       '</select></label>' +
-      '<label>小組（必填）<input type="text" id="apGroup" placeholder="如：約書亞小組"></label>' +
-      '<label>備註（選填）<input type="text" id="apNote" placeholder="如：敬拜團鼓手"></label></div>' +
+      '<label>小組（必填）<input type="text" id="apGroup" placeholder="填寫服事表使用的稱呼"></label>' +
+      '<label>備註（選填）<input type="text" id="apNote" placeholder="填寫服事表使用的稱呼"></label></div>' +
       '<div class="pk-btns"><button onclick="submitApply()">送出申請</button><button onclick="closePicker()">取消</button></div>';
   }
   function submitApply() {
@@ -1394,7 +1412,7 @@
     } else {
       h += '<div class="hint-s">開啟後全體有服事崗位的同工會收到通知並可開始填寫。</div>' +
         '<div class="lv-form">' +
-        '<label>調查名稱 <input type="text" id="svName" placeholder="如：2026 Q4"></label>' +
+        '<label>調查名稱 <input type="text" id="svName" placeholder="填寫服事表使用的稱呼"></label>' +
         '<label>季度開始 <input type="date" id="svStart"></label>' +
         '<label>季度結束 <input type="date" id="svEnd"></label>' +
         '<label>填寫截止 <input type="date" id="svDl"></label></div>' +
@@ -1617,7 +1635,7 @@
         (m.displayName ? '「' + esc(m.displayName) + '」' : '此人') +
         '，顯示名稱／崗位／事工團已自動帶入——確認沒問題可直接按核准。</div>' : '') +
       '<div class="lv-form">' +
-      '<label>顯示名稱（服事表上的稱呼，留空＝用全名）<input type="text" id="apvDisp" placeholder="如：沛璟"></label>' +
+      '<label>顯示名稱（服事表上的稱呼，留空＝用全名）<input type="text" id="apvDisp" placeholder="填寫服事表使用的稱呼"></label>' +
       '<label>牧養身份 <select id="apvRole">' + roles.map(function (r) { return '<option>' + esc(r) + '</option>'; }).join('') + '</select></label>' +
       '<label>事工團角色 <select id="apvTeamRole"><option>同工</option><option>主責</option><option>團長</option></select></label>' +
       '</div>' +
@@ -1715,8 +1733,8 @@
       '<div class="pk-h"><i class="ti ti-calendar-off"></i> 我要請假</div>' +
       '<div class="lv-form">' + whoSel + '<div id="lvDates"><label>日期 <input type="date" class="lvDate"></label></div>' +
       '<button type="button" class="add-day" onclick="addLeaveDate()">＋ 再加一天</button>' +
-      '<label>原因（選填）<input type="text" id="lvReason" placeholder="如：出差、家庭因素"></label>' +
-      '<label>建議代班人（選填，最終由主責決定）<input type="text" id="lvHelper" placeholder="如：已請 XXX 幫忙帶班"></label></div>' +
+      '<label>原因（選填）<input type="text" id="lvReason" placeholder="填寫服事表使用的稱呼"></label>' +
+      '<label>建議代班人（選填，最終由主責決定）<input type="text" id="lvHelper" placeholder="填寫服事表使用的稱呼"></label></div>' +
       '<div class="pk-btns"><button onclick="submitLeave()">送出</button><button onclick="closePicker()">取消</button></div>';
   }
   function addLeaveDate() {
@@ -1811,7 +1829,7 @@
     p.querySelector('.pk-body').innerHTML =
       '<div class="pk-h"><i class="ti ti-speakerphone"></i> ' + (isEdit ? '編輯公告' : '發布公告') + '</div>' +
       '<div class="lv-form">' +
-      '<label>標題（必填）<input type="text" id="nwTitle" placeholder="如：下週六服事同工集訓"></label>' +
+      '<label>標題（必填）<input type="text" id="nwTitle" placeholder="填寫服事表使用的稱呼"></label>' +
       '<label>內容<textarea id="nwBody" rows="5" style="padding:9px;border:1px solid #cfd8e3;border-radius:9px;font-size:15px;font-family:inherit;resize:vertical"></textarea>' +
       '<span class="hint-s" style="font-weight:400">換行會照原樣顯示；行首用「- 」變列點、「1. 」變編號清單。</span></label>' +
       '<label>分類<select id="nwCat"><option>公告</option><option>活動</option><option>提醒</option><option>代禱</option></select></label>' +
