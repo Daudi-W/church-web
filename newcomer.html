@@ -1408,16 +1408,23 @@ SVC_TOKEN = PlatformModule.getToken();
 var LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) &&
   new URLSearchParams(location.search).get('preview') === '1';
 
+var newcomerVersions = Object.create(null);
+function rememberNewcomerVersions(value) {
+  if (!value || typeof value !== 'object') return;
+  if (Number.isInteger(value.rowIndex) && typeof value.rowVersion === 'string') newcomerVersions[value.rowIndex] = value.rowVersion;
+  Object.keys(value).forEach(function(key) { if (typeof value[key] === 'object') rememberNewcomerVersions(value[key]); });
+}
 // 核心：把一個後端函式呼叫轉成帶 token 的 fetch，回傳 Promise
 function callBackend(action, args) {
   if (!ID_TOKEN && !SVC_TOKEN) { requireRelogin(); return Promise.reject('AUTH_REDIRECT'); }
   return fetch(SCRIPT_URL, {
     method: 'POST', redirect: 'follow',
-    body: JSON.stringify({ action: action, idToken: ID_TOKEN, sessionToken: SVC_TOKEN, args: args || [] })
+    body: JSON.stringify({ action: action, idToken: ID_TOKEN, sessionToken: SVC_TOKEN, args: args || [], rowVersion: newcomerVersions[(args || [])[0]] || '' })
   })
   .then(function(r){ return r.json(); })
   .then(function(res){
     if (res && res.__noauth) { requireRelogin(); throw 'AUTH_REDIRECT'; }
+    rememberNewcomerVersions(res);
     return res;
   });
 }

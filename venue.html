@@ -748,14 +748,12 @@
 
   <!-- ── 分堂切換 ── -->
   <div class="branch-tabs" role="tablist">
-    <button type="button" class="branch-tab active" data-branch="桃園" onclick="selectBranch('桃園')">🏛 桃園</button>
-    <button type="button" class="branch-tab" data-branch="林口" onclick="selectBranch('林口')">🏛 林口</button>
   </div>
 
   <form id="bookingForm">
     <div class="form-group">
       <label>申請人姓名 <span class="required">*</span></label>
-      <input type="text" id="name" placeholder="請輸入您的姓名" required autocomplete="name">
+      <input type="text" id="name" placeholder="平台登入自動帶入" required readonly autocomplete="name">
     </div>
 
     <div class="form-group">
@@ -792,7 +790,7 @@
       <label>登記人 Email（平台登入自動帶入）</label>
       <input type="email" id="emailInput" readonly tabindex="-1"
              style="background:#f1f3f5;color:#555;cursor:not-allowed;">
-      <div class="email-hint">已由平台登入驗證身分，無法手動修改。登記成功後寄送確認信與行事曆邀請。</div>
+      <div class="email-hint" id="bookingNotificationHint">已由平台登入驗證身分，無法手動修改。</div>
       <div class="email-status" id="emailStatus" style="display:none;"></div>
     </div>
 
@@ -810,8 +808,6 @@
     <div class="cal-subtitle">為保護同工隱私,僅顯示時段與場地。標示「休」的日期為教會休假日(仍可借用)。</div>
 
     <div class="cal-branch-tabs">
-      <button type="button" class="cal-branch-tab active" data-cal-branch="桃園" onclick="selectCalBranch('桃園')">桃園</button>
-      <button type="button" class="cal-branch-tab" data-cal-branch="林口" onclick="selectCalBranch('林口')">林口</button>
     </div>
 
     <div class="cal-controls">
@@ -882,6 +878,7 @@
   });
 
   function showLocalPreview() {
+    configureVenueCatalog([{name:'測試堂區',venues:['測試教室','測試禮堂']}]);
     USER_EMAIL = 'preview@example.com';
     emailVerified = true;
     document.getElementById('emailInput').value = USER_EMAIL;
@@ -915,6 +912,10 @@
         return;
       }
       USER_EMAIL = res.email;
+      document.getElementById('name').value = res.name || '';
+      document.getElementById('bookingNotificationHint').textContent = '已由平台登入驗證身分，無法手動修改。' +
+        (res.notifications && res.notifications.email ? '登記後寄送確認信。' : '') +
+        (res.notifications && res.notifications.invites ? '登記後寄送行事曆邀請。' : '');
       emailVerified = !!res.allowed;
       document.getElementById('emailInput').value = res.email;
       if (!res.allowed) {
@@ -924,6 +925,7 @@
         );
         return;  // 沒權限不放行
       }
+      configureVenueCatalog(res.catalog || []);
       PlatformModule.markModuleAuthenticated('venue');
       document.getElementById('moduleGate').hidden = true;
       document.getElementById('moduleContent').hidden = false;
@@ -949,43 +951,17 @@
   }
 
   // ── 場地清單(必須與後端 VENUES 一致) ──
-  var VENUES_BY_BRANCH = {
-    '桃園': [
-      { name: '501教室', icon: '🏫' },
-      { name: '502教室', icon: '🏫' },
-      { name: '副堂',    icon: '⛪' },
-      { name: '主堂',    icon: '✝️' }
-    ],
-    '林口': [
-      { name: '201教室', icon: '🏫' },
-      { name: '202教室', icon: '🏫' },
-      { name: '203教室', icon: '🏫' },
-      { name: '主堂',    icon: '✝️' }
-    ]
-  };
+  var VENUES_BY_BRANCH = Object.create(null);
 
   // 場地→顏色(每個場地配一個顏色,讓檢視更清楚)
-  var VENUE_COLORS = {
-    '桃園': {
-      '501教室': '#3b82f6',
-      '502教室': '#0ea5e9',
-      '副堂':    '#8b5cf6',
-      '主堂':    '#ec4899'
-    },
-    '林口': {
-      '201教室': '#10b981',
-      '202教室': '#14b8a6',
-      '203教室': '#06b6d4',
-      '主堂':    '#f59e0b'
-    }
-  };
+  var VENUE_COLORS = Object.create(null);
 
   // ── 表單狀態 ──
-  var currentBranch = '桃園';
+  var currentBranch = '';
   var emailVerified = false;
 
   // ── 檢視狀態 ──
-  var calBranch = '桃園';
+  var calBranch = '';
   var calView = 'month';        // 'month' | 'week'
   var calCursor = new Date();   // 月檢視:該月任一天;週檢視:該週任一天
   var calCache = {};            // key=branch+'-'+yyyy+'-'+mm, value=資料
@@ -1022,6 +998,24 @@
   // ════════════════════════════════════════════
   // 表單部分
   // ════════════════════════════════════════════
+  function configureVenueCatalog(catalog) {
+    if (!Array.isArray(catalog) || !catalog.length) throw new Error('缺少場地清單');
+    var colors = ['#3b82f6','#0ea5e9','#8b5cf6','#ec4899','#10b981'];
+    var tabs=document.querySelector('.branch-tabs'), calTabs=document.querySelector('.cal-branch-tabs');
+    tabs.replaceChildren();calTabs.replaceChildren();
+    catalog.forEach(function(branch) {
+      if (!branch || typeof branch.name!=='string' || !Array.isArray(branch.venues) || !branch.venues.length) throw new Error('場地清單不正確');
+      VENUES_BY_BRANCH[branch.name]=branch.venues.map(function(name){return {name:name,icon:'🏛'};});
+      VENUE_COLORS[branch.name]=Object.create(null);
+      branch.venues.forEach(function(name,i){VENUE_COLORS[branch.name][name]=colors[i%colors.length];});
+      var button=document.createElement('button');button.type='button';button.className='branch-tab';button.dataset.branch=branch.name;button.textContent=branch.name;button.onclick=function(){selectBranch(branch.name);};tabs.appendChild(button);
+      var calButton=document.createElement('button');calButton.type='button';calButton.className='cal-branch-tab';calButton.dataset.calBranch=branch.name;calButton.textContent=branch.name;calButton.onclick=function(){selectCalBranch(branch.name);};calTabs.appendChild(calButton);
+    });
+    currentBranch=catalog[0].name;calBranch=currentBranch;
+    selectBranch(currentBranch);renderLegend();
+    calTabs.firstChild.classList.add('active');
+  }
+
   function selectBranch(branch) {
     currentBranch = branch;
     document.querySelectorAll('.branch-tab').forEach(function(t) {
@@ -1035,11 +1029,11 @@
   function renderVenues() {
     var grid = document.getElementById('venueGrid');
     grid.innerHTML = '';
-    VENUES_BY_BRANCH[currentBranch].forEach(function(v) {
+    (VENUES_BY_BRANCH[currentBranch] || []).forEach(function(v) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'venue-btn';
-      btn.innerHTML = '<span class="venue-icon">' + v.icon + '</span>' + v.name;
+      btn.textContent = v.icon + ' ' + v.name;
       btn.onclick = function() { selectVenue(v.name, btn); };
       grid.appendChild(btn);
     });
@@ -1508,7 +1502,7 @@
 
   function renderLegend() {
     var legend = document.getElementById('calLegend');
-    var venues = VENUES_BY_BRANCH[calBranch];
+    var venues = VENUES_BY_BRANCH[calBranch] || [];
     var html = '';
     venues.forEach(function(v) {
       var color = VENUE_COLORS[calBranch][v.name];
