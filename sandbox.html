@@ -1263,7 +1263,7 @@
       String(res.mine.freq || '').split(';').forEach(function (x) {
         var i = x.indexOf(':'); if (i > 0) SV.freq[x.slice(0, i)] = x.slice(i + 1);
       });
-      String(res.mine.badDates || '').split(',').forEach(function (d) { d = d.trim(); if (d) SV.bad[d] = 1; });
+      String(res.mine.badDates || '').split(/[,，、]/).forEach(function (d) { d = d.trim(); if (d) SV.bad[d] = 1; });
       if (res.mine.pref) SV.pref = res.mine.pref;
     }
     var b = document.querySelector('#picker .pk-body');

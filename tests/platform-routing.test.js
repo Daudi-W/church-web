@@ -90,7 +90,7 @@ test('Service Worker 預快取正式入口、兩個模組與同版共用資源',
     'service.html',
     'venue.html',
     'newcomer.html',
-    'service-runtime-config.js',
+    'runtime-config.js',
     'service-config.js',
     'platform-module.css?v=3',
     'platform-module.js?v=3'
@@ -185,4 +185,10 @@ test('動態 HTML 不把後端文字拼進 inline JavaScript 或未跳脫錯誤�
     context.esc(`<img src=x onerror="alert(1)"> O'Reilly`),
     '&lt;img src=x onerror=&quot;alert(1)&quot;&gt; O&#39;Reilly'
   );
+});
+
+test('服事調查的不行日期支援三種中文常用分隔符', () => {
+  for (const file of ['service.html', 'sandbox.html', 'sandbox-v2.html']) {
+    assert.ok(read(file).includes("split(/[,，、]/)"), `${file} 必須支援 ,、，三種日期分隔符`);
+  }
 });
