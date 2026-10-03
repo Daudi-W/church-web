@@ -90,7 +90,7 @@ test('Service Worker 預快取正式入口、兩個模組與同版共用資源',
     'service.html',
     'venue.html',
     'newcomer.html',
-    'service-runtime-config.js',
+    'runtime-config.js',
     'service-config.js',
     'platform-module.css?v=3',
     'platform-module.js?v=3'
