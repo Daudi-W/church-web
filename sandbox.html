@@ -710,6 +710,7 @@
         else if (act === 'surveyadmin') openSurveyAdmin();
         else if (act === 'newsadmin') openNewsAdmin();
         else if (act === 'grouprename') openGroupRename();
+        else if (act === 'adminconsole') location.href = 'sandbox-admin.html';
         else if (act === 'lvfix') doLeaveReplace(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvpick') openLeavePick(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvskipone') doLeaveSkipOne(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
@@ -1162,6 +1163,7 @@
         '<div class="hint-s">' + psLine + '</div>' +
         '<div class="hint-s" style="margin-top:6px;color:var(--mut)">未公告日期不會進公告表，也不會通知；確認公告後的異動才同步並通知。</div>' +
         '<button class="btn" style="margin-top:10px" data-act="publish"><i class="ti ti-table-share"></i> 公告服事表（測試）</button></div>';
+      h += '<button class="btn" data-act="adminconsole"><i class="ti ti-adjustments"></i> 管理後台（帳號・小組・事工團）</button>';
       h += '<button class="btn" data-act="newsadmin"><i class="ti ti-speakerphone"></i> 公告管理</button>';
       h += '<button class="btn" data-act="surveyadmin"><i class="ti ti-checklist"></i> 調查管理' + (res.survey ? '（進行中：' + esc(res.survey.name) + '）' : '') + '</button>';
       h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
