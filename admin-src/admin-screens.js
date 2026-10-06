@@ -34,7 +34,9 @@ function commit(title, items, apply){
     if (!o) x.dbRegion = x.dbRegion || x.region;
     else if (o.region !== x.region) x.dbRegion = x.region;
     // 有帳號的人，排班用的區一動就對齊白名單的區（每次寫入後的身分重建也會這樣對齊，否則復原會對不上）
-    else if (x.account && o.dbRegion !== x.dbRegion) x.dbRegion = x.region;
+    else if (x.member && o.dbRegion !== x.dbRegion) x.dbRegion = x.region;
+    // 沒登記的人被設定了小組或職分 → 登記到白名單（email 留空）
+    if (o && !o.member && (x.group || (x.role && x.role !== '一般同工') || (x.extraRegions || []).length)) ensureMember(x, x.region);
   });
   const ops = buildOps(snap);
   people = snap.people; groups = snap.groups; regions = snap.regions;
@@ -151,7 +153,7 @@ function resultsHtml(){
   return `<ul class="list">${r.map(p => `<li><button class="lrow" data-act="openPerson" data-id="${p.id}">
     <span class="lbody">
       <span class="lmain"><strong>${hl(p.name, q)}</strong>${cnt[p.name] > 1 ? '<span class="tag warn">同名，請看 email 核對</span>' : ''}${!p.account ? '<span class="tag">沒有帳號</span>' : p.active ? '' : '<span class="tag">已停用</span>'}</span>
-      <span class="lmeta">${esc(p.region || '未設定區')}・${esc(p.account ? (p.group ? p.group + ' 小組' : '不屬於小組') + '・' + p.role : '同工資料庫')}</span>
+      <span class="lmeta">${esc(p.region || '未設定區')}・${esc(p.member ? (p.group ? p.group + ' 小組' : '不屬於小組') + '・' + p.role : '還沒登記小組')}</span>
       ${p.emails.length ? `<span class="mono">${p.emails.map(e => hl(e, q)).join('、')}</span>` : ''}
     </span><span class="chev" aria-hidden="true">›</span></button></li>`).join('')}</ul>`;
 }
@@ -174,17 +176,17 @@ function renderPerson(){
   <div class="card">
     <div class="phead">
       <div><h2>${esc(p.name)}</h2><div class="hint">服事表上稱呼「${esc(p.display)}」・${esc(p.region)}${p.group ? '・' + esc(p.group) + ' 小組' : ''}</div></div>
-      <div class="tags">${p.account ? `<span class="tag">${esc(p.role)}</span>` : '<span class="tag">沒有帳號</span>'}${p.staff ? '<span class="tag info">全職同工・管理者</span>' : ''}${p.account && !p.active ? '<span class="tag danger">已停用</span>' : ''}</div>
+      <div class="tags">${p.member ? `<span class="tag">${esc(p.role)}</span>` : ''}${p.account ? '' : '<span class="tag">沒有帳號</span>'}${p.staff ? '<span class="tag info">全職同工・管理者</span>' : ''}${p.account && !p.active ? '<span class="tag danger">已停用</span>' : ''}</div>
     </div>
     <div class="quick">
-      <button class="btn sm secondary" data-act="editSec" data-s="care">${p.account ? '移到別組' : '改區'}</button>
+      <button class="btn sm secondary" data-act="editSec" data-s="care">${p.member ? '移到別組' : '設定小組'}</button>
       <button class="btn sm secondary" data-act="editSec" data-s="teams">事工團與崗位</button>
       ${!p.account ? '<button class="btn sm secondary" data-act="openAcct">開帳號</button>' : p.active ? '<button class="btn sm danger" data-act="editSec" data-s="disable">停用帳號</button>' : '<button class="btn sm secondary" data-act="editSec" data-s="acct">重新啟用</button>'}
     </div>
   </div>
-  ${sec('care', '牧養', p.account ? `<dl class="kv"><dt>區</dt><dd>${esc(p.region || '未設定')}（${esc(districtLabel(districtOf(p.region)))}）</dd>
+  ${sec('care', '牧養', p.member ? `<dl class="kv"><dt>區</dt><dd>${esc(p.region || '未設定')}（${esc(districtLabel(districtOf(p.region)))}）</dd>
     <dt>小組</dt><dd>${p.group && groupObj(p.group) ? `<button class="link inline" data-act="openGroupPage" data-g="${esc(p.group)}">${esc(p.group)}</button>（小組長 ${esc(leaderName(p.group))}）` : esc(p.group || '不屬於小組')}</dd>
-    <dt>職分</dt><dd>${esc(p.role)}</dd>${(p.extraRegions || []).length ? `<dt>兼管區</dt><dd>${esc(p.extraRegions.join('、'))}</dd>` : ''}</dl>${zoneMismatch(p) ? `<div class="alert warn"><p>排班用的區是「${esc(p.dbRegion)}」，和白名單的「${esc(p.region)}」不一致，排班會套用「${esc(p.dbRegion)}」的牧區限制。</p><div class="row-actions"><button class="btn sm secondary" data-act="fixZone">統一成「${esc(p.region)}」</button></div></div>` : ''}` : `<dl class="kv"><dt>區</dt><dd>${esc(p.region || '未設定')}</dd></dl><p class="hint">還沒有平台帳號的同工，平台只記他的區（排班用），不記小組。開帳號後才能設定小組與職分。</p>`)}
+    <dt>職分</dt><dd>${esc(p.role)}</dd>${(p.extraRegions || []).length ? `<dt>兼管區</dt><dd>${esc(p.extraRegions.join('、'))}</dd>` : ''}</dl>${zoneMismatch(p) ? `<div class="alert warn"><p>排班用的區是「${esc(p.dbRegion)}」，和白名單的「${esc(p.region)}」不一致，排班會套用「${esc(p.dbRegion)}」的牧區限制。</p><div class="row-actions"><button class="btn sm secondary" data-act="fixZone">統一成「${esc(p.region)}」</button></div></div>` : ''}` : `<dl class="kv"><dt>區</dt><dd>${esc(p.region || '未設定')}</dd><dt>小組</dt><dd>還沒登記</dd></dl><p class="hint">點「編輯」設定小組後，小組長和區長的牧養視圖就看得到他的服事。不用開帳號。</p>`)}
   ${sec('teams', '事工團與排班崗位', rows.length ? `<div>${rows.map(r => `<div class="tline"><div class="lmain"><strong>${esc(r.team)}</strong>${r.listed && r.role === '團長' ? '<span class="tag info">團長</span>' : ''}${statePill(r)}</div><div class="lmeta">${esc(r.skills.join('、') || '沒有排班崗位')}</div></div>`).join('')}</div>` : '<p class="hint">還沒有加入任何事工團。</p>')}
   ${p.account ? sec('acct', '帳號', `<dl class="kv"><dt>email</dt><dd>${p.emails.map(esc).join('<br>')}</dd><dt>登入</dt><dd>${p.active ? '可以登入' : '已停用'}</dd><dt>全職同工</dt><dd>${p.staff ? '是（有管理者權限）' : '否'}</dd></dl>`)
     : `<section class="card"><h3>帳號</h3><p class="hint">還沒有平台帳號，不能登入平台。</p><div class="quick"><button class="btn sm secondary" data-act="openAcct">開帳號</button></div></section>`}
@@ -223,10 +225,10 @@ function renderRegionPage(){
     <p class="hint">區長不用另外設定：某人的職分是區長、區牧或區督，區又是這一區，他就是這區的區長。</p>
   </div>
   <div class="row-between"><h2 class="sec-h">小組（${gs.length}）</h2><button class="btn sm secondary" data-act="newGroupHere">＋ 在這區新開小組</button></div>
-  <ul class="list">${gs.map(g => `<li><button class="lrow" data-act="openGroupPage" data-g="${esc(g.name)}"><span class="lbody"><span class="lmain"><strong>${esc(g.name)}</strong>${g.status === '停用' ? '<span class="tag">停用</span>' : ''}${g.old.length ? `<span class="tag">舊名 ${esc(g.old.join('、'))}</span>` : ''}</span><span class="lmeta">小組長 ${esc(g.leader || '（未設定）')}</span></span><span class="num">${membersOf(g.name).length} 人有帳號</span><span class="chev" aria-hidden="true">›</span></button></li>`).join('') || '<li><div class="lrow hint">這區目前沒有小組</div></li>'}</ul>
+  <ul class="list">${gs.map(g => `<li><button class="lrow" data-act="openGroupPage" data-g="${esc(g.name)}"><span class="lbody"><span class="lmain"><strong>${esc(g.name)}</strong>${g.status === '停用' ? '<span class="tag">停用</span>' : ''}${g.old.length ? `<span class="tag">舊名 ${esc(g.old.join('、'))}</span>` : ''}</span><span class="lmeta">小組長 ${esc(g.leader || '（未設定）')}</span></span><span class="num">${membersOf(g.name).length} 人</span><span class="chev" aria-hidden="true">›</span></button></li>`).join('') || '<li><div class="lrow hint">這區目前沒有小組</div></li>'}</ul>
   <h2 class="sec-h">這區的同工（${regionPeople(r.name).length}）</h2>
   <p class="hint">包含有帳號的人和同工資料庫裡的同工；點名字看個人資料。</p>
-  <ul class="list">${regionPeople(r.name).map(p => `<li><button class="lrow" data-act="openPerson" data-id="${p.id}"><span class="lbody"><span class="lmain"><strong>${esc(p.name)}</strong>${p.account ? '' : '<span class="tag">沒有帳號</span>'}${p.region !== r.name && (p.extraRegions || []).includes(r.name) ? '<span class="tag info">兼管</span>' : ''}${p.region !== r.name && p.dbRegion === r.name ? '<span class="tag warn">只有排班用這區</span>' : ''}</span><span class="lmeta">${esc(p.account ? (p.group ? p.group + ' 小組' : '不屬於小組') + '・' + p.role : (p.skills.length ? '排班：' + p.skills.join('、') : '同工資料庫'))}</span></span><span class="chev" aria-hidden="true">›</span></button></li>`).join('') || '<li><div class="lrow hint">這區目前沒有同工</div></li>'}</ul>
+  <ul class="list">${regionPeople(r.name).map(p => `<li><button class="lrow" data-act="openPerson" data-id="${p.id}"><span class="lbody"><span class="lmain"><strong>${esc(p.name)}</strong>${p.account ? '' : '<span class="tag">沒有帳號</span>'}${p.region !== r.name && (p.extraRegions || []).includes(r.name) ? '<span class="tag info">兼管</span>' : ''}${p.region !== r.name && p.dbRegion === r.name ? '<span class="tag warn">只有排班用這區</span>' : ''}</span><span class="lmeta">${esc(p.member ? (p.group ? p.group + ' 小組' : '不屬於小組') + '・' + p.role : (p.skills.length ? '排班：' + p.skills.join('、') : '還沒登記小組'))}</span></span><span class="chev" aria-hidden="true">›</span></button></li>`).join('') || '<li><div class="lrow hint">這區目前沒有同工</div></li>'}</ul>
   <h2 class="sec-h">這一區的設定</h2>
   <div class="agrid">${Object.keys(REGION_ACTS).map(a => `<button class="action" data-act="regionAct" data-a="${a}"><strong>${REGION_ACTS[a][0]}</strong><span>${REGION_ACTS[a][1]}</span></button>`).join('')}</div>`;
 }
@@ -249,9 +251,9 @@ function renderGroupPage(){
     <dl class="kv"><dt>區</dt><dd>${esc(g.region)}（${esc(districtOf(g.region))}）</dd><dt>小組長</dt><dd>${byName(g.leader) ? `<button class="link inline" data-act="openPerson" data-id="${byName(g.leader).id}">${esc(g.leader)}</button>` : esc(g.leader || '（未設定）')}</dd>${g.old.length ? `<dt>舊名</dt><dd>${esc(g.old.join('、'))}</dd>` : ''}</dl>
   </div>
   <div class="row-between"><h2 class="sec-h">組員（${mem.length}）</h2>${mem.length ? `<button class="link" data-act="pickAll">${allPicked ? '取消全選' : '全選'}</button>` : ''}</div>
-  <p class="hint">這些是有帳號的組員；一般組員沒有平台帳號，不會列在這裡。</p>
+  <p class="hint">這裡列出登記在這組的人，沒有帳號的會標「沒有帳號」。還沒登記小組的同工，到他的個人資料設定小組後就會出現在這裡。</p>
   ${mem.length ? `<p class="hint">勾選組員，可以一次移到別組，或分出新的小組。點右邊箭頭看個人資料。</p>
-  <ul class="list">${mem.map(p => `<li class="mrow"><label class="mcheck"><input type="checkbox" data-sel="${p.id}" ${o.pick.includes(p.id) ? 'checked' : ''}><span class="lbody"><span class="lmain"><strong>${esc(p.name)}</strong>${p.name === g.leader ? '<span class="tag info">小組長</span>' : ''}${p.active ? '' : '<span class="tag">已停用</span>'}</span><span class="lmeta">${esc(p.role)}</span></span></label><button class="iconbtn" data-act="openPerson" data-id="${p.id}" aria-label="打開 ${esc(p.name)} 的個人資料">›</button></li>`).join('')}</ul>` : '<div class="empty"><p>這組目前沒有有帳號的組員。</p></div>'}
+  <ul class="list">${mem.map(p => `<li class="mrow"><label class="mcheck"><input type="checkbox" data-sel="${p.id}" ${o.pick.includes(p.id) ? 'checked' : ''}><span class="lbody"><span class="lmain"><strong>${esc(p.name)}</strong>${p.name === g.leader ? '<span class="tag info">小組長</span>' : ''}${!p.account ? '<span class="tag">沒有帳號</span>' : p.active ? '' : '<span class="tag">已停用</span>'}</span><span class="lmeta">${esc(p.role)}</span></span></label><button class="iconbtn" data-act="openPerson" data-id="${p.id}" aria-label="打開 ${esc(p.name)} 的個人資料">›</button></li>`).join('')}</ul>` : '<div class="empty"><p>這組目前沒有登記的組員。</p></div>'}
   <h2 class="sec-h">小組設定</h2>
   <div class="agrid">${acts.map(a => `<button class="action" data-act="groupAct" data-a="${a}"><strong>${GROUP_ACTS[a][0]}</strong><span>${GROUP_ACTS[a][1]}</span></button>`).join('')}</div>
   ${o.pick.length ? `<div class="selbar" role="region" aria-label="已勾選的組員"><span>已選 ${o.pick.length} 人</span><button class="btn sm ghost" data-act="clearPick">取消</button><div class="selbtns"><button class="btn sm secondary" data-act="pickMove">移到別組</button><button class="btn sm primary" data-act="pickSplit">分出新組</button></div></div>` : ''}`;
@@ -359,9 +361,6 @@ KINDS.person = {
   },
   form(){
     const d = ms.draft;
-    if (ms.sec === 'care' && !d.account) return `
-      <div class="field"><label class="field-l" for="d-region">區</label><select id="d-region" data-dr="region">${regionOptions(d.region)}</select></div>
-      <p class="hint">${esc(d.name)} 還沒有平台帳號，平台只記他的區（排班用）。要設定小組與職分，請先幫他開帳號。</p>`;
     if (ms.sec === 'care') return `
       <div class="grid2">
         <div class="field"><label class="field-l" for="d-region">區</label><select id="d-region" data-dr="region" data-rr>${regionOptions(d.region)}</select></div>
@@ -369,7 +368,8 @@ KINDS.person = {
       </div>
       <div class="field"><label class="field-l" for="d-role">職分</label><select id="d-role" data-dr="role" data-rr>${ROLES.map(r => `<option ${r === d.role ? 'selected' : ''}>${r}</option>`).join('')}</select></div>
       ${isZoneRole(d.role) ? `<div class="field"><span class="field-l">兼管區（同時擔任這些區的區長，可不選）</span><div class="chips">${regions.filter(r => r.name !== d.region).map(r => `<button class="chip" data-act="xregion" data-r="${esc(r.name)}" aria-pressed="${(d.extraRegions || []).includes(r.name)}">${esc(r.name)}</button>`).join('')}</div><p class="hint">他會在牧養視圖看到這些區的同工；排班仍只看主要的區。</p></div>` : ''}
-      <p class="hint">先選區，小組選單就只剩那一區的幾組。換到別區時，原本的小組會清空。一次要移好幾個人，從「組織」點進小組勾選比較快。</p>`;
+      <p class="hint">先選區，小組選單就只剩那一區的幾組。換到別區時，原本的小組會清空。一次要移好幾個人，從「組織」點進小組勾選比較快。</p>
+      ${d.member ? '' : '<p class="hint">他還沒登記小組。設定小組後會加進白名單（email 留空，不能登入），小組長和區長就看得到他的服事。</p>'}`;
     if (ms.sec === 'acct') return `
       <div class="field"><span class="field-l">登入用 email（可以有好幾個）</span>
         <div class="emails">${d.emails.map(e => `<div class="erow"><span>${esc(e)}</span>${d.emails.length > 1 ? `<button class="btn sm ghost" data-act="rmEmail" data-e="${esc(e)}" aria-label="移除 ${esc(e)}">移除</button>` : ''}</div>`).join('')}</div>
@@ -435,7 +435,7 @@ KINDS.group = {
   form(){
     const g = groupObj(ms.g), mem = membersOf(g.name), a = ms.action;
     const ol = byName(g.leader);
-    const demoteBox = ol && ol.account && ol.role === '小組長' ? `<label class="switch"><input type="checkbox" data-ms="demote" ${ms.demote ? 'checked' : ''}><span>原小組長 ${esc(g.leader)} 的職分改回「一般同工」<br><span class="hint">他如果還帶別的組，會保留小組長職分。</span></span></label>` : '';
+    const demoteBox = ol && ol.member && ol.role === '小組長' ? `<label class="switch"><input type="checkbox" data-ms="demote" ${ms.demote ? 'checked' : ''}><span>原小組長 ${esc(g.leader)} 的職分改回「一般同工」<br><span class="hint">他如果還帶別的組，會保留小組長職分。</span></span></label>` : '';
     if (a === 'rename') return `<div class="field"><label class="field-l" for="f-nn">新組名</label><input id="f-nn" type="text" data-ms="newName" value="${esc(ms.newName)}" placeholder="通常是新小組長的名字"></div>${pickerHtml('新小組長', 'pick', usable)}${demoteBox}`;
     if (a === 'leader') return pickerHtml('新小組長', 'pick', usable) + demoteBox;
     if (a === 'move') return `<div class="field"><label class="field-l" for="f-tr">搬到哪一區</label><select id="f-tr" data-ms="tr">${regions.filter(r => r.name !== g.region).map(r => `<option ${r.name === ms.tr ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select></div><p class="hint">這組的 ${mem.length} 位組員，區會一起改。</p>`;
@@ -448,7 +448,7 @@ KINDS.group = {
       <div class="field"><label class="field-l" for="f-tg2">小組</label><select id="f-tg2" data-ms="tg">${groupOptionsIn(ms.tr, ms.tg, {except:g.name, status:'啟用', placeholder:'請選擇'})}</select></div></div>`;
     // split
     return `<div class="field"><label class="field-l" for="f-nn">新小組的組名</label><input id="f-nn" type="text" data-ms="newName" value="${esc(ms.newName)}" placeholder="通常用新小組長的名字"></div>
-      <div class="field"><span class="field-l">新小組長（從這組有帳號的組員點選）</span><div class="chips">${mem.filter(p => p.active).map(p => `<button class="chip" data-act="pick" data-f="pick" data-id="${p.id}" aria-pressed="${ms.pick === p.id}">${esc(p.name)}</button>`).join('')}</div>
+      <div class="field"><span class="field-l">新小組長（從這組點選）</span><div class="chips">${mem.filter(p => p.active).map(p => `<button class="chip" data-act="pick" data-f="pick" data-id="${p.id}" aria-pressed="${ms.pick === p.id}">${esc(p.name)}</button>`).join('')}</div>
         <p class="hint">新小組長如果不在這組，先用「移動組員」把他移過來。</p></div>
       <div class="field"><span class="field-l">要跟過去的組員（新小組長會自動算進去）</span>
         <div class="checks">${mem.map(p => `<label class="checkrow"><input type="checkbox" data-idbox="${p.id}" ${ms.ids.includes(p.id) || ms.pick === p.id ? 'checked' : ''} ${ms.pick === p.id ? 'disabled' : ''}><span>${esc(p.name)}${p.name === g.leader ? '（現任小組長）' : ''}</span></label>`).join('')}</div></div>
@@ -477,18 +477,20 @@ function leaderItems(g, nl, demote){
   const ol = byName(g.leader);
   const fx = [`${nl.name} 會在牧養視圖看到這組的組員`];
   if (g.leader) fx.push(`${g.leader} 不再看到這組`);
-  if (nl.account && !isLeaderRole(nl.role)) fx.push(`${nl.name} 的職分：${nl.role} → 小組長`);
-  if (!nl.account) fx.push({w:`${nl.name} 還沒有平台帳號，看不到牧養視圖；需要時請幫他開帳號`});
-  if (nl.account && nl.group !== g.name) fx.push({w:`${nl.name} 目前在「${nl.group || '無小組'}」，他本人的小組不會自動改`});
-  if (demote && ol && ol.account && ol.role === '小組長') fx.push(leadsOther(ol.name, g.name) ? `${ol.name} 還帶別的組，職分保留小組長` : `${ol.name} 的職分：小組長 → 一般同工`);
+  if (!isLeaderRole(nl.role)) fx.push(`${nl.name} 的職分：${nl.role || '一般同工'} → 小組長`);
+  if (!nl.member) fx.push(`${nl.name} 登記到白名單（email 留空）`);
+  if (!nl.account) fx.push({w:`${nl.name} 沒有平台帳號，自己看不到牧養視圖；需要時再幫他開帳號`});
+  if (nl.member && nl.group !== g.name) fx.push({w:`${nl.name} 目前在「${nl.group || '無小組'}」，他本人的小組不會自動改`});
+  if (demote && ol && ol.member && ol.role === '小組長') fx.push(leadsOther(ol.name, g.name) ? `${ol.name} 還帶別的組，職分保留小組長` : `${ol.name} 的職分：小組長 → 一般同工`);
   return [{label:'小組長', before:g.leader || '（未設定）', after:nl.name, fx}];
 }
 function setLeader(g, nl, demote){
   if (nl.name === g.leader) return;
   const ol = byName(g.leader);
   g.leader = nl.name;
-  if (nl.account && !isLeaderRole(nl.role)) nl.role = '小組長';
-  if (demote && ol && ol.account && ol.role === '小組長' && !leadsOther(ol.name, g.name)) ol.role = '一般同工';
+  ensureMember(nl, g.region);
+  if (!isLeaderRole(nl.role)) nl.role = '小組長';
+  if (demote && ol && ol.member && ol.role === '小組長' && !leadsOther(ol.name, g.name)) ol.role = '一般同工';
 }
 function groupPlan(){
   const g = groupObj(ms.g), mem = membersOf(g.name), a = ms.action, o = state.org;
@@ -519,7 +521,7 @@ function groupPlan(){
       items.push({label:'組員併入', after:`${mem.length} 位 → ${tg.name}`, fx});
     }
     const ol = byName(g.leader);
-    if (ol && ol.account && ol.role === '小組長' && !leadsOther(ol.name, g.name)) items.push({label:'原小組長', after:ol.name, fx:[{w:'職分仍是小組長，如需調整請到他的個人資料'}]});
+    if (ol && ol.member && ol.role === '小組長' && !leadsOther(ol.name, g.name)) items.push({label:'原小組長', after:ol.name, fx:[{w:'職分仍是小組長，如需調整請到他的個人資料'}]});
     return {title:mem.length && tg ? `${g.name} 併入 ${tg.name}` : `停用 ${g.name}`, items, apply(){ g.status = '停用'; if (tg) mem.forEach(p => { p.group = tg.name; p.region = tg.region; }); o.pick = []; }};
   }
   if (a === 'batchMove') {
@@ -535,13 +537,13 @@ function groupPlan(){
   const nl = byId(ms.pick), nn = ms.newName, tr = ms.tr;
   const ids = [...new Set([...ms.ids, nl.id])], movers = ids.map(byId), remain = mem.filter(p => !ids.includes(p.id));
   const lf = [`${nl.name} 會在牧養視圖看到新組的組員`];
-  if (nl.account && !isLeaderRole(nl.role)) lf.unshift(`職分：${nl.role} → 小組長`);
+  if (!isLeaderRole(nl.role)) lf.unshift(`職分：${nl.role} → 小組長`);
   return {title:`${g.name} 分殖出 ${nn}`, items:[
     {label:'小組分頁新增一列', after:`${nn}（${tr}・${districtOf(tr)}）`, fx:[`小組長：${nl.name}`]},
     {label:`從 ${g.name} 移到 ${nn}`, after:`${movers.length} 位`, fx:[movers.map(p => p.name).join('、'), '白名單「小組」欄改成新組名', ...(tr !== g.region ? [`他們的區也從 ${g.region} 改成 ${tr}`] : [])]},
     {label:`${g.name} 留下`, after:`${remain.length} 位`, fx:remain.length ? [remain.map(p => p.name).join('、')] : [{w:'原組沒有人了，可以考慮改用「停用或合併」'}]},
     {label:nl.name, after:'新小組長', fx:lf}
-  ], apply(){ groups.push({name:nn, district:districtOf(tr), region:tr, leader:nl.name, status:'啟用', old:[]}); movers.forEach(p => { p.group = nn; p.region = tr; }); if (nl.account && !isLeaderRole(nl.role)) nl.role = '小組長'; o.pick = []; }};
+  ], apply(){ groups.push({name:nn, district:districtOf(tr), region:tr, leader:nl.name, status:'啟用', old:[]}); movers.forEach(p => { p.group = nn; p.region = tr; }); if (!isLeaderRole(nl.role)) nl.role = '小組長'; o.pick = []; }};
 }
 
 /* ---------- 任務：新開小組（可同時開新的區） ---------- */
@@ -591,17 +593,19 @@ KINDS.newGroup = {
       {w:'區長：之後把某人的職分設為區長，區選這一區即可'}]});
     items.push({label:'小組分頁新增一列', after:`${ms.newName}（${region}・${district}）`, fx:[`小組長：${nl.name}`]});
     const fx = [];
-    if (nl.account && !isLeaderRole(nl.role)) fx.push(`職分：${nl.role} → 小組長`);
-    if (nl.account && ms.moveLeader) fx.push(`他的小組：${nl.group || '無'} → ${ms.newName}`);
-    if (nl.account && ms.moveLeader && nl.region !== region) fx.push(`他的區：${nl.region} → ${region}`);
-    if (!nl.account) fx.push({w:`${nl.name} 還沒有平台帳號，看不到牧養視圖；需要時請幫他開帳號`});
+    if (!nl.member) fx.push('登記到白名單（email 留空）');
+    if (!isLeaderRole(nl.role)) fx.push(`職分：${nl.role || '一般同工'} → 小組長`);
+    if (ms.moveLeader) fx.push(`他的小組：${nl.group || '無'} → ${ms.newName}`);
+    if (ms.moveLeader && nl.region !== region) fx.push(`他的區：${nl.region || '未設定'} → ${region}`);
+    if (!nl.account) fx.push({w:`${nl.name} 沒有平台帳號，自己看不到牧養視圖；需要時再幫他開帳號`});
     if (fx.length) items.push({label:nl.name, after:'個人資料一起更新', fx});
     const nn = ms.newName, w = +ms.nw, move = ms.moveLeader;
     return {title:isNew ? `新增 ${region}與 ${nn} 小組` : `新開 ${nn} 小組`, items, apply(){
       if (isNew) regions.push({name:region, district, week:w, inSettings:false});
       groups.push({name:nn, district, region, leader:nl.name, status:'啟用', old:[]});
-      if (nl.account && !isLeaderRole(nl.role)) nl.role = '小組長';
-      if (nl.account && move) { nl.group = nn; nl.region = region; }
+      ensureMember(nl, region);
+      if (!isLeaderRole(nl.role)) nl.role = '小組長';
+      if (move) { nl.group = nn; nl.region = region; }
     }};
   }
 };
@@ -668,7 +672,7 @@ KINDS.region = {
       const items = [];
       if (rp.length) {
         const fx = [rp.map(p => p.name).join('、'), '白名單「區」與同工資料庫「所屬牧區」更新，各團分頁的區一起改'];
-        const own = rp.filter(p => p.account && p.region !== r.name && p.dbRegion === r.name);
+        const own = rp.filter(p => p.member && p.region !== r.name && p.dbRegion === r.name);
         if (own.length) fx.push(`${own.map(p => p.name).join('、')} 有帳號，排班用的區改回他們白名單上的區`);
         const wt = (regionObj(rt) || {}).week;
         if (wt !== r.week) fx.push({w:`牧區限制從「${weekLabel(r.week)}」變成「${weekLabel(wt)}」，已排好的班不會自動重排，請主責檢查`});
@@ -767,8 +771,8 @@ KINDS.newAcct = {
     return {title:`開新帳號：${v.name}`, items:[{label:'白名單新增一列', after:v.name, fx}],
       apply(){
         const p = byName(v.name);
-        if (p) Object.assign(p, {account:true, emails:[v.email.toLowerCase()], active:true, region:v.region, group:v.group, role:v.role, display:v.display});
-        else people.push({id:idFor(v.name), name:v.name, display:v.display, emails:[v.email.toLowerCase()], region:v.region, group:v.group, role:v.role, account:true, active:true, staff:false, teams:{}, skills:[]});
+        if (p) Object.assign(p, {account:true, member:true, emails:[v.email.toLowerCase()], active:true, region:v.region, group:v.group, role:v.role, display:v.display});
+        else people.push({id:idFor(v.name), name:v.name, display:v.display, emails:[v.email.toLowerCase()], region:v.region, group:v.group, role:v.role, account:true, member:true, active:true, staff:false, teams:{}, skills:[]});
         ms.newId = idFor(v.name);
       }};
   }

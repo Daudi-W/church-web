@@ -31,20 +31,23 @@ const districtOf = r => (regionObj(r) || {}).district || '';
 const districtLabel = d => d || '（未設定督區）';
 /* 區長沒有獨立欄位：有帳號、職分是區長／區牧／區督、區欄是這一區的人就是 */
 const isZoneRole = role => /區長|區牧|區督/.test(role || '');
-const headsOf = r => people.filter(p => p.account && p.active && isZoneRole(p.role) && (p.region === r || (p.extraRegions || []).includes(r)));
+const headsOf = r => people.filter(p => p.member && p.active && isZoneRole(p.role) && (p.region === r || (p.extraRegions || []).includes(r)));
 const headName = r => headsOf(r).map(p => p.name).join('、') || '（尚未設定）';
 const weekLabel = w => w == null ? '不在服事表的牧區清單' : +w ? `每月第 ${w} 週主日不排` : '不限制';
 const districts = () => [...new Set(regions.map(r => r.district || ''))];
 const WEEK_OPTS = [0,1,2,3,4,5];
 const groupObj = n => groups.find(g => g.name === n);
 const leaderName = n => { const g = groupObj(n); return g ? (g.leader || '—') : '—'; };
-const membersOf = n => people.filter(p => p.account && p.group === n);
+/* 登記在這組的人（有帳號的、以及白名單上 email 留空的組員） */
+const membersOf = n => people.filter(p => p.member && p.group === n);
 /* 可以出現在選人清單的人：沒帳號的同工，或帳號沒停用的人 */
-const usable = p => !p.account || p.active;
+const usable = p => !p.member || p.active;
+/* 還沒登記的同工，被設定小組／職分／當小組長時，自動登記到白名單（email 留空，不能登入） */
+function ensureMember(p, region){ if (p.member) return; p.member = true; p.active = true; if (!p.region) p.region = region || ''; }
 /* 跟這一區有關的人：白名單的區、排班用的區或兼管區是這一區 */
 const regionPeople = r => people.filter(p => p.region === r || p.dbRegion === r || (p.extraRegions || []).includes(r));
 /* 有帳號的人：白名單的區和排班用的區（同工資料庫）不同 */
-const zoneMismatch = p => p.account && p.dbRegion && p.dbRegion !== p.region;
+const zoneMismatch = p => p.member && p.dbRegion && p.dbRegion !== p.region;
 
 /** 一個人在各團的狀態。listed＝帳號管理表「事工團」分頁有登記（多半是團長）；skills＝排班崗位。 */
 function teamRows(p, pending){
@@ -72,7 +75,7 @@ function hl(text, q){
 function pstate(p){
   const t = {};
   Object.keys(p.teams || {}).forEach(k => t[k] = p.teams[k].role);
-  return {name:p.name, account:!!p.account, emails:p.emails.slice(), active:!!p.active, staff:!!p.staff, region:p.region || '', dbRegion:p.dbRegion || '', extraRegions:(p.extraRegions || []).slice(), group:p.group || '', role:p.role || '一般同工', display:p.display || p.name, skills:p.skills.slice(), teams:t};
+  return {name:p.name, member:!!p.member, account:!!p.account, emails:p.emails.slice(), active:!!p.active, staff:!!p.staff, region:p.region || '', dbRegion:p.dbRegion || '', extraRegions:(p.extraRegions || []).slice(), group:p.group || '', role:p.role || '一般同工', display:p.display || p.name, skills:p.skills.slice(), teams:t};
 }
 function gstate(g){ return {name:g.name, district:g.district || '', region:g.region, leader:g.leader || '', old:(g.old || []).slice(), status:g.status}; }
 function rstate(r){ return (r.inSettings || r.week != null) ? {name:r.name, week:Number(r.week) || 0} : null; }

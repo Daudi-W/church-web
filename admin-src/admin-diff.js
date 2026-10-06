@@ -10,6 +10,7 @@ function personDiff(o, d){
   if (o.region !== d.region) out.push({label:'區', before:o.region, after:d.region,
     fx:['白名單「區」欄更新', `區長視圖：${headName(o.region)} → ${headName(d.region)}`, ...(districtOf(o.region) !== districtOf(d.region) ? [`督區也從 ${districtLabel(districtOf(o.region))} 變成 ${districtLabel(districtOf(d.region))}`] : [])]});
   if (o.staff !== d.staff) out.push({label:'全職同工', before:o.staff ? '是' : '否', after:d.staff ? '是' : '否', fx:[d.staff ? '白名單「全職同工」打勾，他會取得管理者權限' : '白名單「全職同工」取消，他不再能進管理頁']});
+  if (!o.member && (d.member || d.group || (d.role && d.role !== '一般同工'))) out.push({label:'登記小組', after:'加進白名單（email 留空）', fx:['他不能登入平台，但小組長、區長的牧養視圖看得到他的服事', '之後需要登入時，再幫他開帳號']});
   const ox = (o.extraRegions || []).join('、'), dx = (d.extraRegions || []).join('、');
   if (ox !== dx) out.push({label:'兼管區', before:ox || '（無）', after:dx || '（無）', fx:['白名單「兼管區」欄更新', dx ? `他的牧養視圖會包含「${dx}」的同工；那一區沒有自己的區長時，請假通知也會找他` : '他不再兼管其他區', '排班不受影響（排班只看主要的區）']});
   if (o.role !== d.role) out.push({label:'職分', before:o.role, after:d.role, fx:['白名單「職分」欄更新，會影響他看得到的牧養範圍']});
