@@ -1,3 +1,153 @@
+/* 由 admin-src/build.js 產生，請勿直接修改。來源：admin-data.js、admin-diff.js、admin-screens.js、admin-shell.js */
+/* ===== admin-data.js ===== */
+/* ---------- 資料：從後端 adminData 讀進來，畫面都用這幾個陣列 ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+
+let people = [], groups = [], regions = [], log = [], TEAMS = {}, SKILL_TEAM = {}, ROLES = [], teamOrder = [];
+const ID_BY_NAME = {};
+let NEXT_ID = 1;
+const idFor = name => ID_BY_NAME[name] || (ID_BY_NAME[name] = NEXT_ID++);
+
+/** 後端回傳 → 畫面用的形狀（事工團角色包成 {role}，人／組／區記下原始名稱當比對鍵） */
+function ingest(d){
+  TEAMS = d.teams || {}; SKILL_TEAM = {};
+  Object.keys(TEAMS).forEach(t => TEAMS[t].forEach(s => SKILL_TEAM[s] = t));
+  teamOrder = Object.keys(TEAMS);
+  ROLES = d.roles || [];
+  people = (d.people || []).map(p => {
+    const teams = {};
+    Object.keys(p.teams || {}).forEach(t => teams[t] = {role:p.teams[t]});
+    return Object.assign({}, p, {id:idFor(p.name), teams});
+  });
+  groups = (d.groups || []).map(g => Object.assign({}, g, {_key:g.name}));
+  regions = (d.regions || []).map(r => Object.assign({}, r, {_key:r.name}));
+  log = d.log || [];
+}
+
+const byId = id => people.find(p => p.id === id);
+const byName = n => people.find(p => p.name === n);
+const nameOf = id => (byId(id) || {}).name || '—';
+const regionObj = r => regions.find(x => x.name === r);
+const districtOf = r => (regionObj(r) || {}).district || '';
+const districtLabel = d => d || '（未設定督區）';
+/* 區長沒有獨立欄位：有帳號、職分是區長／區牧／區督、區欄是這一區的人就是 */
+const isZoneRole = role => /區長|區牧|區督/.test(role || '');
+const headsOf = r => people.filter(p => p.member && p.active && isZoneRole(p.role) && (p.region === r || (p.extraRegions || []).includes(r)));
+const headName = r => headsOf(r).map(p => p.name).join('、') || '（尚未設定）';
+const weekLabel = w => w == null ? '不在服事表的牧區清單' : +w ? `每月第 ${w} 週主日不排` : '不限制';
+const districts = () => [...new Set(regions.map(r => r.district || ''))];
+const WEEK_OPTS = [0,1,2,3,4,5];
+const groupObj = n => groups.find(g => g.name === n);
+const leaderName = n => { const g = groupObj(n); return g ? (g.leader || '—') : '—'; };
+/* 登記在這組的人（有帳號的、以及白名單上 email 留空的組員） */
+const membersOf = n => people.filter(p => p.member && p.group === n);
+/* 可以出現在選人清單的人：沒帳號的同工，或帳號沒停用的人 */
+const usable = p => !p.member || p.active;
+/* 還沒登記的同工，被設定小組／職分／當小組長時，自動登記到白名單（email 留空，不能登入） */
+function ensureMember(p, region){ if (p.member) return; p.member = true; p.active = true; if (!p.region) p.region = region || ''; }
+/* 跟這一區有關的人：白名單的區、排班用的區或兼管區是這一區 */
+const regionPeople = r => people.filter(p => p.region === r || p.dbRegion === r || (p.extraRegions || []).includes(r));
+/* 有帳號的人：白名單的區和排班用的區（同工資料庫）不同 */
+const zoneMismatch = p => p.member && p.dbRegion && p.dbRegion !== p.region;
+
+/** 一個人在各團的狀態。listed＝帳號管理表「事工團」分頁有登記（多半是團長）；skills＝排班崗位。 */
+function teamRows(p, pending){
+  const set = new Set([...Object.keys(p.teams), ...p.skills.map(s => SKILL_TEAM[s]).filter(Boolean), ...(pending || [])]);
+  return teamOrder.filter(t => set.has(t)).map(t => {
+    const listed = !!p.teams[t];
+    const skills = p.skills.filter(s => SKILL_TEAM[s] === t);
+    const role = listed ? p.teams[t].role : '團員';
+    // 團長本來就可以只帶團不排班；只有登記為團員卻沒有崗位的才需要核對
+    return {team:t, listed, role, skills, state:listed && role !== '團長' && !skills.length ? 'noSkill' : 'ok'};
+  });
+}
+function search(q){
+  q = q.trim().toLowerCase();
+  if (!q) return [];
+  return people.filter(p => p.name.toLowerCase().includes(q) || p.display.toLowerCase().includes(q) || p.emails.some(e => e.toLowerCase().includes(q))).slice(0, 12);
+}
+function hl(text, q){
+  const i = text.toLowerCase().indexOf(q.trim().toLowerCase());
+  if (!q.trim() || i < 0) return esc(text);
+  return esc(text.slice(0, i)) + '<mark>' + esc(text.slice(i, i + q.trim().length)) + '</mark>' + esc(text.slice(i + q.trim().length));
+}
+
+/* ---------- 送後端的狀態：和後端 personState_／groupState_／regionState_ 同一個形狀 ---------- */
+function pstate(p){
+  const t = {};
+  Object.keys(p.teams || {}).forEach(k => t[k] = p.teams[k].role);
+  return {name:p.name, member:!!p.member, account:!!p.account, emails:p.emails.slice(), active:!!p.active, staff:!!p.staff, region:p.region || '', dbRegion:p.dbRegion || '', extraRegions:(p.extraRegions || []).slice(), group:p.group || '', role:p.role || '一般同工', display:p.display || p.name, skills:p.skills.slice(), teams:t};
+}
+function gstate(g){ return {name:g.name, district:g.district || '', region:g.region, leader:g.leader || '', old:(g.old || []).slice(), status:g.status}; }
+function rstate(r){ return (r.inSettings || r.week != null) ? {name:r.name, week:Number(r.week) || 0} : null; }
+function canon(o){
+  if (o === null || o === undefined) return 'null';
+  if (Array.isArray(o)) return JSON.stringify(o.map(String).sort());
+  if (typeof o === 'object') return '{' + Object.keys(o).sort().map(k => k + ':' + canon(o[k])).join(',') + '}';
+  return JSON.stringify(o);
+}
+/** 比對改前（snap）與改後（目前陣列），產生要送後端的 ops。 */
+function buildOps(snap){
+  const ops = [];
+  const r0 = {}; snap.regions.forEach(r => r0[r._key] = r);
+  regions.forEach(r => { const o = r._key ? r0[r._key] : null; const b = o ? rstate(o) : null, a = rstate(r); if (canon(b) !== canon(a)) ops.push({t:'region', key:o ? o.name : r.name, before:b, after:a}); });
+  // 解散的區：原本有、現在沒了
+  snap.regions.forEach(o => { if (o._key && !regions.some(r => r._key === o._key)) { const b = rstate(o); if (b) ops.push({t:'region', key:o.name, before:b, after:null}); } });
+  const g0 = {}; snap.groups.forEach(g => g0[g._key] = g);
+  groups.forEach(g => { const o = g._key ? g0[g._key] : null; const b = o ? gstate(o) : null, a = gstate(g); if (canon(b) !== canon(a)) ops.push({t:'group', key:o ? o.name : g.name, before:b, after:a}); });
+  const p0 = {}; snap.people.forEach(p => p0[p.name] = p);
+  people.forEach(p => { const o = p0[p.name]; const b = o ? pstate(o) : null, a = pstate(p); if (canon(b) !== canon(a)) ops.push({t:'person', key:p.name, before:b, after:a}); });
+  return ops;
+}
+
+/* ===== admin-diff.js ===== */
+/* ---------- 預覽：列出一個人改前改後的差異，以及會改到哪些地方 ---------- */
+function personDiff(o, d){
+  const out = [];
+  d.emails.filter(e => !o.emails.includes(e)).forEach(e => out.push({label:'新增 email', after:e, fx:['白名單 email 欄加入，他可以用這個帳號登入']}));
+  o.emails.filter(e => !d.emails.includes(e)).forEach(e => out.push({label:'移除 email', before:e, after:'（移除）', fx:['之後用這個帳號登入會被擋下']}));
+  if (o.active !== d.active) out.push({label:'登入權限', before:o.active ? '可以登入' : '停用', after:d.active ? '可以登入' : '停用',
+    fx: d.active ? ['白名單「啟用」改為 TRUE'] : ['白名單「啟用」改為 FALSE，他登入會被擋下', ...(d.skills.length ? [{w:'排班崗位不會自動拿掉；如果也不再服事，請在事工團區塊讓他退出'}] : [])]});
+  if (o.group !== d.group) out.push({label:'小組', before:o.group || '（無）', after:d.group || '（無）',
+    fx:['白名單「小組」欄更新', `牧養視圖：${o.group ? leaderName(o.group) + ' 不再看到他' : '原本沒有小組長'}；${d.group ? '改由 ' + leaderName(d.group) + ' 看到' : '之後沒有小組長看得到他'}`]});
+  if (o.region !== d.region) out.push({label:'區', before:o.region, after:d.region,
+    fx:['白名單「區」欄更新', `區長視圖：${headName(o.region)} → ${headName(d.region)}`, ...(districtOf(o.region) !== districtOf(d.region) ? [`督區也從 ${districtLabel(districtOf(o.region))} 變成 ${districtLabel(districtOf(d.region))}`] : [])]});
+  if (o.staff !== d.staff) out.push({label:'全職同工', before:o.staff ? '是' : '否', after:d.staff ? '是' : '否', fx:[d.staff ? '白名單「全職同工」打勾，他會取得管理者權限' : '白名單「全職同工」取消，他不再能進管理頁']});
+  if (!o.member && (d.member || d.group || (d.role && d.role !== '一般同工'))) out.push({label:'登記小組', after:'加進白名單（email 留空）', fx:['他不能登入平台，但小組長、區長的牧養視圖看得到他的服事', '之後需要登入時，再幫他開帳號']});
+  const ox = (o.extraRegions || []).join('、'), dx = (d.extraRegions || []).join('、');
+  if (ox !== dx) out.push({label:'兼管區', before:ox || '（無）', after:dx || '（無）', fx:['白名單「兼管區」欄更新', dx ? `他的牧養視圖會包含「${dx}」的同工；那一區沒有自己的區長時，請假通知也會找他` : '他不再兼管其他區', '排班不受影響（排班只看主要的區）']});
+  if (o.role !== d.role) out.push({label:'職分', before:o.role, after:d.role, fx:['白名單「職分」欄更新，會影響他看得到的牧養範圍']});
+  if (o.display !== d.display) out.push({label:'服事表稱呼', before:o.display, after:d.display, fx:['同工資料庫「顯示名稱」更新', {w:'請確認服事表上寫的也是「' + d.display + '」，否則偵測不到他的服事'}]});
+  const teams = teamOrder.filter(t => o.teams[t] || d.teams[t] || o.skills.some(s => SKILL_TEAM[s] === t) || d.skills.some(s => SKILL_TEAM[s] === t));
+  teams.forEach(t => {
+    const ol = o.teams[t], dl = d.teams[t];
+    const os = o.skills.filter(s => SKILL_TEAM[s] === t), ds = d.skills.filter(s => SKILL_TEAM[s] === t);
+    const quitAll = (ol || os.length) && !dl && !ds.length;
+    if (quitAll) {
+      const fx = [];
+      if (ol) fx.push('帳號管理表「事工團」分頁刪除這一列');
+      if (os.length) fx.push('同工資料庫移除崗位：' + os.join('、') + '，之後不會再排到他');
+      if (ol && ol.role === '團長') fx.push({w:'他會失去這團的團長班表畫面，記得指定新團長'});
+      out.push({label:'退出事工團', before:t, after:'（退出）', fx});
+      return;
+    }
+    if (!ol && dl) out.push({label:'加入事工團', after:t + '（' + dl.role + '）', fx:['帳號管理表「事工團」分頁新增一列']});
+    if (ol && !dl) out.push({label:'從平台移除登記', before:t, after:'（只留排班崗位）', fx:['帳號管理表「事工團」分頁刪除這一列', '排班崗位保留：' + ds.join('、')]});
+    if (ol && dl && ol.role !== dl.role) out.push({label:t + '角色', before:ol.role, after:dl.role, fx:[dl.role === '團長' ? '他會看到這團的團長班表（含缺人提醒）' : '他不再看到這團的團長班表']});
+    if (os.join() !== ds.join()) out.push({label:t + '排班崗位', before:os.join('、') || '（無）', after:ds.join('、') || '（無）', fx:['同工資料庫「可服事崗位」更新']});
+  });
+  return out;
+}
+function diffList(items){
+  return `<ol class="diff">${items.map(it => `<li>
+    <div class="d-label">${esc(it.label)}</div>
+    <div class="d-val">${it.before != null ? `<s>${esc(it.before)}</s><span class="arrow">→</span>` : ''}<strong>${esc(it.after ?? '')}</strong></div>
+    ${it.fx && it.fx.length ? `<ul class="fx">${it.fx.map(f => typeof f === 'string' ? `<li>${esc(f)}</li>` : `<li class="w">${esc(f.w)}</li>`).join('')}</ul>` : ''}
+  </li>`).join('')}</ol>`;
+}
+
+/* ===== admin-screens.js ===== */
 /* ---------- 畫面狀態 ---------- */
 /* peek＝從首頁或組織點進某人：留在原分頁顯示他的資料，返回時回到原本的位置 */
 const state = {tab:'home', q:'', sel:null, peek:null, org:{mode:'care', region:null, group:null, team:null, pick:[]}, allLog:false};
@@ -937,3 +1087,83 @@ document.addEventListener('click', e => {
   if (H[b.dataset.act]) H[b.dataset.act](b, e);
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ms && !ms.busy) closeModal(); });
+
+/* ===== admin-shell.js ===== */
+/* ---------- 登入與連線：沿用服事平台的 Google 登入與平台 session ---------- */
+// ADMIN_ENV 由頁面提供：正式 admin.html 讀 service-runtime-config；沙盒 sandbox-admin.html 直接寫沙盒網址
+const ENV = window.ADMIN_ENV || {};
+let TOKEN = null, ID_TOKEN = null, MY_EMAIL = '';
+try { TOKEN = localStorage.getItem(ENV.tokenKey); } catch (e) { }
+
+/* 每種請求平常要多久（毫秒），給進度條推算用；儲存類比較久 */
+const API_EXPECT = {adminData:8000, adminApply:15000, adminUndo:15000, whoami:3000};
+function api(action, args, popts){
+  const long = action === 'adminApply' || action === 'adminUndo';
+  const h = window.ChurchProgress ? ChurchProgress.begin(Object.assign({
+    expected:API_EXPECT[action] || 3000, write:long, slowAfter:long ? 30000 : 25000,
+    button:ChurchProgress.pressedButton()
+  }, popts || {})) : {end(){}};
+  return apiRaw(action, args).then(v => { h.end(); return v; }, e => { h.end(); throw e; });
+}
+function apiRaw(action, args){
+  return fetch(ENV.endpoint, {
+    method:'POST', redirect:'follow',
+    body:JSON.stringify({action, idToken:ID_TOKEN, sessionToken:TOKEN, args:args || {}})
+  }).then(r => r.json()).then(res => {
+    if (res.ok) return res;
+    const msg = String(res.error || '發生錯誤');
+    if (/SESSION_EXPIRED/.test(msg)) { forgetToken(); showLogin('登入已過期，請重新登入'); }
+    throw new Error(msg);
+  }, () => { const e = new Error('連不上伺服器，請檢查網路後再試一次'); e.network = true; throw e; });
+}
+function forgetToken(){ TOKEN = null; try { localStorage.removeItem(ENV.tokenKey); } catch (e) { } }
+
+function showLogin(msg){
+  document.getElementById('app').hidden = true;
+  document.getElementById('nav').hidden = true;
+  const box = document.getElementById('login');
+  box.hidden = false;
+  document.getElementById('login-msg').textContent = msg || '請用 Google 登入，只有管理者可以使用。';
+  initGoogle();
+}
+function initGoogle(){
+  if (initGoogle.done) return;
+  if (!(window.google && google.accounts && google.accounts.id)) return setTimeout(initGoogle, 150);
+  initGoogle.done = true;
+  google.accounts.id.initialize({client_id:ENV.clientId, callback:onGoogleLogin, auto_select:false});
+  google.accounts.id.renderButton(document.getElementById('gBtn'), {theme:'filled_blue', size:'large', text:'signin_with', shape:'pill'});
+}
+function onGoogleLogin(resp){
+  ID_TOKEN = resp.credential;
+  document.getElementById('login-msg').textContent = '驗證身分中…';
+  api('whoami').then(res => {
+    if (res.sessionToken) { TOKEN = res.sessionToken; try { localStorage.setItem(ENV.tokenKey, TOKEN); } catch (e) { } }
+    if (!res.matched) throw new Error(res.note || '這個 Google 帳號不在名單裡');
+    return start();
+  }).catch(e => showLogin(e.message));
+}
+
+/** 重新讀取全部資料（每次寫入、復原後都會呼叫） */
+function reload(){
+  return api('adminData').then(d => { ingest(d); MY_EMAIL = d.me || MY_EMAIL; });
+}
+function whoLabel(email){
+  if (!email) return '';
+  if (MY_EMAIL && email.toLowerCase() === MY_EMAIL.toLowerCase()) return '你';
+  const p = people.find(x => x.emails.includes(String(email).toLowerCase()));
+  return p ? p.name : email;
+}
+function start(){
+  document.getElementById('login').hidden = true;
+  // 先排出版面的樣子（灰色方塊），讓人知道頁面正在載入
+  document.getElementById('main').innerHTML = '<div class="sk sk-title"></div><div class="sk sk-card"></div><div class="tasks">' + '<div class="sk sk-task"></div>'.repeat(8) + '</div><div class="sk sk-card"></div><p class="hint" role="status">讀取名單與小組資料中，第一次打開大約要 10 秒…</p>';
+  document.getElementById('app').hidden = false;
+  return reload().then(() => {
+    document.getElementById('nav').hidden = false;
+    render();
+  }).catch(e => {
+    if (/只有管理者/.test(e.message)) showLogin('這個帳號沒有管理者權限。需要的話請找核心管理者幫你勾「全職同工」。');
+    else if (!/SESSION_EXPIRED/.test(e.message)) document.getElementById('main').innerHTML = `<div class="empty"><p>讀取失敗：${esc(e.message)}</p><button class="btn secondary" onclick="start()">再試一次</button></div>`;
+  });
+}
+window.addEventListener('load', () => { if (TOKEN) start(); else showLogin(); });

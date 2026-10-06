@@ -4,7 +4,17 @@ const ENV = window.ADMIN_ENV || {};
 let TOKEN = null, ID_TOKEN = null, MY_EMAIL = '';
 try { TOKEN = localStorage.getItem(ENV.tokenKey); } catch (e) { }
 
-function api(action, args){
+/* 每種請求平常要多久（毫秒），給進度條推算用；儲存類比較久 */
+const API_EXPECT = {adminData:8000, adminApply:15000, adminUndo:15000, whoami:3000};
+function api(action, args, popts){
+  const long = action === 'adminApply' || action === 'adminUndo';
+  const h = window.ChurchProgress ? ChurchProgress.begin(Object.assign({
+    expected:API_EXPECT[action] || 3000, write:long, slowAfter:long ? 30000 : 25000,
+    button:ChurchProgress.pressedButton()
+  }, popts || {})) : {end(){}};
+  return apiRaw(action, args).then(v => { h.end(); return v; }, e => { h.end(); throw e; });
+}
+function apiRaw(action, args){
   return fetch(ENV.endpoint, {
     method:'POST', redirect:'follow',
     body:JSON.stringify({action, idToken:ID_TOKEN, sessionToken:TOKEN, args:args || {}})
@@ -54,7 +64,8 @@ function whoLabel(email){
 }
 function start(){
   document.getElementById('login').hidden = true;
-  document.getElementById('main').innerHTML = '<div class="empty"><p>載入中…</p></div>';
+  // 先排出版面的樣子（灰色方塊），讓人知道頁面正在載入
+  document.getElementById('main').innerHTML = '<div class="sk sk-title"></div><div class="sk sk-card"></div><div class="tasks">' + '<div class="sk sk-task"></div>'.repeat(8) + '</div><div class="sk sk-card"></div><p class="hint" role="status">讀取名單與小組資料中，第一次打開大約要 10 秒…</p>';
   document.getElementById('app').hidden = false;
   return reload().then(() => {
     document.getElementById('nav').hidden = false;

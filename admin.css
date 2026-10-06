@@ -193,3 +193,10 @@ img{max-width:100%}
 .login{align-items:flex-start;margin-top:8vh}
 .login h1{font-size:22px}
 .back-link{font-size:15px;color:var(--primary);font-weight:700;text-decoration:none}
+/* 載入時的灰色版面方塊 */
+.sk{background:linear-gradient(90deg,var(--sunken) 25%,var(--hair) 37%,var(--sunken) 63%);background-size:400% 100%;border-radius:12px;animation:sk 1.4s ease infinite}
+.sk-title{height:30px;width:45%}
+.sk-card{height:120px}
+.sk-task{height:76px}
+@keyframes sk{0%{background-position:100% 50%}100%{background-position:0 50%}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
