@@ -396,7 +396,7 @@ KINDS.person = {
     }
     ms.draft.display = String(ms.draft.display || '').trim();
     if (!ms.draft.display) return '服事表稱呼不能空白';
-    if (!ms.draft.emails.length) return '至少要留一個 email，他才能登入';
+    if (ms.draft.account && !ms.draft.emails.length) return '至少要留一個 email，他才能登入';
     return '';
   },
   plan(){
