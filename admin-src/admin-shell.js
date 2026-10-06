@@ -13,7 +13,7 @@ function api(action, args){
     const msg = String(res.error || '發生錯誤');
     if (/SESSION_EXPIRED/.test(msg)) { forgetToken(); showLogin('登入已過期，請重新登入'); }
     throw new Error(msg);
-  }, () => { throw new Error('連不上伺服器，請檢查網路後再試一次'); });
+  }, () => { const e = new Error('連不上伺服器，請檢查網路後再試一次'); e.network = true; throw e; });
 }
 function forgetToken(){ TOKEN = null; try { localStorage.removeItem(ENV.tokenKey); } catch (e) { } }
 

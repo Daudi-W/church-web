@@ -42,7 +42,33 @@ function commit(title, items, apply){
   people = snap.people; groups = snap.groups; regions = snap.regions;
   if (!ops.length) { toast('沒有任何變更', true); return Promise.resolve(false); }
   return api('adminApply', {title, items, ops}).then(res => res.data ? ingest(res.data) : reload()).then(() => { toast('已儲存：' + title); return true; })
-    .catch(e => { toast(e.message || String(e), true); return false; });
+    .catch(e => {
+      if (!e.network) { toast(e.message || String(e), true); return false; }
+      // 連線在等回覆時斷了（手機切 App、鎖螢幕、換網路）：後端可能已經寫完，重新讀一次核對
+      return verifyAfterDrop(ops).then(landed => {
+        if (landed) { toast('已儲存：' + title + '（連線中斷過，已確認寫入成功）'); return true; }
+        toast('沒有存到，請再按一次「確認執行」', true); return false;
+      });
+    });
+}
+/** 連線中斷後：重新讀資料，看每一項是否都已經是「改後」的樣子（全部是＝寫入成功）。讀不到就等幾秒再試。 */
+function verifyAfterDrop(ops, tries){
+  tries = tries || 0;
+  return new Promise(r => setTimeout(r, 2500)).then(() => reload()).then(() => {
+    const now = {person:{}, group:{}, region:{}};
+    people.forEach(p => now.person[p.name] = pstate(p));
+    groups.forEach(g => now.group[g.name] = gstate(g));
+    regions.forEach(r => now.region[r.name] = rstate(r));
+    return ops.every(op => {
+      const key = op.after ? op.after.name : op.key;
+      const cur = now[op.t][key] || null;
+      if (!op.after) return cur === null || (op.t === 'region' && !regions.some(r => r.name === key));
+      if (!cur) return false;
+      const a = Object.assign({}, op.after), c = Object.assign({}, cur);
+      if (op.t === 'person') { delete a.dbRegion; delete c.dbRegion; } // 排班用的區會被身分重建對齊，不拿來判斷
+      return canon(a) === canon(c);
+    });
+  }).catch(() => tries < 2 ? verifyAfterDrop(ops, tries + 1) : false);
 }
 function fixRefs(){
   const o = state.org;
@@ -861,7 +887,15 @@ const H = {
     const e = log.find(x => x.id === b.dataset.id);
     b.disabled = true; b.textContent = '復原中…';
     api('adminUndo', {id:e.id}).then(res => res.data ? ingest(res.data) : reload()).then(() => { fixRefs(); render(); toast('已復原：' + e.title); })
-      .catch(err => { toast(err.message || String(err), true); render(); });
+      .catch(err => {
+        if (!err.network) { toast(err.message || String(err), true); render(); return; }
+        // 連線中斷：重新讀紀錄，看這筆是否已標成「已復原」
+        new Promise(r => setTimeout(r, 2500)).then(() => reload()).then(() => {
+          fixRefs(); render();
+          const x = log.find(l => l.id === e.id);
+          toast(x && x.undone ? '已復原：' + e.title + '（連線中斷過，已確認完成）' : '沒有復原成功，請再按一次', !(x && x.undone));
+        }).catch(() => { toast('連不上伺服器，請稍後重新整理確認', true); render(); });
+      });
   }
 };
 /* 表單欄位隨打隨存：data-ms 存進任務狀態、data-dr 存進個人資料草稿；有 data-rr 的欄位改了就重畫 */
