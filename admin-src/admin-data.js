@@ -41,6 +41,8 @@ const leaderName = n => { const g = groupObj(n); return g ? (g.leader || '—') 
 const membersOf = n => people.filter(p => p.account && p.group === n);
 /* 可以出現在選人清單的人：沒帳號的同工，或帳號沒停用的人 */
 const usable = p => !p.account || p.active;
+/* 跟這一區有關的人：白名單的區、排班用的區或兼管區是這一區 */
+const regionPeople = r => people.filter(p => p.region === r || p.dbRegion === r || (p.extraRegions || []).includes(r));
 /* 有帳號的人：白名單的區和排班用的區（同工資料庫）不同 */
 const zoneMismatch = p => p.account && p.dbRegion && p.dbRegion !== p.region;
 
@@ -85,6 +87,8 @@ function buildOps(snap){
   const ops = [];
   const r0 = {}; snap.regions.forEach(r => r0[r._key] = r);
   regions.forEach(r => { const o = r._key ? r0[r._key] : null; const b = o ? rstate(o) : null, a = rstate(r); if (canon(b) !== canon(a)) ops.push({t:'region', key:o ? o.name : r.name, before:b, after:a}); });
+  // 解散的區：原本有、現在沒了
+  snap.regions.forEach(o => { if (o._key && !regions.some(r => r._key === o._key)) { const b = rstate(o); if (b) ops.push({t:'region', key:o.name, before:b, after:null}); } });
   const g0 = {}; snap.groups.forEach(g => g0[g._key] = g);
   groups.forEach(g => { const o = g._key ? g0[g._key] : null; const b = o ? gstate(o) : null, a = gstate(g); if (canon(b) !== canon(a)) ops.push({t:'group', key:o ? o.name : g.name, before:b, after:a}); });
   const p0 = {}; snap.people.forEach(p => p0[p.name] = p);

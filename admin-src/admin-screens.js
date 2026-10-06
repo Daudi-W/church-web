@@ -29,7 +29,13 @@ function commit(title, items, apply){
   });
   // 改了區的人，排班用的區（同工資料庫、各團分頁）也跟著改
   const p0 = {}; snap.people.forEach(x => p0[x.name] = x);
-  people.forEach(x => { if (p0[x.name] && p0[x.name].region !== x.region) x.dbRegion = x.region; else if (!p0[x.name]) x.dbRegion = x.dbRegion || x.region; });
+  people.forEach(x => {
+    const o = p0[x.name];
+    if (!o) x.dbRegion = x.dbRegion || x.region;
+    else if (o.region !== x.region) x.dbRegion = x.region;
+    // 有帳號的人，排班用的區一動就對齊白名單的區（每次寫入後的身分重建也會這樣對齊，否則復原會對不上）
+    else if (x.account && o.dbRegion !== x.dbRegion) x.dbRegion = x.region;
+  });
   const ops = buildOps(snap);
   people = snap.people; groups = snap.groups; regions = snap.regions;
   if (!ops.length) { toast('沒有任何變更', true); return Promise.resolve(false); }
@@ -206,18 +212,21 @@ function renderOrgRoot(){
       const gs = groups.filter(g => g.region === r.name && g.status === '啟用');
       return `<li><button class="lrow" data-act="openRegionPage" data-r="${esc(r.name)}"><span class="lbody"><span class="lmain"><strong>${esc(r.name)}</strong>${gs.length ? '' : '<span class="tag">沒有小組</span>'}</span><span class="lmeta">區長 ${esc(headName(r.name))}</span><span class="mono">${esc(weekLabel(r.week))}</span></span><span class="num">${gs.length} 組・${people.filter(p => p.region === r.name).length} 人</span><span class="chev" aria-hidden="true">›</span></button></li>`; }).join('')}</ul>`).join('')}`;
 }
-const REGION_ACTS = {rename:['改區名','白名單、小組分頁、同工資料庫、牧區限制一次改完'], district:['換督區','這區所有小組的督區欄一起改'], week:['調整牧區限制','每月哪一週主日不排（由牧師決定）']};
+const REGION_ACTS = {rename:['改區名','白名單、小組分頁、同工資料庫、牧區限制一次改完'], district:['換督區','這區所有小組的督區欄一起改'], week:['調整牧區限制','每月哪一週主日不排（由牧師決定）'], dissolve:['解散這區','同工移到別區，牧區限制一併移除']};
 function renderRegionPage(){
   const r = regionObj(state.org.region), gs = groups.filter(g => g.region === r.name), heads = headsOf(r.name);
   return `<button class="btn ghost back" data-act="orgUp">← 組織</button>
   <div class="card">
     <h2>${esc(r.name)}</h2>
-    <dl class="kv"><dt>督區</dt><dd>${esc(districtLabel(r.district))}</dd><dt>牧區限制</dt><dd>${esc(weekLabel(r.week))}</dd><dt>同工</dt><dd class="num">${people.filter(p => p.region === r.name).length} 人</dd></dl>
+    <dl class="kv"><dt>督區</dt><dd>${esc(districtLabel(r.district))}</dd><dt>牧區限制</dt><dd>${esc(weekLabel(r.week))}</dd><dt>同工</dt><dd class="num">${regionPeople(r.name).length} 人</dd></dl>
     <div class="field"><span class="field-l">區長</span><div class="chips">${heads.map(p => `<button class="chip" data-act="openPerson" data-id="${p.id}">${esc(p.name)}（${esc(p.role)}）</button>`).join('') || '<span class="hint">尚未設定</span>'}</div></div>
     <p class="hint">區長不用另外設定：某人的職分是區長、區牧或區督，區又是這一區，他就是這區的區長。</p>
   </div>
   <div class="row-between"><h2 class="sec-h">小組（${gs.length}）</h2><button class="btn sm secondary" data-act="newGroupHere">＋ 在這區新開小組</button></div>
   <ul class="list">${gs.map(g => `<li><button class="lrow" data-act="openGroupPage" data-g="${esc(g.name)}"><span class="lbody"><span class="lmain"><strong>${esc(g.name)}</strong>${g.status === '停用' ? '<span class="tag">停用</span>' : ''}${g.old.length ? `<span class="tag">舊名 ${esc(g.old.join('、'))}</span>` : ''}</span><span class="lmeta">小組長 ${esc(g.leader || '（未設定）')}</span></span><span class="num">${membersOf(g.name).length} 人有帳號</span><span class="chev" aria-hidden="true">›</span></button></li>`).join('') || '<li><div class="lrow hint">這區目前沒有小組</div></li>'}</ul>
+  <h2 class="sec-h">這區的同工（${regionPeople(r.name).length}）</h2>
+  <p class="hint">包含有帳號的人和同工資料庫裡的同工；點名字看個人資料。</p>
+  <ul class="list">${regionPeople(r.name).map(p => `<li><button class="lrow" data-act="openPerson" data-id="${p.id}"><span class="lbody"><span class="lmain"><strong>${esc(p.name)}</strong>${p.account ? '' : '<span class="tag">沒有帳號</span>'}${p.region !== r.name && (p.extraRegions || []).includes(r.name) ? '<span class="tag info">兼管</span>' : ''}${p.region !== r.name && p.dbRegion === r.name ? '<span class="tag warn">只有排班用這區</span>' : ''}</span><span class="lmeta">${esc(p.account ? (p.group ? p.group + ' 小組' : '不屬於小組') + '・' + p.role : (p.skills.length ? '排班：' + p.skills.join('、') : '同工資料庫'))}</span></span><span class="chev" aria-hidden="true">›</span></button></li>`).join('') || '<li><div class="lrow hint">這區目前沒有同工</div></li>'}</ul>
   <h2 class="sec-h">這一區的設定</h2>
   <div class="agrid">${Object.keys(REGION_ACTS).map(a => `<button class="action" data-act="regionAct" data-a="${a}"><strong>${REGION_ACTS[a][0]}</strong><span>${REGION_ACTS[a][1]}</span></button>`).join('')}</div>`;
 }
@@ -600,13 +609,21 @@ KINDS.newGroup = {
 /* ---------- 任務：區（改名、督區、牧區限制） ---------- */
 function regionTask(action){
   const r = regionObj(state.org.region);
-  ms = {kind:'region', action, r:r.name, steps:['form','preview'], i:0, rn:'', rd:districts().find(d => d !== r.district) || '__new', rdn:'', rw:String(r.week)};
+  ms = {kind:'region', action, r:r.name, steps:['form','preview'], i:0, rn:'', rd:districts().find(d => d !== r.district) || '__new', rdn:'', rw:String(r.week), rt:(regions.find(x => x.name !== r.name && x.inSettings) || {}).name || ''};
   renderModal();
 }
 KINDS.region = {
   form(){
     const r = regionObj(ms.r), a = ms.action;
     if (a === 'rename') return `<div class="field"><label class="field-l" for="f-rn">新區名</label><input id="f-rn" type="text" data-ms="rn" value="${esc(ms.rn)}"></div><p class="hint">區名寫在好幾個地方，這裡會一次全部改掉，不會留下舊名。</p>`;
+    if (a === 'dissolve') {
+      const gs = groups.filter(g => g.region === r.name), ps = regionPeople(r.name);
+      if (gs.length) return `<div class="alert warn"><p>這區還有 ${gs.length} 個小組（${esc(gs.map(g => g.name).join('、'))}），要先把小組搬到別區，或停用併入別組，才能解散。</p></div>`;
+      return `${ps.length ? `<p>這區還有 ${ps.length} 位同工：<strong>${esc(ps.map(p => p.name).join('、'))}</strong></p>
+        <div class="field"><label class="field-l" for="f-rt">全部移到哪一區</label><select id="f-rt" data-ms="rt">${regions.filter(x => x.name !== r.name).map(x => `<option ${x.name === ms.rt ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
+        <p class="hint">要分到不同的區，請先點進個人資料一個一個改，剩下的再用這裡一次移。</p>` : '<p class="hint">這區已經沒有同工，可以直接解散。</p>'}
+        <p class="hint">解散後，服事表「設定」裡這一區的牧區限制會移除，排班下拉選單也不再有這一區。</p>`;
+    }
     if (a === 'district') return `<div class="field"><label class="field-l" for="f-rd">改到哪個督區</label><select id="f-rd" data-ms="rd" data-rr>${districts().filter(d => d !== r.district).map(d => `<option ${d === ms.rd ? 'selected' : ''}>${esc(d)}</option>`).join('')}<option value="__new" ${ms.rd === '__new' ? 'selected' : ''}>＋ 新的督區…</option></select></div>${ms.rd === '__new' ? `<div class="field"><label class="field-l" for="f-rdn">新督區名稱</label><input id="f-rdn" type="text" data-ms="rdn" value="${esc(ms.rdn)}"></div>` : ''}`;
     return `<div class="field"><label class="field-l" for="f-rw">牧區限制（由牧師決定）</label><select id="f-rw" data-ms="rw">${WEEK_OPTS.map(w => `<option value="${w}" ${String(w) === String(ms.rw) ? 'selected' : ''}>${weekLabel(w)}</option>`).join('')}</select></div><p class="hint">目前：${esc(weekLabel(r.week))}</p>`;
   },
@@ -623,6 +640,10 @@ KINDS.region = {
       if (districts().includes(ms.rdn)) return `已經有「${ms.rdn}」這個督區了，請直接選它`;
     }
     if (ms.action === 'week' && +ms.rw === +r.week) return '和現在的設定一樣';
+    if (ms.action === 'dissolve') {
+      if (groups.some(g => g.region === r.name)) return '這區還有小組，請先把小組搬走或合併';
+      if (regionPeople(r.name).length && !ms.rt) return '請選同工要移到哪一區';
+    }
     return '';
   },
   plan(){
@@ -636,11 +657,34 @@ KINDS.region = {
         ...(people.some(p => (p.extraRegions || []).includes(r.name)) ? [{label:'白名單「兼管區」欄', after:people.filter(p => (p.extraRegions || []).includes(r.name)).map(p => p.name).join('、'), fx:[`兼管區裡的「${r.name}」改成「${nn}」`]}] : []),
         {label:'同工資料庫「所屬牧區」', after:`${ps.length} 位一起改`, fx:['儲存後馬上同步，不用等每晚 04:00']},
         {label:'服事表「設定」牧區限制', after:`${r.name} → ${nn}`, fx:[`限制照舊：${weekLabel(r.week)}`, '排班表的牧區下拉選單一起更新', {w:'漏改這裡的話，排班會找不到這區的限制，把人排到不該排的那一週，所以這一步一定一起做'}]}
-      ], apply(){ const old = r.name; ps.forEach(p => p.region = nn); people.forEach(p => { if ((p.extraRegions || []).includes(old)) p.extraRegions = p.extraRegions.map(z => z === old ? nn : z); }); gs.forEach(g => g.region = nn); r.name = nn; if (o.region === old) o.region = nn; }};
+      ], apply(){ const old = r.name; ps.forEach(p => p.region = nn); people.forEach(p => { if (p.dbRegion === old) p.dbRegion = nn; if ((p.extraRegions || []).includes(old)) p.extraRegions = p.extraRegions.map(z => z === old ? nn : z); }); gs.forEach(g => g.region = nn); r.name = nn; if (o.region === old) o.region = nn; }};
     }
     if (ms.action === 'district') {
       const nd = ms.rd === '__new' ? ms.rdn : ms.rd;
       return {title:`${r.name} 改到 ${nd}`, items:[{label:'督區', before:r.district, after:nd, fx:[...(ms.rd === '__new' ? [`新增督區「${nd}」`] : []), `小組分頁 ${gs.length} 組的「督區」欄一起改：${gs.map(g => g.name).join('、')}`]}], apply(){ r.district = nd; }};
+    }
+    if (ms.action === 'dissolve') {
+      const rp = regionPeople(r.name), rt = ms.rt;
+      const items = [];
+      if (rp.length) {
+        const fx = [rp.map(p => p.name).join('、'), '白名單「區」與同工資料庫「所屬牧區」更新，各團分頁的區一起改'];
+        const own = rp.filter(p => p.account && p.region !== r.name && p.dbRegion === r.name);
+        if (own.length) fx.push(`${own.map(p => p.name).join('、')} 有帳號，排班用的區改回他們白名單上的區`);
+        const wt = (regionObj(rt) || {}).week;
+        if (wt !== r.week) fx.push({w:`牧區限制從「${weekLabel(r.week)}」變成「${weekLabel(wt)}」，已排好的班不會自動重排，請主責檢查`});
+        if (rp.some(p => (p.extraRegions || []).includes(r.name))) fx.push('兼管這區的區長，兼管區裡拿掉這一區');
+        items.push({label:'同工移到', after:`${rt}（${rp.length} 位）`, fx});
+      }
+      items.push({label:'解散區', before:r.name, after:'（移除）', fx:r.inSettings ? ['服事表「設定」移除這一區的牧區限制', '排班表的牧區下拉選單不再有這一區'] : ['這一區不在服事表的牧區清單，只需要把人移走']});
+      return {title:`解散 ${r.name}`, items, apply(){
+        const z = r.name;
+        people.forEach(p => {
+          if (p.region === z) p.region = rt;
+          if (p.dbRegion === z) p.dbRegion = rt;
+          if ((p.extraRegions || []).includes(z)) p.extraRegions = p.extraRegions.filter(x => x !== z && x !== p.region);
+        });
+        regions = regions.filter(x => x !== r);
+      }};
     }
     const nw = +ms.rw;
     return {title:`${r.name} 牧區限制改為${weekLabel(nw)}`, items:[{label:'牧區限制', before:weekLabel(r.week), after:weekLabel(nw), fx:['服事表「設定」分頁更新', {w:'已經排好的班不會自動重排，請主責檢查' + (nw ? `第 ${nw} 週有沒有排到這區的人` : '之後的班表')}]}], apply(){ r.week = nw; }};
