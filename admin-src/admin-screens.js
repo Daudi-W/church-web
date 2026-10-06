@@ -178,7 +178,7 @@ function renderPerson(){
   </div>
   ${sec('care', '牧養', p.account ? `<dl class="kv"><dt>區</dt><dd>${esc(p.region || '未設定')}（${esc(districtLabel(districtOf(p.region)))}）</dd>
     <dt>小組</dt><dd>${p.group && groupObj(p.group) ? `<button class="link inline" data-act="openGroupPage" data-g="${esc(p.group)}">${esc(p.group)}</button>（小組長 ${esc(leaderName(p.group))}）` : esc(p.group || '不屬於小組')}</dd>
-    <dt>職分</dt><dd>${esc(p.role)}</dd></dl>${zoneMismatch(p) ? `<div class="alert warn"><p>排班用的區是「${esc(p.dbRegion)}」，和白名單的「${esc(p.region)}」不一致，排班會套用「${esc(p.dbRegion)}」的牧區限制。</p><div class="row-actions"><button class="btn sm secondary" data-act="fixZone">統一成「${esc(p.region)}」</button></div></div>` : ''}` : `<dl class="kv"><dt>區</dt><dd>${esc(p.region || '未設定')}</dd></dl><p class="hint">還沒有平台帳號的同工，平台只記他的區（排班用），不記小組。開帳號後才能設定小組與職分。</p>`)}
+    <dt>職分</dt><dd>${esc(p.role)}</dd>${(p.extraRegions || []).length ? `<dt>兼管區</dt><dd>${esc(p.extraRegions.join('、'))}</dd>` : ''}</dl>${zoneMismatch(p) ? `<div class="alert warn"><p>排班用的區是「${esc(p.dbRegion)}」，和白名單的「${esc(p.region)}」不一致，排班會套用「${esc(p.dbRegion)}」的牧區限制。</p><div class="row-actions"><button class="btn sm secondary" data-act="fixZone">統一成「${esc(p.region)}」</button></div></div>` : ''}` : `<dl class="kv"><dt>區</dt><dd>${esc(p.region || '未設定')}</dd></dl><p class="hint">還沒有平台帳號的同工，平台只記他的區（排班用），不記小組。開帳號後才能設定小組與職分。</p>`)}
   ${sec('teams', '事工團與排班崗位', rows.length ? `<div>${rows.map(r => `<div class="tline"><div class="lmain"><strong>${esc(r.team)}</strong>${r.listed && r.role === '團長' ? '<span class="tag info">團長</span>' : ''}${statePill(r)}</div><div class="lmeta">${esc(r.skills.join('、') || '沒有排班崗位')}</div></div>`).join('')}</div>` : '<p class="hint">還沒有加入任何事工團。</p>')}
   ${p.account ? sec('acct', '帳號', `<dl class="kv"><dt>email</dt><dd>${p.emails.map(esc).join('<br>')}</dd><dt>登入</dt><dd>${p.active ? '可以登入' : '已停用'}</dd><dt>全職同工</dt><dd>${p.staff ? '是（有管理者權限）' : '否'}</dd></dl>`)
     : `<section class="card"><h3>帳號</h3><p class="hint">還沒有平台帳號，不能登入平台。</p><div class="quick"><button class="btn sm secondary" data-act="openAcct">開帳號</button></div></section>`}
@@ -358,7 +358,8 @@ KINDS.person = {
         <div class="field"><label class="field-l" for="d-region">區</label><select id="d-region" data-dr="region" data-rr>${regionOptions(d.region)}</select></div>
         <div class="field"><label class="field-l" for="d-group">小組（只列 ${esc(d.region)} 的）</label><select id="d-group" data-dr="group">${groupOptionsIn(d.region, d.group)}</select></div>
       </div>
-      <div class="field"><label class="field-l" for="d-role">職分</label><select id="d-role" data-dr="role">${ROLES.map(r => `<option ${r === d.role ? 'selected' : ''}>${r}</option>`).join('')}</select></div>
+      <div class="field"><label class="field-l" for="d-role">職分</label><select id="d-role" data-dr="role" data-rr>${ROLES.map(r => `<option ${r === d.role ? 'selected' : ''}>${r}</option>`).join('')}</select></div>
+      ${isZoneRole(d.role) ? `<div class="field"><span class="field-l">兼管區（同時擔任這些區的區長，可不選）</span><div class="chips">${regions.filter(r => r.name !== d.region).map(r => `<button class="chip" data-act="xregion" data-r="${esc(r.name)}" aria-pressed="${(d.extraRegions || []).includes(r.name)}">${esc(r.name)}</button>`).join('')}</div><p class="hint">他會在牧養視圖看到這些區的同工；排班仍只看主要的區。</p></div>` : ''}
       <p class="hint">先選區，小組選單就只剩那一區的幾組。換到別區時，原本的小組會清空。一次要移好幾個人，從「組織」點進小組勾選比較快。</p>`;
     if (ms.sec === 'acct') return `
       <div class="field"><span class="field-l">登入用 email（可以有好幾個）</span>
@@ -632,9 +633,10 @@ KINDS.region = {
         {label:'區名', before:r.name, after:nn},
         {label:'白名單「區」欄', after:`${ps.length} 位改成「${nn}」`, fx:[ps.map(p => p.name).join('、')]},
         {label:'小組分頁「區」欄', after:`${gs.length} 組`, fx:[gs.map(g => g.name).join('、')]},
+        ...(people.some(p => (p.extraRegions || []).includes(r.name)) ? [{label:'白名單「兼管區」欄', after:people.filter(p => (p.extraRegions || []).includes(r.name)).map(p => p.name).join('、'), fx:[`兼管區裡的「${r.name}」改成「${nn}」`]}] : []),
         {label:'同工資料庫「所屬牧區」', after:`${ps.length} 位一起改`, fx:['儲存後馬上同步，不用等每晚 04:00']},
         {label:'服事表「設定」牧區限制', after:`${r.name} → ${nn}`, fx:[`限制照舊：${weekLabel(r.week)}`, '排班表的牧區下拉選單一起更新', {w:'漏改這裡的話，排班會找不到這區的限制，把人排到不該排的那一週，所以這一步一定一起做'}]}
-      ], apply(){ const old = r.name; ps.forEach(p => p.region = nn); gs.forEach(g => g.region = nn); r.name = nn; if (o.region === old) o.region = nn; }};
+      ], apply(){ const old = r.name; ps.forEach(p => p.region = nn); people.forEach(p => { if ((p.extraRegions || []).includes(old)) p.extraRegions = p.extraRegions.map(z => z === old ? nn : z); }); gs.forEach(g => g.region = nn); r.name = nn; if (o.region === old) o.region = nn; }};
     }
     if (ms.action === 'district') {
       const nd = ms.rd === '__new' ? ms.rdn : ms.rd;
@@ -804,6 +806,7 @@ const H = {
     if (ms.draft.emails.includes(v)) return toast('他已經有這個 email 了', true);
     ms.draft.emails.push(v); renderModal();
   },
+  xregion(b){ const d = ms.draft, z = b.dataset.r; d.extraRegions = (d.extraRegions || []).includes(z) ? d.extraRegions.filter(x => x !== z) : (d.extraRegions || []).concat([z]); renderModal(); },
   trole(b){ const t = b.dataset.team, d = ms.draft; if (b.dataset.v === '團長') d.teams[t] = {role:'團長'}; else if (d.teams[t]) d.teams[t].role = '團員'; renderModal(); },
   skill(b){ const s = b.dataset.s, d = ms.draft; d.skills = d.skills.includes(s) ? d.skills.filter(x => x !== s) : [...d.skills, s]; renderModal(); },
   tquit(b){ const t = b.dataset.team, d = ms.draft; delete d.teams[t]; d.skills = d.skills.filter(s => SKILL_TEAM[s] !== t); ms.pending = (ms.pending || []).filter(x => x !== t); renderModal(); },
@@ -836,6 +839,8 @@ function bind(e){
   if (el.dataset.dr && ms.draft) {
     const k = el.dataset.dr, d = ms.draft;
     d[k] = val;
+    if (k === 'role' && !isZoneRole(val)) d.extraRegions = [];
+    if (k === 'region') d.extraRegions = (d.extraRegions || []).filter(z => z !== val);
     if (k === 'region' && d.group && groupObj(d.group).region !== val) { d.group = ''; if (e.type === 'change') toast(`已換到${val}，請在小組選單選他的新小組`); }
   }
   if (e.type === 'change' && 'rr' in el.dataset) renderModal();

@@ -10,6 +10,8 @@ function personDiff(o, d){
   if (o.region !== d.region) out.push({label:'區', before:o.region, after:d.region,
     fx:['白名單「區」欄更新', `區長視圖：${headName(o.region)} → ${headName(d.region)}`, ...(districtOf(o.region) !== districtOf(d.region) ? [`督區也從 ${districtLabel(districtOf(o.region))} 變成 ${districtLabel(districtOf(d.region))}`] : [])]});
   if (o.staff !== d.staff) out.push({label:'全職同工', before:o.staff ? '是' : '否', after:d.staff ? '是' : '否', fx:[d.staff ? '白名單「全職同工」打勾，他會取得管理者權限' : '白名單「全職同工」取消，他不再能進管理頁']});
+  const ox = (o.extraRegions || []).join('、'), dx = (d.extraRegions || []).join('、');
+  if (ox !== dx) out.push({label:'兼管區', before:ox || '（無）', after:dx || '（無）', fx:['白名單「兼管區」欄更新', dx ? `他的牧養視圖會包含「${dx}」的同工；那一區沒有自己的區長時，請假通知也會找他` : '他不再兼管其他區', '排班不受影響（排班只看主要的區）']});
   if (o.role !== d.role) out.push({label:'職分', before:o.role, after:d.role, fx:['白名單「職分」欄更新，會影響他看得到的牧養範圍']});
   if (o.display !== d.display) out.push({label:'服事表稱呼', before:o.display, after:d.display, fx:['同工資料庫「顯示名稱」更新', {w:'請確認服事表上寫的也是「' + d.display + '」，否則偵測不到他的服事'}]});
   const teams = teamOrder.filter(t => o.teams[t] || d.teams[t] || o.skills.some(s => SKILL_TEAM[s] === t) || d.skills.some(s => SKILL_TEAM[s] === t));

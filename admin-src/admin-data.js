@@ -30,7 +30,8 @@ const regionObj = r => regions.find(x => x.name === r);
 const districtOf = r => (regionObj(r) || {}).district || '';
 const districtLabel = d => d || '（未設定督區）';
 /* 區長沒有獨立欄位：有帳號、職分是區長／區牧／區督、區欄是這一區的人就是 */
-const headsOf = r => people.filter(p => p.account && p.active && p.region === r && /區長|區牧|區督/.test(p.role));
+const isZoneRole = role => /區長|區牧|區督/.test(role || '');
+const headsOf = r => people.filter(p => p.account && p.active && isZoneRole(p.role) && (p.region === r || (p.extraRegions || []).includes(r)));
 const headName = r => headsOf(r).map(p => p.name).join('、') || '（尚未設定）';
 const weekLabel = w => w == null ? '不在服事表的牧區清單' : +w ? `每月第 ${w} 週主日不排` : '不限制';
 const districts = () => [...new Set(regions.map(r => r.district || ''))];
@@ -69,7 +70,7 @@ function hl(text, q){
 function pstate(p){
   const t = {};
   Object.keys(p.teams || {}).forEach(k => t[k] = p.teams[k].role);
-  return {name:p.name, account:!!p.account, emails:p.emails.slice(), active:!!p.active, staff:!!p.staff, region:p.region || '', dbRegion:p.dbRegion || '', group:p.group || '', role:p.role || '一般同工', display:p.display || p.name, skills:p.skills.slice(), teams:t};
+  return {name:p.name, account:!!p.account, emails:p.emails.slice(), active:!!p.active, staff:!!p.staff, region:p.region || '', dbRegion:p.dbRegion || '', extraRegions:(p.extraRegions || []).slice(), group:p.group || '', role:p.role || '一般同工', display:p.display || p.name, skills:p.skills.slice(), teams:t};
 }
 function gstate(g){ return {name:g.name, district:g.district || '', region:g.region, leader:g.leader || '', old:(g.old || []).slice(), status:g.status}; }
 function rstate(r){ return (r.inSettings || r.week != null) ? {name:r.name, week:Number(r.week) || 0} : null; }
