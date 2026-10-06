@@ -191,7 +191,10 @@ function commit(title, items, apply){
   const ops = buildOps(snap);
   people = snap.people; groups = snap.groups; regions = snap.regions;
   if (!ops.length) { toast('沒有任何變更', true); return Promise.resolve(false); }
-  return api('adminApply', {title, items, ops}).then(res => res.data ? ingest(res.data) : reload()).then(() => { toast('已儲存：' + title); return true; })
+  // 儲存要十幾秒：確認按鈕上依時間推算顯示目前大概在做哪一步
+  const stage = p => p < 0.3 ? '核對資料中…' : p < 0.62 ? '寫入試算表中…' : '更新權限中…';
+  const onTick = p => { const b = document.querySelector('.mactions [data-act=apply]'); if (b && ms && ms.busy) b.textContent = stage(p); };
+  return api('adminApply', {title, items, ops}, {onTick}).then(res => res.data ? ingest(res.data) : reload()).then(() => { toast('已儲存：' + title); return true; })
     .catch(e => {
       if (!e.network) { toast(e.message || String(e), true); return false; }
       // 連線在等回覆時斷了（手機切 App、鎖螢幕、換網路）：後端可能已經寫完，重新讀一次核對
@@ -459,9 +462,9 @@ function renderModal(){
   } else body = KINDS[ms.kind][st]();
   const first = ms.i === 0;
   const actions = st === 'preview'
-    ? `<button class="btn secondary" data-act="${first ? 'close' : 'prev'}" ${ms.busy ? 'disabled' : ''}>${first ? '取消' : '回去修改'}</button><button class="btn primary" data-act="apply" ${ms.busy ? 'disabled' : ''}>${ms.busy ? '儲存中…' : '確認執行'}</button>`
+    ? `<button class="btn secondary" data-act="${first ? 'close' : 'prev'}" ${ms.busy ? 'disabled' : ''}>${first ? '取消' : '回去修改'}</button><button class="btn primary${ms.busy ? ' cp-busy' : ''}" data-act="apply" ${ms.busy ? 'disabled aria-busy="true"' : ''}>${ms.busy ? '核對資料中…' : '確認執行'}</button>`
     : `<button class="btn secondary" data-act="${first ? 'close' : 'prev'}">${first ? '取消' : '上一步'}</button>${st === 'pick' && ms.autoNext ? '' : '<button class="btn primary" data-act="next">' + (ms.steps[ms.i + 1] === 'preview' ? '預覽變更' : '下一步') + '</button>'}`;
-  const wait = ms.busy ? '<p class="hint" role="status">正在寫入試算表，通常要 15 秒左右，請先不要關閉這個頁面。</p>' : '';
+  const wait = ms.busy ? '<p class="hint" role="status">通常要 15 秒左右，請先不要關閉這個頁面；畫面最上方的綠色進度條跑完就好了。</p>' : '';
   document.getElementById('modal-root').innerHTML = `<div class="modal" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(modalTitle())}"><button class="x" data-act="close" aria-label="關閉">×</button>${stepper}<h2>${esc(modalTitle())}</h2>${body}${wait}<div class="mactions">${actions}</div></div></div>`;
 }
 function modalTitle(){
@@ -1092,7 +1095,17 @@ const ENV = window.ADMIN_ENV || {};
 let TOKEN = null, ID_TOKEN = null, MY_EMAIL = '';
 try { TOKEN = localStorage.getItem(ENV.tokenKey); } catch (e) { }
 
-function api(action, args){
+/* 每種請求平常要多久（毫秒），給進度條推算用；儲存類比較久 */
+const API_EXPECT = {adminData:8000, adminApply:15000, adminUndo:15000, whoami:3000};
+function api(action, args, popts){
+  const long = action === 'adminApply' || action === 'adminUndo';
+  const h = window.ChurchProgress ? ChurchProgress.begin(Object.assign({
+    expected:API_EXPECT[action] || 3000, write:long, slowAfter:long ? 30000 : 25000,
+    button:ChurchProgress.pressedButton()
+  }, popts || {})) : {end(){}};
+  return apiRaw(action, args).then(v => { h.end(); return v; }, e => { h.end(); throw e; });
+}
+function apiRaw(action, args){
   return fetch(ENV.endpoint, {
     method:'POST', redirect:'follow',
     body:JSON.stringify({action, idToken:ID_TOKEN, sessionToken:TOKEN, args:args || {}})
@@ -1142,7 +1155,8 @@ function whoLabel(email){
 }
 function start(){
   document.getElementById('login').hidden = true;
-  document.getElementById('main').innerHTML = '<div class="empty"><p>載入中…</p></div>';
+  // 先排出版面的樣子（灰色方塊），讓人知道頁面正在載入
+  document.getElementById('main').innerHTML = '<div class="sk sk-title"></div><div class="sk sk-card"></div><div class="tasks">' + '<div class="sk sk-task"></div>'.repeat(8) + '</div><div class="sk sk-card"></div><p class="hint" role="status">讀取名單與小組資料中，第一次打開大約要 10 秒…</p>';
   document.getElementById('app').hidden = false;
   return reload().then(() => {
     document.getElementById('nav').hidden = false;
