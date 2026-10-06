@@ -40,6 +40,8 @@ const leaderName = n => { const g = groupObj(n); return g ? (g.leader || '—') 
 const membersOf = n => people.filter(p => p.account && p.group === n);
 /* 可以出現在選人清單的人：沒帳號的同工，或帳號沒停用的人 */
 const usable = p => !p.account || p.active;
+/* 有帳號的人：白名單的區和排班用的區（同工資料庫）不同 */
+const zoneMismatch = p => p.account && p.dbRegion && p.dbRegion !== p.region;
 
 /** 一個人在各團的狀態。listed＝帳號管理表「事工團」分頁有登記（多半是團長）；skills＝排班崗位。 */
 function teamRows(p, pending){
@@ -47,7 +49,9 @@ function teamRows(p, pending){
   return teamOrder.filter(t => set.has(t)).map(t => {
     const listed = !!p.teams[t];
     const skills = p.skills.filter(s => SKILL_TEAM[s] === t);
-    return {team:t, listed, role:listed ? p.teams[t].role : '團員', skills, state:listed && !skills.length ? 'noSkill' : 'ok'};
+    const role = listed ? p.teams[t].role : '團員';
+    // 團長本來就可以只帶團不排班；只有登記為團員卻沒有崗位的才需要核對
+    return {team:t, listed, role, skills, state:listed && role !== '團長' && !skills.length ? 'noSkill' : 'ok'};
   });
 }
 function search(q){
@@ -65,7 +69,7 @@ function hl(text, q){
 function pstate(p){
   const t = {};
   Object.keys(p.teams || {}).forEach(k => t[k] = p.teams[k].role);
-  return {name:p.name, account:!!p.account, emails:p.emails.slice(), active:!!p.active, staff:!!p.staff, region:p.region || '', group:p.group || '', role:p.role || '一般同工', display:p.display || p.name, skills:p.skills.slice(), teams:t};
+  return {name:p.name, account:!!p.account, emails:p.emails.slice(), active:!!p.active, staff:!!p.staff, region:p.region || '', dbRegion:p.dbRegion || '', group:p.group || '', role:p.role || '一般同工', display:p.display || p.name, skills:p.skills.slice(), teams:t};
 }
 function gstate(g){ return {name:g.name, district:g.district || '', region:g.region, leader:g.leader || '', old:(g.old || []).slice(), status:g.status}; }
 function rstate(r){ return (r.inSettings || r.week != null) ? {name:r.name, week:Number(r.week) || 0} : null; }

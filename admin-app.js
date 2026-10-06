@@ -42,6 +42,8 @@ const leaderName = n => { const g = groupObj(n); return g ? (g.leader || '—') 
 const membersOf = n => people.filter(p => p.account && p.group === n);
 /* 可以出現在選人清單的人：沒帳號的同工，或帳號沒停用的人 */
 const usable = p => !p.account || p.active;
+/* 有帳號的人：白名單的區和排班用的區（同工資料庫）不同 */
+const zoneMismatch = p => p.account && p.dbRegion && p.dbRegion !== p.region;
 
 /** 一個人在各團的狀態。listed＝帳號管理表「事工團」分頁有登記（多半是團長）；skills＝排班崗位。 */
 function teamRows(p, pending){
@@ -49,7 +51,9 @@ function teamRows(p, pending){
   return teamOrder.filter(t => set.has(t)).map(t => {
     const listed = !!p.teams[t];
     const skills = p.skills.filter(s => SKILL_TEAM[s] === t);
-    return {team:t, listed, role:listed ? p.teams[t].role : '團員', skills, state:listed && !skills.length ? 'noSkill' : 'ok'};
+    const role = listed ? p.teams[t].role : '團員';
+    // 團長本來就可以只帶團不排班；只有登記為團員卻沒有崗位的才需要核對
+    return {team:t, listed, role, skills, state:listed && role !== '團長' && !skills.length ? 'noSkill' : 'ok'};
   });
 }
 function search(q){
@@ -67,7 +71,7 @@ function hl(text, q){
 function pstate(p){
   const t = {};
   Object.keys(p.teams || {}).forEach(k => t[k] = p.teams[k].role);
-  return {name:p.name, account:!!p.account, emails:p.emails.slice(), active:!!p.active, staff:!!p.staff, region:p.region || '', group:p.group || '', role:p.role || '一般同工', display:p.display || p.name, skills:p.skills.slice(), teams:t};
+  return {name:p.name, account:!!p.account, emails:p.emails.slice(), active:!!p.active, staff:!!p.staff, region:p.region || '', dbRegion:p.dbRegion || '', group:p.group || '', role:p.role || '一般同工', display:p.display || p.name, skills:p.skills.slice(), teams:t};
 }
 function gstate(g){ return {name:g.name, district:g.district || '', region:g.region, leader:g.leader || '', old:(g.old || []).slice(), status:g.status}; }
 function rstate(r){ return (r.inSettings || r.week != null) ? {name:r.name, week:Number(r.week) || 0} : null; }
@@ -162,6 +166,9 @@ function commit(title, items, apply){
     const regionChanged = r._key && distBefore[r._key] !== r.district;
     if (moved || regionChanged) g.district = r.district || '';
   });
+  // 改了區的人，排班用的區（同工資料庫、各團分頁）也跟著改
+  const p0 = {}; snap.people.forEach(x => p0[x.name] = x);
+  people.forEach(x => { if (p0[x.name] && p0[x.name].region !== x.region) x.dbRegion = x.region; else if (!p0[x.name]) x.dbRegion = x.dbRegion || x.region; });
   const ops = buildOps(snap);
   people = snap.people; groups = snap.groups; regions = snap.regions;
   if (!ops.length) { toast('沒有任何變更', true); return Promise.resolve(false); }
@@ -179,6 +186,7 @@ function fixRefs(){
 function auditList(){
   const out = [];
   people.filter(usable).forEach(p => teamRows(p).forEach(r => { if (r.state !== 'ok') out.push({p, r}); }));
+  people.filter(p => usable(p) && zoneMismatch(p)).forEach(p => out.push({p, zone:true}));
   return out;
 }
 function regionOptions(sel){ return regions.map(r => `<option ${r.name === sel ? 'selected' : ''}>${esc(r.name)}</option>`).join(''); }
@@ -198,7 +206,7 @@ const ICON = {
   org:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg>'
 };
 function renderNav(){
-  const n = auditList().filter(x => x.r.state === 'noSkill').length;
+  const n = auditList().length;
   document.getElementById('nav').innerHTML = [['home','首頁'],['people','找人'],['org','組織']].map(([k, l]) =>
     `<button data-act="tab" data-k="${k}" aria-current="${state.tab === k ? 'page' : 'false'}"><span class="ni">${ICON[k]}</span><span>${l}</span>${k === 'home' && n ? `<span class="count" aria-label="${n} 件待核對">${n}</span>` : ''}</button>`).join('');
 }
@@ -226,14 +234,14 @@ const TASKS = [
 function renderHome(){
   const need = auditList();
   const row = x => `<li><button class="lrow" data-act="openPerson" data-id="${x.p.id}"><span class="lbody">
-      <span class="lmain"><strong>${esc(x.p.name)}</strong><span class="tag">${esc(x.r.team)}</span>${x.r.listed && x.r.role === '團長' ? '<span class="tag warn">團長</span>' : ''}</span>
-      <span class="lmeta">平台登記在團裡，排班沒有崗位</span>
+      <span class="lmain"><strong>${esc(x.p.name)}</strong><span class="tag">${esc(x.zone ? '區不一致' : x.r.team)}</span></span>
+      <span class="lmeta">${x.zone ? `排班用「${esc(x.p.dbRegion)}」，白名單是「${esc(x.p.region)}」` : '登記為團員，但排班沒有崗位'}</span>
     </span><span class="chev" aria-hidden="true">›</span></button></li>`;
   return `
   <header class="page-h"><div class="row-between"><h1>管理後台</h1><a class="back-link" href="${esc(ENV.platformUrl || 'service.html')}">回服事平台</a></div><p>帳號、小組與事工團維護</p></header>
   ${need.length ? `<section class="card attention" aria-labelledby="h-audit">
     <h2 id="h-audit">待核對 ${need.length} 件</h2>
-    <p class="hint">這些人在平台登記在團裡（多半是團長），但排班沒有崗位，所以不會被排到。點進去處理，或確認他本來就只帶團不排班。</p>
+    <p class="hint">點進去處理。區不一致：排班會用錯區的牧區限制，建議統一成白名單的區。團員沒有崗位：不會被排到，請補崗位或讓他退出。</p>
     <ul class="list">${need.map(row).join('')}</ul>
   </section>` : ''}
   <section class="stack" aria-labelledby="h-tasks">
@@ -309,7 +317,7 @@ function renderPerson(){
   </div>
   ${sec('care', '牧養', p.account ? `<dl class="kv"><dt>區</dt><dd>${esc(p.region || '未設定')}（${esc(districtLabel(districtOf(p.region)))}）</dd>
     <dt>小組</dt><dd>${p.group && groupObj(p.group) ? `<button class="link inline" data-act="openGroupPage" data-g="${esc(p.group)}">${esc(p.group)}</button>（小組長 ${esc(leaderName(p.group))}）` : esc(p.group || '不屬於小組')}</dd>
-    <dt>職分</dt><dd>${esc(p.role)}</dd></dl>` : `<dl class="kv"><dt>區</dt><dd>${esc(p.region || '未設定')}</dd></dl><p class="hint">還沒有平台帳號的同工，平台只記他的區（排班用），不記小組。開帳號後才能設定小組與職分。</p>`)}
+    <dt>職分</dt><dd>${esc(p.role)}</dd></dl>${zoneMismatch(p) ? `<div class="alert warn"><p>排班用的區是「${esc(p.dbRegion)}」，和白名單的「${esc(p.region)}」不一致，排班會套用「${esc(p.dbRegion)}」的牧區限制。</p><div class="row-actions"><button class="btn sm secondary" data-act="fixZone">統一成「${esc(p.region)}」</button></div></div>` : ''}` : `<dl class="kv"><dt>區</dt><dd>${esc(p.region || '未設定')}</dd></dl><p class="hint">還沒有平台帳號的同工，平台只記他的區（排班用），不記小組。開帳號後才能設定小組與職分。</p>`)}
   ${sec('teams', '事工團與排班崗位', rows.length ? `<div>${rows.map(r => `<div class="tline"><div class="lmain"><strong>${esc(r.team)}</strong>${r.listed && r.role === '團長' ? '<span class="tag info">團長</span>' : ''}${statePill(r)}</div><div class="lmeta">${esc(r.skills.join('、') || '沒有排班崗位')}</div></div>`).join('')}</div>` : '<p class="hint">還沒有加入任何事工團。</p>')}
   ${p.account ? sec('acct', '帳號', `<dl class="kv"><dt>email</dt><dd>${p.emails.map(esc).join('<br>')}</dd><dt>登入</dt><dd>${p.active ? '可以登入' : '已停用'}</dd><dt>全職同工</dt><dd>${p.staff ? '是（有管理者權限）' : '否'}</dd></dl>`)
     : `<section class="card"><h3>帳號</h3><p class="hint">還沒有平台帳號，不能登入平台。</p><div class="quick"><button class="btn sm secondary" data-act="openAcct">開帳號</button></div></section>`}
@@ -405,7 +413,7 @@ function renderModal(){
   } else body = KINDS[ms.kind][st]();
   const first = ms.i === 0;
   const actions = st === 'preview'
-    ? `<button class="btn secondary" data-act="prev" ${ms.busy ? 'disabled' : ''}>回去修改</button><button class="btn primary" data-act="apply" ${ms.busy ? 'disabled' : ''}>${ms.busy ? '儲存中…' : '確認執行'}</button>`
+    ? `<button class="btn secondary" data-act="${first ? 'close' : 'prev'}" ${ms.busy ? 'disabled' : ''}>${first ? '取消' : '回去修改'}</button><button class="btn primary" data-act="apply" ${ms.busy ? 'disabled' : ''}>${ms.busy ? '儲存中…' : '確認執行'}</button>`
     : `<button class="btn secondary" data-act="${first ? 'close' : 'prev'}">${first ? '取消' : '上一步'}</button>${st === 'pick' && ms.autoNext ? '' : '<button class="btn primary" data-act="next">' + (ms.steps[ms.i + 1] === 'preview' ? '預覽變更' : '下一步') + '</button>'}`;
   const wait = ms.busy ? '<p class="hint" role="status">正在寫入試算表，通常要 15 秒左右，請先不要關閉這個頁面。</p>' : '';
   document.getElementById('modal-root').innerHTML = `<div class="modal" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(modalTitle())}"><button class="x" data-act="close" aria-label="關閉">×</button>${stepper}<h2>${esc(modalTitle())}</h2>${body}${wait}<div class="mactions">${actions}</div></div></div>`;
@@ -416,6 +424,7 @@ function modalTitle(){
   if (k === 'group') return GROUP_ACTS[ms.action][0] + (ms.g ? '：' + ms.g : '');
   if (k === 'region') return REGION_ACTS[ms.action][0] + '：' + ms.r;
   if (k === 'team') return '換團長：' + ms.team;
+  if (k === 'zonefix') return '統一排班用的區：' + nameOf(ms.pid);
   if (k === 'newGroup') return '新開小組';
   return '開新帳號';
 }
@@ -775,6 +784,17 @@ KINDS.region = {
   }
 };
 
+/* ---------- 任務：排班用的區統一成白名單的區 ---------- */
+KINDS.zonefix = {
+  plan(){
+    const p = byId(ms.pid), from = p.dbRegion, to = p.region;
+    const wf = (regionObj(from) || {}).week, wt = (regionObj(to) || {}).week;
+    const fx = ['同工資料庫「所屬牧區」更新', '他所在的各團分頁，區一起改'];
+    if (wf !== wt) fx.push({w:`牧區限制從「${weekLabel(wf)}」變成「${weekLabel(wt)}」，已排好的班不會自動重排，請主責檢查`});
+    return {title:`${p.name}：排班用的區統一成${to}`, items:[{label:'排班用的區', before:from, after:to, fx}], apply(){ byName(p.name).dbRegion = to; }};
+  }
+};
+
 /* ---------- 任務：換團長 ---------- */
 KINDS.team = {
   form(){
@@ -873,6 +893,7 @@ const H = {
   backSearch(){ state.sel = null; render(); toTop(); },
   backPeek(){ const y = state.peek.y; state.peek = null; render(); window.scrollTo(0, y); },
   editSec(b){ personTask(b.dataset.s, curPid()); },
+  fixZone(){ ms = {kind:'zonefix', pid:curPid(), steps:['preview'], i:0}; renderModal(); },
   orgMode(b){ orgGo({mode:b.dataset.m}); },
   openRegionPage(b){ orgGo({mode:'care', region:b.dataset.r}); },
   openGroupPage(b){ const g = groupObj(b.dataset.g); orgGo({mode:'care', region:g.region, group:g.name}); },
