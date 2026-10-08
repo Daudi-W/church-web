@@ -1,6 +1,8 @@
 /* ---------- 畫面狀態 ---------- */
 /* peek＝從首頁或組織點進某人：留在原分頁顯示他的資料，返回時回到原本的位置 */
-const state = {tab:'home', q:'', sel:null, peek:null, org:{mode:'care', region:null, group:null, team:null, pick:[], tf:{skill:'', region:'', sort:'lead'}}, allLog:false};
+/* 事工團頁的排序記在這台裝置；沒記過就用崗位排 */
+function savedTeamSort(){ try { return localStorage.getItem('adminTeamSort') || 'skill'; } catch (e) { return 'skill'; } }
+const state = {tab:'home', q:'', sel:null, peek:null, org:{mode:'care', region:null, group:null, team:null, pick:[], tf:{skill:'', region:'', sort:savedTeamSort()}}, allLog:false};
 let ms = null; // 目前開著的彈窗（任務）
 
 const isLeaderRole = r => /小組長|區長|區牧|區督/.test(r);
@@ -285,7 +287,7 @@ function renderGroupPage(){
   <div class="agrid">${acts.map(a => `<button class="action" data-act="groupAct" data-a="${a}"><strong>${GROUP_ACTS[a][0]}</strong><span>${GROUP_ACTS[a][1]}</span></button>`).join('')}</div>
   ${o.pick.length ? `<div class="selbar" role="region" aria-label="已勾選的組員"><span>已選 ${o.pick.length} 人</span><button class="btn sm ghost" data-act="clearPick">取消</button><div class="selbtns"><button class="btn sm secondary" data-act="pickMove">移到別組</button><button class="btn sm primary" data-act="pickSplit">分出新組</button></div></div>` : ''}`;
 }
-const TEAM_SORT = {lead:'團長在前', name:'姓名', region:'區', skill:'崗位'};
+const TEAM_SORT = {skill:'崗位', region:'區', lead:'團長在前', name:'姓名'};
 const nameCmp = new Intl.Collator('zh-TW-u-co-stroke').compare;
 function teamView(t){
   const f = state.org.tf, all = teamMembers(t), skills = TEAMS[t];
@@ -934,7 +936,7 @@ function bind(e){
   // 搜尋框只在打字時更新清單；失焦（change）時不要重畫，否則正要點的那一列會被換掉
   if (el.id === 'q') { if (e.type === 'input') { state.q = el.value; document.getElementById('results').innerHTML = resultsHtml(); } return; }
   if (el.id === 'pk-q') { if (e.type === 'input') { ms.pq = el.value; document.getElementById('pk-results').innerHTML = pickResultsHtml(); } return; }
-  if (el.dataset.tf) { if (e.type === 'change') { state.org.tf[el.dataset.tf] = el.value; render(); document.getElementById(el.id)?.focus(); } return; }
+  if (el.dataset.tf) { if (e.type === 'change') { state.org.tf[el.dataset.tf] = el.value; if (el.dataset.tf === 'sort') try { localStorage.setItem('adminTeamSort', el.value); } catch (x) { } render(); document.getElementById(el.id)?.focus(); } return; }
   if (el.dataset.sel && e.type === 'change') { const o = state.org, id = +el.dataset.sel; o.pick = el.checked ? [...o.pick, id] : o.pick.filter(x => x !== id); render(); return; }
   if (!ms) return;
   if (el.dataset.idbox && e.type === 'change') { const id = +el.dataset.idbox; ms.ids = el.checked ? [...ms.ids, id] : ms.ids.filter(x => x !== id); return; }
