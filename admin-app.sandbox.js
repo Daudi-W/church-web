@@ -152,7 +152,8 @@ function diffList(items){
 /* peek＝從首頁或組織點進某人：留在原分頁顯示他的資料，返回時回到原本的位置 */
 /* 事工團頁的排序記在這台裝置；沒記過就用崗位排 */
 function savedTeamSort(){ try { return localStorage.getItem('adminTeamSort') || 'skill'; } catch (e) { return 'skill'; } }
-const state = {tab:'home', q:'', sel:null, peek:null, org:{mode:'care', region:null, group:null, team:null, pick:[], tf:{skill:'', region:'', sort:savedTeamSort()}}, allLog:false};
+function savedTeamDir(){ try { return localStorage.getItem('adminTeamDir') === 'desc' ? 'desc' : 'asc'; } catch (e) { return 'asc'; } }
+const state = {tab:'home', q:'', sel:null, peek:null, org:{mode:'care', region:null, group:null, team:null, pick:[], tf:{skill:'', region:'', sort:savedTeamSort(), dir:savedTeamDir()}}, allLog:false};
 let ms = null; // 目前開著的彈窗（任務）
 
 const isLeaderRole = r => /小組長|區長|區牧|區督/.test(r);
@@ -453,7 +454,8 @@ function teamView(t){
     region:(a, b) => regionIdx(a.p.region) - regionIdx(b.p.region),
     skill:(a, b) => skillIdx(a) - skillIdx(b)
   }[f.sort] || (() => 0);
-  return {all, list:list.sort((a, b) => by(a, b) || nameCmp(a.p.name, b.p.name))};
+  const sign = f.dir === 'desc' ? -1 : 1;
+  return {all, list:list.sort((a, b) => sign * (by(a, b) || nameCmp(a.p.name, b.p.name)))};
 }
 function renderTeamPage(){
   const t = state.org.team, f = state.org.tf, {all:m, list} = teamView(t), heads = m.filter(x => x.r.listed && x.r.role === '團長');
@@ -470,7 +472,7 @@ function renderTeamPage(){
     <div class="field"><label class="field-l" for="tf-region">篩選區</label><select id="tf-region" data-tf="region"><option value="">全部的區</option>${rs.map(r => `<option ${r.name === f.region ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}${noRegion ? `<option value="__none" ${f.region === '__none' ? 'selected' : ''}>未設定區</option>` : ''}</select></div>
   </div>
   <div class="row-between tbar"><p class="hint" role="status">${filtered ? `符合 ${list.length} 人／共 ${m.length} 人 <button class="link" data-act="teamFilterClear">清除篩選</button>` : `共 ${m.length} 人`}</p>
-    <div class="tsort"><span class="field-l" id="tsort-l">排序</span><div class="seg" role="group" aria-labelledby="tsort-l">${Object.keys(TEAM_SORT).map(k => `<button data-act="teamSort" data-k="${k}" aria-pressed="${k === f.sort}">${TEAM_SORT[k]}</button>`).join('')}</div></div></div>
+    <div class="tsort"><span class="field-l" id="tsort-l">排序</span><div class="seg" role="group" aria-labelledby="tsort-l">${Object.keys(TEAM_SORT).map(k => `<button data-act="teamSort" data-k="${k}" aria-pressed="${k === f.sort}">${TEAM_SORT[k]}</button>`).join('')}</div><button class="btn sm ghost tdir" data-act="teamDir" aria-label="目前${f.dir === 'desc' ? '降冪' : '升冪'}，點一下切換">${f.dir === 'desc' ? '↓ 降冪' : '↑ 升冪'}</button></div></div>
   <ul class="list">${list.map(x => `<li><button class="lrow" data-act="openPerson" data-id="${x.p.id}"><span class="lbody"><span class="lmain"><strong>${esc(x.p.name)}</strong>${x.r.listed && x.r.role === '團長' ? '<span class="tag info">團長</span>' : ''}${statePill(x.r)}</span><span class="lmeta">${esc(x.p.region || '未設定區')}・${esc(x.r.skills.join('、') || '沒有排班崗位')}</span></span><span class="chev" aria-hidden="true">›</span></button></li>`).join('') || `<li><div class="lrow hint">${filtered ? '沒有符合條件的成員' : '目前沒有成員'}</div></li>`}</ul>
   <p class="hint">要讓某人退出或改崗位，點他的名字，在個人資料的「事工團與排班崗位」修改。</p>`;
 }
@@ -1013,8 +1015,9 @@ const H = {
   orgMode(b){ orgGo({mode:b.dataset.m}); },
   openRegionPage(b){ orgGo({mode:'care', region:b.dataset.r}); },
   openGroupPage(b){ const g = groupObj(b.dataset.g); orgGo({mode:'care', region:g.region, group:g.name}); },
-  openTeamPage(b){ orgGo({mode:'team', team:b.dataset.t, tf:{skill:'', region:'', sort:state.org.tf.sort}}); },
+  openTeamPage(b){ orgGo({mode:'team', team:b.dataset.t, tf:{skill:'', region:'', sort:state.org.tf.sort, dir:state.org.tf.dir}}); },
   teamSort(b){ state.org.tf.sort = b.dataset.k; try { localStorage.setItem('adminTeamSort', b.dataset.k); } catch (x) { } render(); },
+  teamDir(){ const f = state.org.tf; f.dir = f.dir === 'desc' ? 'asc' : 'desc'; try { localStorage.setItem('adminTeamDir', f.dir); } catch (x) { } render(); },
   teamFilterClear(){ Object.assign(state.org.tf, {skill:'', region:''}); render(); },
   orgUp(){ const o = state.org; if (o.group) { o.group = null; o.pick = []; } else if (o.region) o.region = null; else o.team = null; render(); toTop(); },
   regionAct(b){ regionTask(b.dataset.a); },

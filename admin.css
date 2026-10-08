@@ -40,7 +40,8 @@ input:focus,select:focus{border-color:var(--primary);outline:2px solid var(--pri
 .tfilter{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .tbar{margin:12px 0 4px}
 .tbar .hint{margin:0}
-.tsort{display:flex;align-items:center;gap:8px}
+.tsort{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tdir{min-height:36px;padding:0 10px}
 .btn{border:1px solid transparent;border-radius:12px;min-height:48px;padding:0 18px;white-space:nowrap;flex-shrink:0;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:16px}
 .btn.sm{min-height:40px;padding:0 14px;font-size:15px}
 .btn.primary{background:var(--primary);color:#fff}
