@@ -150,7 +150,10 @@ function diffList(items){
 /* ===== admin-screens.js ===== */
 /* ---------- 畫面狀態 ---------- */
 /* peek＝從首頁或組織點進某人：留在原分頁顯示他的資料，返回時回到原本的位置 */
-const state = {tab:'home', q:'', sel:null, peek:null, org:{mode:'care', region:null, group:null, team:null, pick:[]}, allLog:false};
+/* 事工團頁的排序記在這台裝置；沒記過就用崗位排 */
+function savedTeamSort(){ try { return localStorage.getItem('adminTeamSort') || 'skill'; } catch (e) { return 'skill'; } }
+function savedTeamDir(){ try { return localStorage.getItem('adminTeamDir') === 'desc' ? 'desc' : 'asc'; } catch (e) { return 'asc'; } }
+const state = {tab:'home', q:'', sel:null, peek:null, org:{mode:'care', region:null, group:null, team:null, pick:[], tf:{skill:'', region:'', sort:savedTeamSort(), dir:savedTeamDir()}}, allLog:false};
 let ms = null; // 目前開著的彈窗（任務）
 
 const isLeaderRole = r => /小組長|區長|區牧|區督/.test(r);
@@ -435,15 +438,42 @@ function renderGroupPage(){
   <div class="agrid">${acts.map(a => `<button class="action" data-act="groupAct" data-a="${a}"><strong>${GROUP_ACTS[a][0]}</strong><span>${GROUP_ACTS[a][1]}</span></button>`).join('')}</div>
   ${o.pick.length ? `<div class="selbar" role="region" aria-label="已勾選的組員"><span>已選 ${o.pick.length} 人</span><button class="btn sm ghost" data-act="clearPick">取消</button><div class="selbtns"><button class="btn sm secondary" data-act="pickMove">移到別組</button><button class="btn sm primary" data-act="pickSplit">分出新組</button></div></div>` : ''}`;
 }
+const TEAM_SORT = {skill:'崗位', region:'區', lead:'團長', name:'姓名'};
+const nameCmp = new Intl.Collator('zh-TW-u-co-stroke').compare;
+function teamView(t){
+  const f = state.org.tf, all = teamMembers(t), skills = TEAMS[t];
+  const isHead = x => x.r.listed && x.r.role === '團長';
+  const regionIdx = n => { const i = regions.findIndex(r => r.name === n); return i < 0 ? regions.length : i; };
+  const skillIdx = x => x.r.skills.length ? Math.min(...x.r.skills.map(s => { const i = skills.indexOf(s); return i < 0 ? skills.length : i; })) : skills.length + 1;
+  const list = all.filter(x =>
+    (!f.skill || (f.skill === '__none' ? !x.r.skills.length : x.r.skills.includes(f.skill))) &&
+    (!f.region || (x.p.region || '') === (f.region === '__none' ? '' : f.region)));
+  const by = {
+    lead:(a, b) => isHead(b) - isHead(a),
+    name:() => 0,
+    region:(a, b) => regionIdx(a.p.region) - regionIdx(b.p.region),
+    skill:(a, b) => skillIdx(a) - skillIdx(b)
+  }[f.sort] || (() => 0);
+  const sign = f.dir === 'desc' ? -1 : 1;
+  return {all, list:list.sort((a, b) => sign * (by(a, b) || nameCmp(a.p.name, b.p.name)))};
+}
 function renderTeamPage(){
-  const t = state.org.team, m = teamMembers(t), heads = m.filter(x => x.r.listed && x.r.role === '團長');
+  const t = state.org.team, f = state.org.tf, {all:m, list} = teamView(t), heads = m.filter(x => x.r.listed && x.r.role === '團長');
+  const rs = regions.filter(r => m.some(x => x.p.region === r.name)), noRegion = m.some(x => !x.p.region);
+  const filtered = f.skill || f.region;
   return `<button class="btn ghost back" data-act="orgUp">← 事工團</button>
   <div class="card">
     <h2>${esc(t)}</h2>
     <dl class="kv"><dt>團長</dt><dd>${esc(heads.map(x => x.p.name).join('、') || '（尚未設定）')}</dd><dt>排班崗位</dt><dd>${esc(TEAMS[t].join('、'))}</dd><dt>成員</dt><dd class="num">${m.length} 人</dd></dl>
     <div class="quick"><button class="btn sm secondary" data-act="teamLead">換團長</button><button class="btn sm secondary" data-act="teamAdd">加入成員</button></div>
   </div>
-  <ul class="list">${m.map(x => `<li><button class="lrow" data-act="openPerson" data-id="${x.p.id}"><span class="lbody"><span class="lmain"><strong>${esc(x.p.name)}</strong>${x.r.listed && x.r.role === '團長' ? '<span class="tag info">團長</span>' : ''}${statePill(x.r)}</span><span class="lmeta">${esc(x.r.skills.join('、') || '沒有排班崗位')}</span></span><span class="chev" aria-hidden="true">›</span></button></li>`).join('') || '<li><div class="lrow hint">目前沒有成員</div></li>'}</ul>
+  <div class="tfilter" role="group" aria-label="篩選成員">
+    <div class="field"><label class="field-l" for="tf-skill">篩選崗位</label><select id="tf-skill" data-tf="skill"><option value="">全部崗位</option>${TEAMS[t].map(s => `<option ${s === f.skill ? 'selected' : ''}>${esc(s)}</option>`).join('')}<option value="__none" ${f.skill === '__none' ? 'selected' : ''}>沒有崗位</option></select></div>
+    <div class="field"><label class="field-l" for="tf-region">篩選區</label><select id="tf-region" data-tf="region"><option value="">全部的區</option>${rs.map(r => `<option ${r.name === f.region ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}${noRegion ? `<option value="__none" ${f.region === '__none' ? 'selected' : ''}>未設定區</option>` : ''}</select></div>
+  </div>
+  <div class="row-between tbar"><p class="hint" role="status">${filtered ? `符合 ${list.length} 人／共 ${m.length} 人 <button class="link" data-act="teamFilterClear">清除篩選</button>` : `共 ${m.length} 人`}</p>
+    <div class="tsort"><span class="field-l" id="tsort-l">排序</span><div class="seg" role="group" aria-labelledby="tsort-l">${Object.keys(TEAM_SORT).map(k => `<button data-act="teamSort" data-k="${k}" aria-pressed="${k === f.sort}">${TEAM_SORT[k]}</button>`).join('')}</div><button class="btn sm ghost tdir" data-act="teamDir" aria-label="目前${f.dir === 'desc' ? '降冪' : '升冪'}，點一下切換">${f.dir === 'desc' ? '↓ 降冪' : '↑ 升冪'}</button></div></div>
+  <ul class="list">${list.map(x => `<li><button class="lrow" data-act="openPerson" data-id="${x.p.id}"><span class="lbody"><span class="lmain"><strong>${esc(x.p.name)}</strong>${x.r.listed && x.r.role === '團長' ? '<span class="tag info">團長</span>' : ''}${statePill(x.r)}</span><span class="lmeta">${esc(x.p.region || '未設定區')}・${esc(x.r.skills.join('、') || '沒有排班崗位')}</span></span><span class="chev" aria-hidden="true">›</span></button></li>`).join('') || `<li><div class="lrow hint">${filtered ? '沒有符合條件的成員' : '目前沒有成員'}</div></li>`}</ul>
   <p class="hint">要讓某人退出或改崗位，點他的名字，在個人資料的「事工團與排班崗位」修改。</p>`;
 }
 
@@ -985,7 +1015,10 @@ const H = {
   orgMode(b){ orgGo({mode:b.dataset.m}); },
   openRegionPage(b){ orgGo({mode:'care', region:b.dataset.r}); },
   openGroupPage(b){ const g = groupObj(b.dataset.g); orgGo({mode:'care', region:g.region, group:g.name}); },
-  openTeamPage(b){ orgGo({mode:'team', team:b.dataset.t}); },
+  openTeamPage(b){ orgGo({mode:'team', team:b.dataset.t, tf:{skill:'', region:'', sort:state.org.tf.sort, dir:state.org.tf.dir}}); },
+  teamSort(b){ state.org.tf.sort = b.dataset.k; try { localStorage.setItem('adminTeamSort', b.dataset.k); } catch (x) { } render(); },
+  teamDir(){ const f = state.org.tf; f.dir = f.dir === 'desc' ? 'asc' : 'desc'; try { localStorage.setItem('adminTeamDir', f.dir); } catch (x) { } render(); },
+  teamFilterClear(){ Object.assign(state.org.tf, {skill:'', region:''}); render(); },
   orgUp(){ const o = state.org; if (o.group) { o.group = null; o.pick = []; } else if (o.region) o.region = null; else o.team = null; render(); toTop(); },
   regionAct(b){ regionTask(b.dataset.a); },
   newGroupHere(){ newGroupTask(state.org.region); },
@@ -1057,6 +1090,7 @@ function bind(e){
   // 搜尋框只在打字時更新清單；失焦（change）時不要重畫，否則正要點的那一列會被換掉
   if (el.id === 'q') { if (e.type === 'input') { state.q = el.value; document.getElementById('results').innerHTML = resultsHtml(); } return; }
   if (el.id === 'pk-q') { if (e.type === 'input') { ms.pq = el.value; document.getElementById('pk-results').innerHTML = pickResultsHtml(); } return; }
+  if (el.dataset.tf) { if (e.type === 'change') { state.org.tf[el.dataset.tf] = el.value; render(); document.getElementById(el.id)?.focus(); } return; }
   if (el.dataset.sel && e.type === 'change') { const o = state.org, id = +el.dataset.sel; o.pick = el.checked ? [...o.pick, id] : o.pick.filter(x => x !== id); render(); return; }
   if (!ms) return;
   if (el.dataset.idbox && e.type === 'change') { const id = +el.dataset.idbox; ms.ids = el.checked ? [...ms.ids, id] : ms.ids.filter(x => x !== id); return; }
