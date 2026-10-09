@@ -1,5 +1,5 @@
 /* 管理後台樣式（正式 admin.html 與沙盒 sandbox-admin.html 共用）。
- * 版面：底部三分頁（首頁／找人／組織），桌機轉左側欄；所有寫入都走同一種彈窗：選擇 → 填寫 → 確認。色彩與字級沿用 DESIGN.md（旌旗綠、字重 400/700、輸入框 16px）。平台本身只有淺色主題，原型照用。 */
+ * 版面：底部三分頁（首頁／找人／組織），桌機轉左側欄；所有寫入都走同一種彈窗：選擇 → 填寫 → 確認。色彩與字級沿用 DESIGN.md（主題綠、字重 400/700、輸入框 16px）。平台本身只有淺色主題，原型照用。 */
 :root{
   --primary:#0F6E56;--primary-pressed:#085041;--primary-deep:#04342C;--primary-soft:#5DCAA5;--primary-pale:#9FE1CB;--primary-tint:#E1F5EE;
   --canvas:#f4f6f8;--surface:#ffffff;--sunken:#e9eef3;--hair:#e3e9ef;--hair-strong:#c9d3dd;
