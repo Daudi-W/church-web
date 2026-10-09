@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- 內容安全政策：只允許從自己、Google 登入、平台後端與圖示字型載入／連線（2026-10-08 安全檢查） -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://accounts.google.com/gsi/style; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="robots" content="noindex">
+<title>服事平台管理後台</title>
+<link rel="stylesheet" href="admin.css?v=3">
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="service-runtime-config.js"></script>
+<script src="service-config.js"></script>
+<script>
+  // 正式環境：沿用服事平台的部署設定與登入 session（同一個 svcToken，平台已登入就不用再登入）
+  window.ADMIN_ENV = { endpoint: ChurchServiceConfig.serviceEndpoint, clientId: ChurchServiceConfig.googleClientId, tokenKey: "svcToken", platformUrl: "service.html" };
+</script>
+</head>
+<body>
+<div class="wrap">
+  
+  <section id="login" class="card login" hidden>
+    <h1>管理後台</h1>
+    <p id="login-msg" class="hint">請用 Google 登入，只有管理者可以使用。</p>
+    <div id="gBtn"></div>
+    <a class="back-link" href="service.html">回服事平台</a>
+  </section>
+  <div id="app" hidden><main id="main"></main></div>
+</div>
+<nav class="nav" id="nav" aria-label="主要分頁" hidden></nav>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+<script src="progress.js?v=1"></script>
+<script src="admin-app.js?v=3"></script>
+</body>
+</html>

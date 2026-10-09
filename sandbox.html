@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 內容安全政策：只允許從自己、Google 登入、平台後端與圖示字型載入／連線（2026-10-08 安全檢查） -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://accounts.google.com/gsi/style; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>🧪 測試環境｜桃園教會服事平台（沙盒）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0F6E56">
@@ -13,6 +15,7 @@
 <script src="https://accounts.google.com/gsi/client" async></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
 <script src="platform-module.js?v=3"></script>
+<script src="progress.js?v=1"></script>
 <style>
   :root {
     --tl-900: #04342C; --tl-800: #085041; --tl-600: #0F6E56;
@@ -449,11 +452,19 @@
     return d;
   }
 
-  function api(action, args) {
+  // 背景動作不顯示進度（自動更新、已讀、推播訂閱、登出）；會改資料的動作鎖住按下的按鈕
+  var API_QUIET = { notiSeen: 1, savePushSub: 1, logout: 1 };
+  var API_WRITE = { assign: 1, unassign: 1, leave: 1, leaveReplace: 1, leaveSkip: 1, apply: 1, review: 1, newsPost: 1, newsUpdate: 1,
+    publish: 1, groupRename: 1, surveySubmit: 1, surveyOpen: 1, surveyClose: 1, surveyImport: 1, deleteNoti: 1, clearNoti: 1 };
+  function api(action, args, quiet) {
+    var h = (!quiet && !API_QUIET[action] && window.ChurchProgress)
+      ? ChurchProgress.begin({ write: !!API_WRITE[action], expected: API_WRITE[action] ? 4000 : 2500, button: API_WRITE[action] ? ChurchProgress.pressedButton() : null })
+      : { end: function () { } };
     return fetch(SCRIPT_URL, {
       method: 'POST', redirect: 'follow',
       body: JSON.stringify({ action: action, idToken: ID_TOKEN, sessionToken: TOKEN, args: args || {} })
-    }).then(function (r) { return r.json(); });
+    }).then(function (r) { return r.json(); })
+      .then(function (v) { h.end(); return v; }, function (e) { h.end(); throw e; });
   }
 
   /* 使用者自填內容（姓名/備註等）塞進 innerHTML 前先跳脫，避免 stored-XSS。 */
@@ -494,7 +505,7 @@
     setStatus('⏳ 驗證身分中…', false);
     api('whoami').then(applyResult).catch(function () { setStatus('⚠️ 連線失敗，請稍後再試', true); });
   }
-  function refresh() { api('whoami').then(applyResult).catch(function () { }); }
+  function refresh() { api('whoami', {}, true).then(applyResult).catch(function () { }); } // 背景自動更新：不顯示進度條
   // 手動重新整理：送 fresh→後端清班表/同工快取重讀試算表，保證拿到剛改完的最新資料（解決後台改完前端慢同步）
   function manualRefresh() {
     var btn = document.getElementById('rfsBtn');
@@ -710,6 +721,7 @@
         else if (act === 'surveyadmin') openSurveyAdmin();
         else if (act === 'newsadmin') openNewsAdmin();
         else if (act === 'grouprename') openGroupRename();
+        else if (act === 'adminconsole') location.href = 'sandbox-admin.html';
         else if (act === 'lvfix') doLeaveReplace(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvpick') openLeavePick(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvskipone') doLeaveSkipOne(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
@@ -1162,6 +1174,7 @@
         '<div class="hint-s">' + psLine + '</div>' +
         '<div class="hint-s" style="margin-top:6px;color:var(--mut)">未公告日期不會進公告表，也不會通知；確認公告後的異動才同步並通知。</div>' +
         '<button class="btn" style="margin-top:10px" data-act="publish"><i class="ti ti-table-share"></i> 公告服事表（測試）</button></div>';
+      h += '<button class="btn" data-act="adminconsole"><i class="ti ti-adjustments"></i> 管理後台（帳號・小組・事工團）</button>';
       h += '<button class="btn" data-act="newsadmin"><i class="ti ti-speakerphone"></i> 公告管理</button>';
       h += '<button class="btn" data-act="surveyadmin"><i class="ti ti-checklist"></i> 調查管理' + (res.survey ? '（進行中：' + esc(res.survey.name) + '）' : '') + '</button>';
       h += '<button class="btn" data-act="review"><i class="ti ti-shield-check"></i> 帳號審核' +
