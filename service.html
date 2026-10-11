@@ -331,7 +331,7 @@
     if (!fromNoti) {
       try {
         var cached = localStorage.getItem('svcWhoami');
-        if (cached) { applyResult(JSON.parse(cached), true); usedCache = true; }
+        if (cached) { var cc = JSON.parse(cached); if (cc.cachedAt && Date.now() - cc.cachedAt < 86400000 && cc.sessionTag === TOKEN.slice(-16)) { applyResult(cc, true); usedCache = true; } else { localStorage.removeItem('svcWhoami'); } }
       } catch (e) { }
     }
     if (!usedCache) setStatus(fromNoti ? '🔄 載入最新資料…' : '⏳ 自動登入中…', false);
@@ -461,8 +461,18 @@
     return fetch(SCRIPT_URL, {
       method: 'POST', redirect: 'follow',
       body: JSON.stringify({ action: action, idToken: ID_TOKEN, sessionToken: TOKEN, args: args || {} })
-    }).then(function (r) { return r.json(); })
-      .then(function (v) { h.end(); return v; }, function (e) { h.end(); throw e; });
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      h.end();
+      if (!res.ok && /^(SESSION_EXPIRED|ACCOUNT_DISABLED_OR_UNLISTED)$/.test(res.error || '')) {
+        TOKEN = null; ID_TOKEN = null; LAST_RES = null;
+        try { localStorage.removeItem('svcToken'); localStorage.removeItem('svcWhoami'); } catch (e) { }
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('tabbar').style.display = 'none';
+        document.getElementById('loginScreen').style.display = '';
+        setStatus('登入已失效或帳號已停用，請重新登入或聯絡管理員', true);
+      }
+      return res;
+    }, function (e) { h.end(); throw e; });
   }
 
   /* 使用者自填內容（姓名/備註等）塞進 innerHTML 前先跳脫，避免 stored-XSS。 */
@@ -578,9 +588,17 @@
       TOKEN = res.sessionToken;
       try { localStorage.setItem('svcToken', TOKEN); } catch (e) { }
     }
+    if (!fromCache && !res.matched) {
+      try { localStorage.removeItem('svcWhoami'); if (res.disabled) localStorage.removeItem('svcToken'); } catch (e) { }
+      if (res.disabled) TOKEN = null;
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('tabbar').style.display = 'none';
+      document.getElementById('loginScreen').style.display = '';
+    }
     if (!fromCache && res.matched) {
       try {
         var cc = {}; for (var ck in res) { if (ck !== 'sessionToken') cc[ck] = res[ck]; }
+        cc.cachedAt = Date.now(); cc.sessionTag = TOKEN ? TOKEN.slice(-16) : '';
         localStorage.setItem('svcWhoami', JSON.stringify(cc));
       } catch (e) { }
     }
