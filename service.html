@@ -227,6 +227,11 @@
     max-width: calc(100% - 32px); width: max-content; background: var(--tl-900); color: #fff; font-size: 15px; line-height: 1.5;
     padding: 10px 16px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.2); cursor: pointer; white-space: pre-line; }
   .toast.err { background: #8a1c1c; }
+  /* 浮窗讀取中：置中的轉圈＋文字（頂端細進度條在浮窗開著時被遮暗，不夠明顯） */
+  .ld { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 36px 8px 28px; color: var(--tl-600); font-size: 15px; font-weight: 700; text-align: center; }
+  .ld-spin { width: 36px; height: 36px; border: 4px solid var(--tl-50); border-top-color: var(--tl-600); border-radius: 50%; animation: ld-spin .8s linear infinite; }
+  @keyframes ld-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .ld-spin { animation-duration: 2.4s; } }
   .my-lv { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--bd); }
   .my-lv .d { font-weight: 700; min-width: 92px; }
   .my-lv .r { flex: 1; color: var(--mut); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -385,7 +390,7 @@
   var BOARD = { slots: [], br: '全部' };
   function openChurchBoard() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '載入全教會服事表…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('載入全教會服事表…');
     api('announcement', { weeks: 8 }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       BOARD = { slots: res.slots || [], br: '全部' };
@@ -427,7 +432,7 @@
     var b = p.querySelector('.pk-body');
     function render() { b.innerHTML = dayBoardHtml(date, (DAY_SLOTS || []).filter(function (s) { return s.date === date; })); }
     if (DAY_SLOTS) { render(); return; }
-    b.innerHTML = '載入 ' + esc(date) + ' 當天服事表…';
+    b.innerHTML = loadingHtml('載入 ' + date + ' 當天服事表…');
     api('announcement', { weeks: 8 }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       DAY_SLOTS = res.slots || [];
@@ -490,6 +495,9 @@
     el.style.display = 'block';
     clearTimeout(TOAST_T);
     TOAST_T = setTimeout(function () { el.style.display = 'none'; }, ok ? 3500 : 6000);
+  }
+  function loadingHtml(msg) {
+    return '<div class="ld" role="status"><span class="ld-spin" aria-hidden="true"></span>' + esc(msg) + '</div>';
   }
   /* 把技術錯誤（Failed to fetch、JSON 解析失敗）換成同工看得懂、知道下一步的話。 */
   function errText(e) {
@@ -1159,7 +1167,7 @@
     if (!to) return;
     if (!toName && !confirm('把 ' + e.date + '（' + e.weekday + '）' + cf.session + '・' + cf.role + ' 的 ' + e.name + ' 換成 ' + to + '？\n（會自動通知雙方）')) return;
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '檢查並補入中…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('檢查並補入中…');
     api('leaveReplace', { lid: e.lid, row: cf.row, col: cf.col, to: to }).then(function (res) {
       if (!res.ok) {
         b.innerHTML = '<div class="pk-h">⚠️ 無法補入</div><div class="hint-s">' + esc(res.error || '') + '</div>' +
@@ -1179,7 +1187,7 @@
     var e = LEAVE_LIST[ei], cf = e && e.conflicts[ci];
     if (!e || !cf) return;
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '找可代班的人…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('找可代班的人…');
     api('candidates', { row: cf.row, col: cf.col, forName: e.name }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       var h = '<div class="pk-h"><i class="ti ti-user-search"></i> 換別人：' + esc(e.date) + '（' + esc(e.weekday) + '）' + esc(cf.session) + '・' + esc(cf.role) +
@@ -1292,7 +1300,7 @@
     if (!zone) { toast('請選擇所屬區'); return; }
     if (!group) { toast('請填寫小組'); return; }
     var args = { name: name, zone: zone, group: group, note: document.getElementById('apNote').value.trim() };
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('送出中…');
     api('apply', args).then(function (res) {
       if (!res.ok) { toast('申請失敗：' + (res.error || '')); openApply(); return; }
       b.innerHTML = '<div class="pk-h">✅ 申請已送出</div>' +
@@ -1313,7 +1321,7 @@
           : '<div class="pk-btns"><button onclick="closePicker()">知道了</button></div>');
       return;
     }
-    b.innerHTML = '載入調查…';
+    b.innerHTML = loadingHtml('載入調查…');
     api('surveyState').then(function (res) {
       if (!res.ok || !res.open) { b.innerHTML = '⚠️ ' + esc(res.error || '目前沒有進行中的調查'); return; }
       renderSurveyForm(res);
@@ -1409,7 +1417,7 @@
     var missing = SV.teams.filter(function (t) { return SV.freq[t] === undefined || SV.freq[t] === ''; });
     if (missing.length) { toast('請先選擇頻率：' + missing.join('、')); return; }
     var badDates = Object.keys(SV.bad).filter(function (d) { return SV.bad[d]; });
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('送出中…');
     api('surveySubmit', { freq: SV.freq, badDates: badDates, pref: SV.pref }).then(function (res) {
       if (!res.ok) { toast('送出失敗：' + (res.error || '')); openSurvey(); return; }
       b.innerHTML = '<div class="pk-h">✅ 已送出</div>' +
@@ -1419,7 +1427,7 @@
   }
 
   function openSurveyStats() {
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '統計中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('統計中…');
     api('surveyStats').then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       var h = '<div class="pk-h"><i class="ti ti-clipboard-check"></i> ' + esc(res.name) + ' 填寫狀況</div>';
@@ -1481,7 +1489,7 @@
     api('surveyClose').then(function () { closePicker(); refresh(); });
   }
   function surveyImportPreview() {
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '產生預覽…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('產生預覽…');
     api('surveyImport', { apply: false }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       var h = '<div class="pk-h"><i class="ti ti-database-import"></i> 匯入預覽（' + Number(res.count || 0) + ' 人）</div>';
@@ -1496,7 +1504,7 @@
     }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
   function surveyImportApply() {
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '匯入中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('匯入中…');
     api('surveyImport', { apply: true }).then(function (res) {
       if (!res.ok) { toast('匯入失敗：' + (res.error || '')); return; }
       b.innerHTML = '<div class="pk-h">✅ 已匯入 ' + Number(res.applied || 0) + ' 人</div>' +
@@ -1602,7 +1610,7 @@
   /* ===== 小組改名 / 交棒（管理者） ===== */
   function openGroupRename() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '讀取小組清單…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('讀取小組清單…');
     api('groupsList').then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || '無法取得小組清單') + '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>'; return; }
       var opts = (res.groups || []).filter(function (g) { return g.enabled; }).map(function (g) {
@@ -1623,7 +1631,7 @@
     var leader = document.getElementById('grLeader').value.trim();
     if (!to && !leader) { toast('新組名、新小組長至少填一個'); return; }
     if (!confirm('確認要把「' + from + '」' + (to ? '改名為「' + to + '」' : '') + (leader ? (to ? '並' : '') + '交棒給「' + leader + '」' : '') + '？')) return;
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '更新中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('更新中…');
     api('groupRename', { from: from, to: to, newLeader: leader }).then(function (res) {
       if (!res.ok) { toast('更新失敗：' + (res.error || '')); openGroupRename(); return; }
       b.innerHTML = '<div class="pk-h">✅ 已完成</div>' +
@@ -1637,7 +1645,7 @@
   var FOPT = null, APPS = [];
   function openReview() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '讀取待審申請…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('讀取待審申請…');
     Promise.all([api('applications'), FOPT ? Promise.resolve({ ok: true }) : api('formOptions')]).then(function (rr) {
       var res = rr[0];
       if (rr[1] && rr[1].ok && rr[1].teams) FOPT = rr[1];
@@ -1743,7 +1751,7 @@
       teamRole: document.getElementById('apvTeamRole').value,
       skills: skillArr.join(',')
     };
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '核准設定中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('核准設定中…');
     api('review', args).then(function (res) {
       if (!res.ok) { toast('核准失敗：' + (res.error || '')); openReview(); return; }
       openReview();
@@ -1751,7 +1759,7 @@
   }
   function doReview(row, decision, name) {
     if (decision === 'reject' && !confirm('確定婉拒「' + name + '」的申請？')) return;
-    var b = document.querySelector('#picker .pk-body'); if (b) b.innerHTML = '處理中…';
+    var b = document.querySelector('#picker .pk-body'); if (b) b.innerHTML = loadingHtml('處理中…');
     api('review', { row: Number(row), decision: decision }).then(function (res) {
       if (!res.ok) { toast('處理失敗：' + (res.error || '')); }
       openReview();
@@ -1812,7 +1820,7 @@
     var whoEl = document.getElementById('lvWho');
     var forName = whoEl ? whoEl.value : '';
     var pre = { iso: iso, reason: reason, helper: helper, forName: forName };
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('送出中…');
     api('leave', { dates: mds, reason: reason, helper: helper, forName: forName }).then(function (res) {
       if (!res.ok) { toast('請假失敗：' + (res.error || '')); openLeave(pre); return; }
       if (res.duplicate) {
@@ -1976,7 +1984,7 @@
   }
   function openNewsAdmin() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '載入公告…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('載入公告…');
     api('newsList').then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       NEWS_ADMIN = res.list || [];
@@ -2026,7 +2034,7 @@
   var ANN = { slots: [], br: '全部' };
   function openAnnouncement() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '產生公告中…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('產生公告中…');
     api('announcement', { weeks: 8 }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       ANN = { slots: res.slots || [], br: '全部' };
