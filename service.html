@@ -222,6 +222,20 @@
   .hint-s { color: var(--mut); font-size: 13px; line-height: 1.6; }
   .ses-t { color: var(--tl-600); font-weight: 600; font-size: 0.92em; }
   .lv-done { text-align: left; }
+  /* 固定 toast：錯誤與成功訊息都出現在同一個位置（取代瀏覽器原生 alert） */
+  .toast { position: fixed; left: 50%; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 10000;
+    max-width: calc(100% - 32px); width: max-content; background: var(--tl-900); color: #fff; font-size: 15px; line-height: 1.5;
+    padding: 10px 16px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.2); cursor: pointer; white-space: pre-line; }
+  .toast.err { background: #8a1c1c; }
+  /* 浮窗讀取中：置中的轉圈＋文字（頂端細進度條在浮窗開著時被遮暗，不夠明顯） */
+  .ld { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 36px 8px 28px; color: var(--tl-600); font-size: 15px; font-weight: 700; text-align: center; }
+  .ld-spin { width: 36px; height: 36px; border: 4px solid var(--tl-50); border-top-color: var(--tl-600); border-radius: 50%; animation: ld-spin .8s linear infinite; }
+  @keyframes ld-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .ld-spin { animation-duration: 2.4s; } }
+  .my-lv { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--bd); }
+  .my-lv .d { font-weight: 700; min-width: 92px; }
+  .my-lv .r { flex: 1; color: var(--mut); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .my-lv button { min-height: 44px; padding: 0 14px; border: 1px solid #d0d7de; background: #fff; color: #555; border-radius: 10px; font-size: 14px; cursor: pointer; }
   .lv-row { display: flex; gap: 10px; align-items: baseline; padding: 5px 0; font-size: 14px; line-height: 1.6; }
   .lv-row .lv-k { flex: 0 0 40px; color: var(--mut); font-weight: 700; }
   .lv-row .lv-v { flex: 1; color: var(--tl-800); }
@@ -376,12 +390,12 @@
   var BOARD = { slots: [], br: '全部' };
   function openChurchBoard() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '載入全教會服事表…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('載入全教會服事表…');
     api('announcement', { weeks: 8 }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       BOARD = { slots: res.slots || [], br: '全部' };
       renderBoard();
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
   function slotBranches(slots) {
     var brs = []; slots.forEach(function (s) { var x = s.branch || DEFAULT_BRANCH; if (brs.indexOf(x) === -1) brs.push(x); });
@@ -418,12 +432,12 @@
     var b = p.querySelector('.pk-body');
     function render() { b.innerHTML = dayBoardHtml(date, (DAY_SLOTS || []).filter(function (s) { return s.date === date; })); }
     if (DAY_SLOTS) { render(); return; }
-    b.innerHTML = '載入 ' + esc(date) + ' 當天服事表…';
+    b.innerHTML = loadingHtml('載入 ' + date + ' 當天服事表…');
     api('announcement', { weeks: 8 }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       DAY_SLOTS = res.slots || [];
       render();
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
   function dayBoardHtml(date, slots) {
     var close = '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>';
@@ -452,7 +466,7 @@
 
   // 背景動作不顯示進度（自動更新、已讀、推播訂閱、登出）；會改資料的動作鎖住按下的按鈕
   var API_QUIET = { notiSeen: 1, savePushSub: 1, logout: 1 };
-  var API_WRITE = { assign: 1, unassign: 1, leave: 1, leaveReplace: 1, leaveSkip: 1, apply: 1, review: 1, newsPost: 1, newsUpdate: 1,
+  var API_WRITE = { assign: 1, unassign: 1, leave: 1, leaveCancel: 1, leaveReplace: 1, leaveSkip: 1, apply: 1, review: 1, newsPost: 1, newsUpdate: 1,
     publish: 1, groupRename: 1, surveySubmit: 1, surveyOpen: 1, surveyClose: 1, surveyImport: 1, deleteNoti: 1, clearNoti: 1 };
   function api(action, args, quiet) {
     var h = (!quiet && !API_QUIET[action] && window.ChurchProgress)
@@ -463,6 +477,34 @@
       body: JSON.stringify({ action: action, idToken: ID_TOKEN, sessionToken: TOKEN, args: args || {} })
     }).then(function (r) { return r.json(); })
       .then(function (v) { h.end(); return v; }, function (e) { h.end(); throw e; });
+  }
+
+  /* 固定位置提示：預設是錯誤樣式（大多數提示是錯誤／漏填），成功訊息傳 'ok'。點一下可關。 */
+  var TOAST_T = null;
+  function toast(msg, kind) {
+    var el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'toast';
+      el.addEventListener('click', function () { el.style.display = 'none'; });
+      document.body.appendChild(el);
+    }
+    var ok = kind === 'ok';
+    el.className = 'toast' + (ok ? '' : ' err');
+    el.setAttribute('role', ok ? 'status' : 'alert');
+    el.textContent = String(msg == null ? '' : msg);
+    el.style.display = 'block';
+    clearTimeout(TOAST_T);
+    TOAST_T = setTimeout(function () { el.style.display = 'none'; }, ok ? 3500 : 6000);
+  }
+  function loadingHtml(msg) {
+    return '<div class="ld" role="status"><span class="ld-spin" aria-hidden="true"></span>' + esc(msg) + '</div>';
+  }
+  /* 把技術錯誤（Failed to fetch、JSON 解析失敗）換成同工看得懂、知道下一步的話。 */
+  function errText(e) {
+    var m = String((e && e.message) || e || '');
+    if (navigator.onLine === false || /Failed to fetch|NetworkError|Load failed|network/i.test(m)) return '網路好像斷了，請確認連線後再試一次';
+    if (/JSON|Unexpected token|SyntaxError/i.test(m)) return '伺服器暫時沒有回應，請稍後再試一次';
+    return m || '發生未知的問題，請稍後再試一次';
   }
 
   /* 使用者自填內容（姓名/備註等）塞進 innerHTML 前先跳脫，避免 stored-XSS。 */
@@ -481,7 +523,7 @@
   }
   function openSafeExternal(raw) {
     var href = safeExternalUrl(raw);
-    if (!href) { alert('這個連結格式不安全，已停止開啟。'); return false; }
+    if (!href) { toast('這個連結格式不安全，已停止開啟。'); return false; }
     var opened = window.open(href, '_blank', 'noopener');
     if (opened) opened.opener = null;
     return true;
@@ -529,7 +571,8 @@
     if (btn) { btn.classList.add('spin'); btn.disabled = true; }
     api('whoami', { fresh: true }).then(function (res) {
       if (res.ok) applyResult(res);
-    }).catch(function () { }).then(function () {
+      else toast('更新失敗：' + (res.error || '請稍後再試一次'));
+    }).catch(function (e) { toast('更新失敗：' + errText(e)); }).then(function () {
       if (btn) { btn.classList.remove('spin'); btn.disabled = false; }
     });
   }
@@ -709,7 +752,7 @@
     LAST_RES.notifications = list.filter(function (n) { return n.nid !== nid; }); // 樂觀移除
     renderTab();
     api('deleteNoti', { nid: nid }).catch(function (e) {
-      alert('刪除失敗：' + (e && e.message ? e.message : e));
+      toast('刪除失敗：' + errText(e));
       refresh(); // 還原成伺服器最新狀態
     });
   }
@@ -719,7 +762,7 @@
     LAST_RES.notifications = [];
     renderTab();
     api('clearNoti').catch(function (e) {
-      alert('清除失敗：' + (e && e.message ? e.message : e));
+      toast('清除失敗：' + errText(e));
       refresh();
     });
   }
@@ -744,6 +787,7 @@
         else if (act === 'lvskipone') doLeaveSkipOne(Number(el.getAttribute('data-e')), Number(el.getAttribute('data-c')));
         else if (act === 'lvreopen') doLeaveReopen(Number(el.getAttribute('data-e')));
         else if (act === 'lvtoggle') { LV_OPEN = !LV_OPEN; renderTab(); }
+        else if (act === 'lvcancel') cancelLeave(Number(el.getAttribute('data-lid')), el.getAttribute('data-d'));
         else if (act === 'syncboard') openSyncBoard();
         else if (act === 'logout') logout();
         else if (act === 'sheet') openSafeExternal(LAST_RES.scheduleUrl);
@@ -886,6 +930,16 @@
     var list = res.services || [];
     var h = heroHtml(list);
     h += '<div class="qa"><button data-act="leave"><i class="ti ti-calendar-off"></i> 我要請假</button><button data-act="open" data-href="' + CHURCH_SHEET_URL + '" data-name="全教會服事表"><i class="ti ti-calendar"></i> 全教會服事表</button></div>';
+    var myLv = res.myLeaves || [];
+    if (myLv.length) {
+      h += '<div class="sec"><div class="sec-h">我的請假</div>';
+      myLv.forEach(function (lv) {
+        h += '<div class="my-lv"><span class="d">' + esc(lv.date) + '（' + esc(lv.weekday) + '）</span>' +
+          '<span class="r">' + esc(lv.reason || '') + '</span>' +
+          '<button data-act="lvcancel" data-lid="' + Number(lv.lid) + '" data-d="' + esc(lv.date + '（' + lv.weekday + '）') + '">撤回</button></div>';
+      });
+      h += '</div>';
+    }
     if (list.length) {
       var byDate = {}, order = [];
       list.forEach(function (sv) {
@@ -1094,17 +1148,17 @@
     if (!confirm(e.date + '（' + e.weekday + '）' + cf.session + '・' + cf.role + '　' + e.name +
       ' 這一堂不用補？\n（會把 ' + e.name + ' 從服事表這個崗位清掉，樂團改「無」、其他崗位移除名字）')) return;
     api('leaveSkip', { lid: e.lid, session: cf.session, row: cf.row, col: cf.col }).then(function (res) {
-      if (!res.ok) { alert('失敗：' + (res.error || '')); return; }
+      if (!res.ok) { toast('失敗：' + (res.error || '')); return; }
       manualRefresh();
-    }).catch(function (err) { alert('連線失敗：' + err); });
+    }).catch(function (err) { toast(errText(err)); });
   }
   function doLeaveReopen(ei) {
     var e = LEAVE_LIST[ei];
     if (!e) return;
     api('leaveSkip', { lid: e.lid, reopen: true }).then(function (res) {
-      if (!res.ok) { alert('失敗：' + (res.error || '')); return; }
+      if (!res.ok) { toast('失敗：' + (res.error || '')); return; }
       manualRefresh();
-    }).catch(function (err) { alert('連線失敗：' + err); });
+    }).catch(function (err) { toast(errText(err)); });
   }
   function doLeaveReplace(ei, ci, toName) {
     var e = LEAVE_LIST[ei], cf = e && e.conflicts[ci];
@@ -1113,7 +1167,7 @@
     if (!to) return;
     if (!toName && !confirm('把 ' + e.date + '（' + e.weekday + '）' + cf.session + '・' + cf.role + ' 的 ' + e.name + ' 換成 ' + to + '？\n（會自動通知雙方）')) return;
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '檢查並補入中…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('檢查並補入中…');
     api('leaveReplace', { lid: e.lid, row: cf.row, col: cf.col, to: to }).then(function (res) {
       if (!res.ok) {
         b.innerHTML = '<div class="pk-h">⚠️ 無法補入</div><div class="hint-s">' + esc(res.error || '') + '</div>' +
@@ -1127,13 +1181,13 @@
         '<div class="hint-s">' + esc(res.date) + '（' + esc(res.weekday) + '）' + esc(res.session) + '・' + esc(res.role) + '：' +
         esc(res.from) + ' → <b>' + esc(res.to) + '</b><br>已通知 ' + esc(res.to) + '（新增服事）與 ' + esc(res.from) + '（代班已安排）。' + remainTxt + '</div>' +
         '<div class="pk-btns"><button onclick="closePicker();manualRefresh()">完成</button></div>';
-    }).catch(function (err) { b.innerHTML = '⚠️ 連線失敗：' + esc(err); });
+    }).catch(function (err) { b.innerHTML = '⚠️ ' + esc(errText(err)); });
   }
   function openLeavePick(ei, ci) {
     var e = LEAVE_LIST[ei], cf = e && e.conflicts[ci];
     if (!e || !cf) return;
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '找可代班的人…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('找可代班的人…');
     api('candidates', { row: cf.row, col: cf.col, forName: e.name }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       var h = '<div class="pk-h"><i class="ti ti-user-search"></i> 換別人：' + esc(e.date) + '（' + esc(e.weekday) + '）' + esc(cf.session) + '・' + esc(cf.role) +
@@ -1156,7 +1210,7 @@
       b.querySelectorAll('span[data-nm]').forEach(function (el) {
         el.addEventListener('click', function () { doLeaveReplace(ei, ci, el.getAttribute('data-nm')); });
       });
-    }).catch(function (err) { b.innerHTML = '⚠️ 連線失敗：' + esc(err); });
+    }).catch(function (err) { b.innerHTML = '⚠️ ' + esc(errText(err)); });
   }
 
   function renderMe(res) {
@@ -1242,17 +1296,17 @@
     var name = document.getElementById('apName').value.trim();
     var zone = document.getElementById('apZone').value.trim();
     var group = document.getElementById('apGroup').value.trim();
-    if (!name) { alert('請填寫姓名（全名）'); return; }
-    if (!zone) { alert('請選擇所屬區'); return; }
-    if (!group) { alert('請填寫小組'); return; }
+    if (!name) { toast('請填寫姓名（全名）'); return; }
+    if (!zone) { toast('請選擇所屬區'); return; }
+    if (!group) { toast('請填寫小組'); return; }
     var args = { name: name, zone: zone, group: group, note: document.getElementById('apNote').value.trim() };
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('送出中…');
     api('apply', args).then(function (res) {
-      if (!res.ok) { alert('申請失敗：' + (res.error || '')); openApply(); return; }
+      if (!res.ok) { toast('申請失敗：' + (res.error || '')); openApply(); return; }
       b.innerHTML = '<div class="pk-h">✅ 申請已送出</div>' +
         '<div class="hint-s">核准後重新登入即可使用，請耐心等候。</div>' +
         '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
-    }).catch(function (e) { alert('連線失敗：' + e); });
+    }).catch(function (e) { toast(errText(e)); });
   }
 
   var SV = null; // 調查填寫狀態
@@ -1267,11 +1321,11 @@
           : '<div class="pk-btns"><button onclick="closePicker()">知道了</button></div>');
       return;
     }
-    b.innerHTML = '載入調查…';
+    b.innerHTML = loadingHtml('載入調查…');
     api('surveyState').then(function (res) {
       if (!res.ok || !res.open) { b.innerHTML = '⚠️ ' + esc(res.error || '目前沒有進行中的調查'); return; }
       renderSurveyForm(res);
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
 
   function svWeekendDates(startStr, endStr) {
@@ -1361,19 +1415,19 @@
 
   function submitSurvey() {
     var missing = SV.teams.filter(function (t) { return SV.freq[t] === undefined || SV.freq[t] === ''; });
-    if (missing.length) { alert('請先選擇頻率：' + missing.join('、')); return; }
+    if (missing.length) { toast('請先選擇頻率：' + missing.join('、')); return; }
     var badDates = Object.keys(SV.bad).filter(function (d) { return SV.bad[d]; });
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('送出中…');
     api('surveySubmit', { freq: SV.freq, badDates: badDates, pref: SV.pref }).then(function (res) {
-      if (!res.ok) { alert('送出失敗：' + (res.error || '')); openSurvey(); return; }
+      if (!res.ok) { toast('送出失敗：' + (res.error || '')); openSurvey(); return; }
       b.innerHTML = '<div class="pk-h">✅ 已送出</div>' +
         '<div class="hint-s">感謝填寫！截止前都可以回來修改。</div>' +
         '<div class="pk-btns"><button onclick="closePicker()">完成</button></div>';
-    }).catch(function (e) { alert('連線失敗：' + e); });
+    }).catch(function (e) { toast(errText(e)); });
   }
 
   function openSurveyStats() {
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '統計中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('統計中…');
     api('surveyStats').then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       var h = '<div class="pk-h"><i class="ti ti-clipboard-check"></i> ' + esc(res.name) + ' 填寫狀況</div>';
@@ -1391,7 +1445,7 @@
         h += '<div class="pk-btns"><button onclick="openSurvey()">返回</button></div>';
       }
       b.innerHTML = h;
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
 
   function openSurveyAdmin() {
@@ -1422,20 +1476,20 @@
       end: document.getElementById('svEnd').value,
       deadline: document.getElementById('svDl').value
     };
-    if (!args.name || !args.start || !args.end) { alert('請填名稱與季度起訖'); return; }
+    if (!args.name || !args.start || !args.end) { toast('請填名稱與季度起訖'); return; }
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = '開啟並通知全體中…（約需十幾秒）';
     api('surveyOpen', args).then(function (res) {
-      if (!res.ok) { alert('開啟失敗：' + (res.error || '')); return; }
+      if (!res.ok) { toast('開啟失敗：' + (res.error || '')); return; }
       b.innerHTML = '<div class="pk-h">✅ 調查已開啟</div><div class="hint-s">已通知 ' + Number(res.notified || 0) + ' 位同工。</div>' +
         '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
-    }).catch(function (e) { alert('連線失敗：' + e); });
+    }).catch(function (e) { toast(errText(e)); });
   }
   function surveyCloseConfirm() {
     if (!confirm('確定結束調查？結束後大家就不能再填寫。')) return;
     api('surveyClose').then(function () { closePicker(); refresh(); });
   }
   function surveyImportPreview() {
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '產生預覽…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('產生預覽…');
     api('surveyImport', { apply: false }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       var h = '<div class="pk-h"><i class="ti ti-database-import"></i> 匯入預覽（' + Number(res.count || 0) + ' 人）</div>';
@@ -1447,16 +1501,16 @@
       if (res.misses && res.misses.length) h += '<div class="hint-s" style="color:var(--red)">同工資料庫找不到：' + esc(res.misses.join('、')) + '（這些人要手動處理）</div>';
       h += '<div class="pk-btns"><button onclick="surveyImportApply()">確認匯入 ' + Number(res.count || 0) + ' 人</button><button onclick="openSurveyAdmin()">返回</button></div>';
       b.innerHTML = h;
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
   function surveyImportApply() {
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '匯入中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('匯入中…');
     api('surveyImport', { apply: true }).then(function (res) {
-      if (!res.ok) { alert('匯入失敗：' + (res.error || '')); return; }
+      if (!res.ok) { toast('匯入失敗：' + (res.error || '')); return; }
       b.innerHTML = '<div class="pk-h">✅ 已匯入 ' + Number(res.applied || 0) + ' 人</div>' +
         '<div class="hint-s">同工資料庫的頻率與不行日期已更新，自動排班會直接採用。</div>' +
         '<div class="pk-btns"><button onclick="closePicker()">完成</button></div>';
-    }).catch(function (e) { alert('連線失敗：' + e); });
+    }).catch(function (e) { toast(errText(e)); });
   }
 
   /* ===== 公告服事表：補日期欄＋同步＋發布水位 ===== */
@@ -1507,7 +1561,7 @@
   function previewPublish() {
     var branch = document.getElementById('pubBranch').value;
     var date = document.getElementById('pubDate').value;
-    if (!date) { alert('目前沒有可公告的週次'); return; }
+    if (!date) { toast('目前沒有可公告的週次'); return; }
     PUBLISH_DRAFT = { branch: branch, date: date };
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = '產生預覽中…（不會寫入）';
     api('publish', { branch: branch, date: date, apply: false }).then(function (res) {
@@ -1534,7 +1588,7 @@
         (isBackfill ? '這次只補同步目前已公告範圍，不改公告水位，也不補發通知。' : '確認後才會寫入公告服事表；完成前不會更新公告水位。') + '</div>' +
         '<div class="pk-btns"><button onclick="confirmPublish()">' + (isBackfill ? '確認補同步（不發通知）' : '確認公告') + '</button><button onclick="openPublish()">返回修改</button></div>';
       b.innerHTML = h;
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
 
   function confirmPublish() {
@@ -1550,13 +1604,13 @@
         '<button onclick="closePicker();refresh()">完成</button></div>';
       var boardBtn = document.getElementById('pubBoardLink');
       if (boardBtn) boardBtn.addEventListener('click', function () { openSafeExternal(res.boardUrl); });
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
 
   /* ===== 小組改名 / 交棒（管理者） ===== */
   function openGroupRename() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '讀取小組清單…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('讀取小組清單…');
     api('groupsList').then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || '無法取得小組清單') + '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>'; return; }
       var opts = (res.groups || []).filter(function (g) { return g.enabled; }).map(function (g) {
@@ -1569,29 +1623,29 @@
         '<label>新組名（不改就留空）<input type="text" id="grTo" placeholder="例：新名A"></label>' +
         '<label>新小組長（不換就留空）<input type="text" id="grLeader" placeholder="填姓名，例：王小明"></label></div>' +
         '<div class="pk-btns"><button onclick="submitGroupRename()">確認</button><button onclick="closePicker()">取消</button></div>';
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e) + '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>'; });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)) + '<div class="pk-btns"><button onclick="closePicker()">關閉</button></div>'; });
   }
   function submitGroupRename() {
     var from = document.getElementById('grFrom').value;
     var to = document.getElementById('grTo').value.trim();
     var leader = document.getElementById('grLeader').value.trim();
-    if (!to && !leader) { alert('新組名、新小組長至少填一個'); return; }
+    if (!to && !leader) { toast('新組名、新小組長至少填一個'); return; }
     if (!confirm('確認要把「' + from + '」' + (to ? '改名為「' + to + '」' : '') + (leader ? (to ? '並' : '') + '交棒給「' + leader + '」' : '') + '？')) return;
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '更新中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('更新中…');
     api('groupRename', { from: from, to: to, newLeader: leader }).then(function (res) {
-      if (!res.ok) { alert('更新失敗：' + (res.error || '')); openGroupRename(); return; }
+      if (!res.ok) { toast('更新失敗：' + (res.error || '')); openGroupRename(); return; }
       b.innerHTML = '<div class="pk-h">✅ 已完成</div>' +
         '<div class="hint-s">「' + esc(res.from) + '」→「' + esc(res.to) + '」，小組長：' + esc(res.newLeader) +
         '，已同步更新 ' + Number(res.membersUpdated || 0) + ' 位組員的白名單小組欄。</div>' +
         '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
-    }).catch(function (e) { alert('連線失敗：' + e); });
+    }).catch(function (e) { toast(errText(e)); });
   }
 
   /* ===== 審核 ===== */
   var FOPT = null, APPS = [];
   function openReview() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '讀取待審申請…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('讀取待審申請…');
     Promise.all([api('applications'), FOPT ? Promise.resolve({ ok: true }) : api('formOptions')]).then(function (rr) {
       var res = rr[0];
       if (rr[1] && rr[1].ok && rr[1].teams) FOPT = rr[1];
@@ -1615,7 +1669,7 @@
       b.querySelectorAll('.rv-no').forEach(function (btn) {
         btn.addEventListener('click', function () { doReview(btn.getAttribute('data-row'), 'reject', btn.getAttribute('data-name')); });
       });
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
 
   function openApproveForm(row) {
@@ -1697,23 +1751,24 @@
       teamRole: document.getElementById('apvTeamRole').value,
       skills: skillArr.join(',')
     };
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '核准設定中…';
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('核准設定中…');
     api('review', args).then(function (res) {
-      if (!res.ok) { alert('核准失敗：' + (res.error || '')); openReview(); return; }
+      if (!res.ok) { toast('核准失敗：' + (res.error || '')); openReview(); return; }
       openReview();
-    }).catch(function (e) { alert('連線失敗：' + e); });
+    }).catch(function (e) { toast(errText(e)); });
   }
   function doReview(row, decision, name) {
     if (decision === 'reject' && !confirm('確定婉拒「' + name + '」的申請？')) return;
-    var b = document.querySelector('#picker .pk-body'); if (b) b.innerHTML = '處理中…';
+    var b = document.querySelector('#picker .pk-body'); if (b) b.innerHTML = loadingHtml('處理中…');
     api('review', { row: Number(row), decision: decision }).then(function (res) {
-      if (!res.ok) { alert('處理失敗：' + (res.error || '')); }
+      if (!res.ok) { toast('處理失敗：' + (res.error || '')); }
       openReview();
-    }).catch(function (e) { alert('連線失敗：' + e); });
+    }).catch(function (e) { toast(errText(e)); });
   }
 
   /* ===== 請假 ===== */
-  function openLeave() {
+  function openLeave(pre) {
+    pre = pre || null;
     var p = document.getElementById('picker'); p.style.display = 'flex';
     var whoSel = '';
     var res = LAST_RES;
@@ -1726,35 +1781,55 @@
     }
     p.querySelector('.pk-body').innerHTML =
       '<div class="pk-h"><i class="ti ti-calendar-off"></i> 我要請假</div>' +
-      '<div class="lv-form">' + whoSel + '<div id="lvDates"><label>日期 <input type="date" class="lvDate"></label></div>' +
+      '<div class="lv-form">' + whoSel + '<div id="lvDates"></div>' +
       '<button type="button" class="add-day" onclick="addLeaveDate()">＋ 再加一天</button>' +
       '<label>原因（選填）<input type="text" id="lvReason" placeholder="如：出差、家庭因素"></label>' +
       '<label>建議代班人（選填，最終由主責決定）<input type="text" id="lvHelper" placeholder="如：已請 XXX 幫忙帶班"></label></div>' +
       '<div class="pk-btns"><button onclick="submitLeave()">送出</button><button onclick="closePicker()">取消</button></div>';
+    var isoDates = (pre && pre.iso && pre.iso.length) ? pre.iso : [''];
+    isoDates.forEach(function (v) { addLeaveDate(v); });
+    if (pre) {
+      document.getElementById('lvReason').value = pre.reason || '';
+      document.getElementById('lvHelper').value = pre.helper || '';
+      var who = document.getElementById('lvWho'); if (who) who.value = pre.forName || '';
+    }
   }
-  function addLeaveDate() {
+  function todayIso() {
+    var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  function addLeaveDate(val) {
     var wrap = document.getElementById('lvDates');
     var label = document.createElement('label');
-    label.innerHTML = '日期 <input type="date" class="lvDate">';
+    label.innerHTML = '日期 <input type="date" class="lvDate" min="' + todayIso() + '">';
+    if (typeof val === 'string' && val) label.querySelector('input').value = val;
     wrap.appendChild(label);
   }
   function submitLeave() {
-    var mds = [];
+    var mds = [], iso = [];
     document.querySelectorAll('#picker .lvDate').forEach(function (inp) {
       if (!inp.value) return;
+      if (iso.indexOf(inp.value) === -1) iso.push(inp.value);
       var d = new Date(inp.value);
       var md = (d.getMonth() + 1) + '/' + d.getDate();
       if (mds.indexOf(md) === -1) mds.push(md);
     });
-    if (!mds.length) { alert('請先選日期'); return; }
+    if (!mds.length) { toast('請先選日期'); return; }
     var reason = document.getElementById('lvReason').value;
     var helperEl = document.getElementById('lvHelper');
     var helper = helperEl ? helperEl.value : '';
     var whoEl = document.getElementById('lvWho');
     var forName = whoEl ? whoEl.value : '';
-    var b = document.querySelector('#picker .pk-body'); b.innerHTML = '送出中…';
+    var pre = { iso: iso, reason: reason, helper: helper, forName: forName };
+    var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('送出中…');
     api('leave', { dates: mds, reason: reason, helper: helper, forName: forName }).then(function (res) {
-      if (!res.ok) { alert('請假失敗：' + (res.error || '')); openLeave(); return; }
+      if (!res.ok) { toast('請假失敗：' + (res.error || '')); openLeave(pre); return; }
+      if (res.duplicate) {
+        b.innerHTML = '<div class="pk-h"><i class="ti ti-calendar-check"></i> 之前已經登記過了</div>' +
+          '<div class="hint-s">' + esc((res.already || mds).join('、')) + ' 已經是請假狀態，不用再送一次。</div>' +
+          '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
+        return;
+      }
+      mds = res.dates && res.dates.length ? res.dates : mds;
       var hint = res.proxy
         ? '已幫「' + esc(res.target) + '」登記，系統會通知本人，排班時會自動避開。'
         : '排班時會自動避開你，系統已通知你的小組長。';
@@ -1767,9 +1842,25 @@
         '<div class="lv-done">' +
         '<div class="lv-row"><span class="lv-k">日期</span><span class="lv-v">' + mds.join('、') + '</span></div>' +
         '<div class="lv-row"><span class="lv-k">說明</span><span class="lv-v">' + hint + '</span></div>' +
-        conf + '</div>' +
+        conf +
+        (res.already && res.already.length ? '<div class="hint-s">' + esc(res.already.join('、')) + ' 之前已登記過，這次沒有重複送出。</div>' : '') +
+        '<div class="hint-s">之後要撤回，可以到「服事」頁的「我的請假」。</div>' +
+        '</div>' +
         '<div class="pk-btns"><button onclick="closePicker();refresh()">完成</button></div>';
-    }).catch(function (e) { alert('連線失敗：' + e); });
+    }).catch(function (e) {
+      // 斷線時不知道伺服器有沒有收到：表單內容原樣放回，後端會略過已登記的日期，所以可以放心再送
+      openLeave(pre);
+      toast(errText(e) + '\n不確定剛剛有沒有送出，直接再按一次「送出」即可，已登記的日期不會重複。');
+    });
+  }
+  function cancelLeave(lid, label) {
+    if (!lid) return;
+    if (!confirm('撤回 ' + label + ' 的請假？\n撤回後排班就不會再避開這天；已經安排好的代班不會改回來。')) return;
+    api('leaveCancel', { lid: lid }).then(function (res) {
+      if (!res.ok) { toast('撤回失敗：' + (res.error || '')); manualRefresh(); return; }
+      toast('已撤回 ' + label + ' 的請假', 'ok');
+      manualRefresh();
+    }).catch(function (e) { toast('撤回失敗：' + errText(e)); });
   }
 
   /* ===== 公告欄（最新消息） ===== */
@@ -1880,20 +1971,20 @@
       isPublic: document.getElementById('nwPub').checked,
       notify: document.getElementById('nwNotify').checked
     };
-    if (!args.title) { alert('請填寫公告標題'); return; }
+    if (!args.title) { toast('請填寫公告標題'); return; }
     if (nid) args.nid = nid;
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = nid ? '儲存中…' : '發布中…';
     api(nid ? 'newsUpdate' : 'newsPost', args).then(function (res) {
-      if (!res.ok) { alert((nid ? '儲存' : '發布') + '失敗：' + (res.error || '')); openNewsPost(args, nid); return; } // 保留已填內容
+      if (!res.ok) { toast((nid ? '儲存' : '發布') + '失敗：' + (res.error || '')); openNewsPost(args, nid); return; } // 保留已填內容
       b.innerHTML = '<div class="pk-h">✅ ' + (nid ? '公告已更新' : '公告已發布') + '</div>' +
         '<div class="hint-s">' + (res.notified ? '已通知 ' + Number(res.notified || 0) + ' 位同工（通知中心＋手機推播）。' : '已更新首頁公告欄。') + '</div>' +
         '<div class="pk-btns">' + (nid ? '<button onclick="openNewsAdmin()">返回列表</button>' : '') +
         '<button onclick="closePicker();manualRefresh()">完成</button></div>';
-    }).catch(function (e) { alert('連線失敗：' + e); openNewsPost(args, nid); });
+    }).catch(function (e) { toast(errText(e)); openNewsPost(args, nid); });
   }
   function openNewsAdmin() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '載入公告…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('載入公告…');
     api('newsList').then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       NEWS_ADMIN = res.list || [];
@@ -1927,28 +2018,28 @@
       h += '<div class="hint-s" style="margin-top:10px">沒填下架日的公告 30 天後自動下架；下架／過期超過 60 天會自動搬到「公告欄_歸檔」分頁。</div>';
       h += '<div class="pk-btns"><button onclick="closePicker();manualRefresh()">關閉</button></div>';
       b.innerHTML = h;
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
   function editNews(i) { var n = NEWS_ADMIN[i]; if (n) openNewsPost(n, n.nid); }
   function toggleNews(i) {
     var n = NEWS_ADMIN[i]; if (!n) return;
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = n.enabled ? '下架中…' : '重新上架中…';
     api('newsUpdate', { nid: n.nid, enabled: !n.enabled }).then(function (res) {
-      if (!res.ok) alert('操作失敗：' + (res.error || ''));
+      if (!res.ok) toast('操作失敗：' + (res.error || ''));
       openNewsAdmin();
-    }).catch(function (e) { alert('連線失敗：' + e); openNewsAdmin(); });
+    }).catch(function (e) { toast(errText(e)); openNewsAdmin(); });
   }
 
   /* ===== 公告 ===== */
   var ANN = { slots: [], br: '全部' };
   function openAnnouncement() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
-    var b = p.querySelector('.pk-body'); b.innerHTML = '產生公告中…';
+    var b = p.querySelector('.pk-body'); b.innerHTML = loadingHtml('產生公告中…');
     api('announcement', { weeks: 8 }).then(function (res) {
       if (!res.ok) { b.innerHTML = '⚠️ ' + esc(res.error || ''); return; }
       ANN = { slots: res.slots || [], br: '全部' };
       renderAnnounce();
-    }).catch(function (e) { b.innerHTML = '⚠️ 連線失敗：' + esc(e); });
+    }).catch(function (e) { b.innerHTML = '⚠️ ' + esc(errText(e)); });
   }
   function renderAnnounce() {
     var b = document.querySelector('#picker .pk-body');
@@ -1988,7 +2079,7 @@
   function closePicker() { document.getElementById('picker').style.display = 'none'; }
   function openEmbed(url, title) {
     var href = safeExternalUrl(url);
-    if (!href) { alert('這個連結格式不安全，已停止開啟。'); return; }
+    if (!href) { toast('這個連結格式不安全，已停止開啟。'); return; }
     document.getElementById('embedTitle').textContent = title || '';
     document.getElementById('embedExt').href = href;
     document.getElementById('embedFrame').src = href;
@@ -2051,11 +2142,11 @@
   function enablePush() {
     var btn = document.getElementById('pushBtn');
     if (!SERVICE_CONFIG.webPushEnabled || !VAPID_PUBLIC) {
-      alert('這個部署尚未啟用手機推播，請洽教會平台管理者。');
+      toast('這個部署尚未啟用手機推播，請洽教會平台管理者。');
       return;
     }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert('這個環境不支援推播。iPhone 請先用 Safari「加入主畫面」，再從主畫面圖示打開。');
+      toast('這個環境不支援推播。iPhone 請先用 Safari「加入主畫面」，再從主畫面圖示打開。');
       return;
     }
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-bell"></i> 設定中…'; }
@@ -2070,11 +2161,11 @@
       .then(function (res) {
         if (!res.ok) throw new Error(res.error || '儲存失敗');
         if (btn) { btn.innerHTML = '<i class="ti ti-bell-ringing"></i> 通知已開啟'; }
-        alert('✅ 手機通知已開啟！排班異動、請假等會直接推到這支手機。');
+        toast('✅ 手機通知已開啟！排班異動、請假等會直接推到這支手機。', 'ok');
       })
       .catch(function (e) {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-bell"></i> 開啟手機通知'; }
-        alert('開啟失敗：' + (e && e.message ? e.message : e));
+        toast('開啟失敗：' + errText(e));
       });
   }
 </script>
