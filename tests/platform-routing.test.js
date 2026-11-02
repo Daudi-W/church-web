@@ -5,7 +5,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..');
-const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
+const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8').replace(/\r\n/g, '\n');
 
 const FORMAL_ENDPOINTS = {
   'service.html': 'https://script.google.com/macros/s/AKfycbxavwu853Lejoco68BOJ1hEiH6MSrXMe2do171i8uUbGtQxDYBrLqk5U07H6Qas96rAWQ/exec',
@@ -105,6 +105,9 @@ test('模組路由只接受同源 allowlist', () => {
   const { api } = loadPlatform();
   assert.equal(api.moduleHref('venue'), 'venue.html');
   assert.equal(api.moduleHref('newcomer'), 'newcomer.html');
+  assert.equal(api.moduleHref('files'), 'files.html');
+  assert.equal(api.isModuleHref('files.html'), true);
+  assert.equal(api.isModuleHref('https://evil.example/files.html'), false);
   assert.equal(api.moduleHref('admin'), '');
   assert.equal(api.isModuleHref('venue.html'), true);
   assert.equal(api.isModuleHref('/church-web/newcomer.html?from=notice'), true);
@@ -113,6 +116,9 @@ test('模組路由只接受同源 allowlist', () => {
 });
 
 test('登入後只恢復合法模組，未知 next 不導頁', () => {
+  const files = loadPlatform('?next=files');
+  assert.equal(files.api.resumeRequestedModule(), true);
+  assert.deepEqual(files.replacements, ['files.html']);
   const allowed = loadPlatform('?next=venue');
   assert.equal(allowed.api.getRequestedModule(), 'venue');
   assert.equal(allowed.api.resumeRequestedModule(), true);

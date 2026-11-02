@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0F6E56">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; form-action https: http://127.0.0.1:* http://localhost:*">
+  <title>兒童幼幼檔案｜教會服事平台</title>
+  <link rel="stylesheet" href="files.css?v=1">
+  <script src="platform-module.js?v=3" defer></script>
+  <script src="files-runtime-config.js" defer></script>
+  <script src="files.js?v=1" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="service.html"><span class="brand-icon" aria-hidden="true">✦</span><span>教會服事平台<small>兒童・幼幼事工</small></span></a>
+    <a class="back-link" href="service.html">← 回平台</a>
+  </header>
+  <div id="previewBanner" class="preview-banner" hidden>畫面預覽・這裡使用示範檔案，上傳、下載與管理尚未接通。</div>
+  <main class="shell">
+    <section id="gate" class="gate" role="status">
+      <span class="gate-icon" aria-hidden="true">▤</span>
+      <h1 id="gateTitle">正在開啟事工檔案</h1>
+      <p id="gateMessage">正在確認你的平台登入與事工權限。</p>
+      <a id="gateLogin" class="button primary" href="service.html?next=files" hidden>回平台登入</a>
+      <button id="gateRetry" class="button" hidden>重新嘗試</button>
+    </section>
+    <div id="workspace" hidden>
+      <div class="page-heading">
+        <div><div class="eyebrow">同工資源</div><h1>兒童幼幼檔案</h1><p>教案、服事資源與活動紀錄，都在這裡。</p></div>
+        <div id="identity" class="identity"></div>
+      </div>
+      <div class="layout">
+        <aside class="sidebar" aria-label="分類導覽">
+          <button id="allFiles" class="folder-nav active"><span aria-hidden="true">▤</span>全部資料夾</button>
+          <div class="nav-label">資源分類</div><nav id="folderNav"></nav>
+          <p class="sidebar-note">沿用 Drive 資料夾分類。<br>上傳時請先進入對應資料夾。</p>
+        </aside>
+        <section class="content" aria-label="檔案內容">
+          <div class="toolbar-top"><nav id="breadcrumbs" aria-label="目前位置"></nav><button id="refresh" class="button quiet" aria-label="重新整理檔案">↻ 重新整理</button></div>
+          <div class="toolbar">
+            <form id="searchForm" class="search"><label class="sr-only" for="searchInput">搜尋目前資料夾</label><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="搜尋目前資料夾" maxlength="100"><button class="button quiet" type="submit">搜尋</button></form>
+            <div class="actions"><button id="newFolder" class="button" hidden>＋ 資料夾</button><button id="chooseFiles" class="button primary">↑ 上傳檔案</button><input id="fileInput" type="file" multiple hidden></div>
+          </div>
+          <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="選取或拖曳檔案上傳">
+            <span class="drop-icon" aria-hidden="true">↑</span><div><strong>把檔案拖到這裡，或點選上傳</strong><p>檔案會存進目前資料夾；同名檔案會另外保留。</p></div>
+          </div>
+          <section id="uploads" class="upload-panel" aria-label="上傳進度" aria-live="polite" hidden></section>
+          <div class="list-heading"><h2 id="folderTitle">全部資料夾</h2><span id="itemCount" class="muted"></span></div>
+          <div id="loadError" class="inline-error" role="alert" hidden></div>
+          <div id="fileList" class="file-list" aria-live="polite" aria-busy="false"></div>
+          <button id="loadMore" class="button more" hidden>載入更多</button>
+          <p class="scope-note">此檔案區限兒童、幼幼同工與指定管理員使用。</p>
+        </section>
+      </div>
+    </div>
+  </main>
+  <dialog id="manageDialog">
+    <form id="manageForm"><h2 id="dialogTitle"></h2><p id="dialogMessage"></p><label id="dialogLabel" for="dialogName">名稱</label><input id="dialogName" maxlength="180" autocomplete="off"><p id="dialogError" class="dialog-error" role="alert"></p><div class="dialog-actions"><button id="dialogCancel" type="button" class="button">取消</button><button id="dialogSave" class="button primary" type="submit">儲存</button></div></form>
+  </dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

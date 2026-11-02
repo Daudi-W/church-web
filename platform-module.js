@@ -3,7 +3,8 @@
 
   var MODULES = {
     venue: 'venue.html',
-    newcomer: 'newcomer.html'
+    newcomer: 'newcomer.html',
+    files: 'files.html'
   };
   var TOKEN_KEY = 'svcToken';
   var WHOAMI_KEY = 'svcWhoami';
