@@ -58,15 +58,32 @@
     }
   }
 
+  function folderId(value) {
+    return typeof value === 'string' && /^[A-Za-z0-9_-]{10,200}$/.test(value) ? value : '';
+  }
+
   function resumeRequestedModule() {
     var requested = getRequestedModule();
     if (!requested) return false;
-    global.location.replace(MODULES[requested]);
+    var destination = MODULES[requested];
+    if (requested === 'files') {
+      var folder = folderId(new URLSearchParams(global.location.search).get('folder'));
+      if (folder) destination += '#folder=' + encodeURIComponent(folder);
+    }
+    global.location.replace(destination);
     return true;
   }
 
   function loginHref(moduleName, reason) {
+    if (!MODULES[moduleName]) return '';
     var href = 'service.html?next=' + encodeURIComponent(moduleName);
+    if (moduleName === 'files') {
+      try {
+        var current = new URL(global.location.href);
+        var folder = folderId(new URLSearchParams(current.hash.slice(1)).get('folder'));
+        if (folder) href += '&folder=' + encodeURIComponent(folder);
+      } catch (e) { }
+    }
     if (reason) href += '&reason=' + encodeURIComponent(reason);
     return href;
   }
@@ -117,6 +134,7 @@
     getToken: getToken,
     isModuleHref: isModuleHref,
     markModuleAuthenticated: markModuleAuthenticated,
+    loginHref: loginHref,
     moduleHref: moduleHref,
     requirePlatformLogin: requirePlatformLogin,
     resumeRequestedModule: resumeRequestedModule,

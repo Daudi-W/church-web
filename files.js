@@ -21,7 +21,13 @@
       return url.href.replace(/\/$/, '');
     } catch (e) { return ''; }
   }
-  if (typeof module === 'object' && module.exports) module.exports = { formatBytes: formatBytes, chunkRange: chunkRange, apiBase: apiBase };
+  function folderLink(href, id) {
+    var url = new URL('files.html', href);
+    if (!/^https?:$/.test(url.protocol) || !/^[A-Za-z0-9_-]{10,200}$/.test(id)) throw new Error('資料夾連結不正確。');
+    url.search = ''; url.hash = 'folder=' + encodeURIComponent(id);
+    return url.href;
+  }
+  if (typeof module === 'object' && module.exports) module.exports = { formatBytes: formatBytes, chunkRange: chunkRange, apiBase: apiBase, folderLink: folderLink };
   if (typeof document === 'undefined') return;
 
   var $ = function (id) { return document.getElementById(id); };
@@ -44,6 +50,7 @@
   function gate(title, message, login) {
     $('gate').hidden = false; $('workspace').hidden = true; $('gateTitle').textContent = title; $('gateMessage').textContent = message;
     $('gateLogin').hidden = !login; $('gateRetry').hidden = !!login;
+    $('gateLogin').href = PlatformModule.loginHref('files');
   }
   async function request(path, options) {
     options = options || {};
@@ -218,6 +225,13 @@
     });
     if (added) { renderUploads(); runUploads(); }
   }
+  $('shareFolder').addEventListener('click', async function () {
+    if (preview || !currentId) { toast('本機預覽不能分享給其他人；正式上線後可複製連結。'); return; }
+    try {
+      await navigator.clipboard.writeText(folderLink(location.href, currentId));
+      toast('已複製此資料夾連結；接收者仍須具備兒童／幼幼事工權限。');
+    } catch (error) { toast('無法自動複製，請直接複製瀏覽器網址列。'); }
+  });
   $('allFiles').addEventListener('click', function () { navigate(me.rootId); });
   $('refresh').addEventListener('click', function () { loadFolder(fromHash()); });
   $('gateRetry').addEventListener('click', function () { location.reload(); });
@@ -250,6 +264,7 @@
       me = await request('/api/me'); PlatformModule.markModuleAuthenticated('files');
       $('identity').replaceChildren(el('strong', '', me.name), el('span', '', preview ? '畫面預覽' : me.admin ? '檔案管理員' : '事工同工'));
       $('newFolder').hidden = !me.admin; $('chooseFiles').disabled = preview;
+      $('shareFolder').disabled = preview;
       $('dropZone').setAttribute('aria-disabled', String(preview)); $('previewBanner').hidden = !preview;
       $('gate').hidden = true; $('workspace').hidden = false; currentId = fromHash(); await loadFolder(currentId);
     } catch (error) { if (!$('workspace').hidden) return; gate('目前無法開啟檔案區', error.message, false); }

@@ -36,7 +36,7 @@ function makeStorage(initial = {}) {
   };
 }
 
-function loadPlatform(search = '') {
+function loadPlatform(search = '', page = 'service.html') {
   const replacements = [];
   const localStorage = makeStorage({ svcToken: 'token-1', svcWhoami: '{"ok":true}', unrelated: 'keep' });
   const sessionStorage = makeStorage();
@@ -44,7 +44,7 @@ function loadPlatform(search = '') {
     localStorage,
     sessionStorage,
     location: {
-      href: `https://daudi-w.github.io/church-web/service.html${search}`,
+      href: `https://daudi-w.github.io/church-web/${page}${search}`,
       origin: 'https://daudi-w.github.io',
       search,
       replace(href) { replacements.push(href); },
@@ -197,4 +197,20 @@ test('服事調查的不行日期支援三種中文常用分隔符', () => {
   for (const file of ['service.html', 'sandbox.html', 'sandbox-v2.html']) {
     assert.ok(read(file).includes("split(/[,，、]/)"), `${file} 必須支援 ,、，三種日期分隔符`);
   }
+});
+
+test('分享子資料夾可直接經登入返回原位置，不能注入外部網址', () => {
+  const direct = loadPlatform();
+  direct.api.requirePlatformLogin('files');
+  assert.deepEqual(direct.replacements, ['service.html?next=files']);
+  const fromFolder = loadPlatform('', 'files.html#folder=child_folder_12345');
+  fromFolder.api.requirePlatformLogin('files');
+  assert.deepEqual(fromFolder.replacements, ['service.html?next=files&folder=child_folder_12345']);
+  const nested = loadPlatform('?next=files&folder=child_folder_12345');
+  nested.api.resumeRequestedModule();
+  assert.deepEqual(nested.replacements, ['files.html#folder=child_folder_12345']);
+  const invalid = loadPlatform('?next=files&folder=https%3A%2F%2Fevil.example');
+  invalid.api.resumeRequestedModule();
+  assert.deepEqual(invalid.replacements, ['files.html']);
+  assert.equal(nested.api.loginHref('unknown'), '');
 });
