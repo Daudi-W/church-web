@@ -1,4 +1,4 @@
-/* 最後更新：2026-11-03（讀取條、站內預覽）。權限只採用檔案後端驗證結果；不讀 svcWhoami 快取判角色。 */
+/* 最後更新：2026-11-03（讀取條、站內預覽、上一層）。權限只採用檔案後端驗證結果；不讀 svcWhoami 快取判角色。 */
 (function () {
   'use strict';
   var FOLDER = 'application/vnd.google-apps.folder';
@@ -123,7 +123,7 @@
     });
     $('allFiles').classList.toggle('active', currentId === me.rootId);
   }
-  var previewJob;
+  var previewJob, upTarget = '';
   function closePreview() {
     if (previewJob) { previewJob.controller.abort(); if (previewJob.url) URL.revokeObjectURL(previewJob.url); previewJob = null; }
     $('pvBody').replaceChildren(); $('pvActions').replaceChildren();
@@ -221,6 +221,8 @@
       items = append ? items.concat(data.files.filter(function (file) { return !items.some(function (old) { return old.id === file.id; }); })) : data.files;
       $('folderTitle').textContent = id === me.rootId ? '全部資料夾' : data.path[data.path.length - 1].name;
       $('breadcrumbs').replaceChildren();
+      // 不在最上層時顯示「上一層」，走錯資料夾可一鍵回去。
+      upTarget = data.path.length > 1 ? data.path[data.path.length - 2].id : ''; $('upFolder').hidden = !upTarget;
       data.path.forEach(function (part, index) {
         if (index) $('breadcrumbs').append(el('span', '', '›'));
         $('breadcrumbs').append(button(index === 0 ? '全部資料夾' : part.name, '', function () { navigate(part.id); }));
@@ -322,6 +324,7 @@
   ['dragleave', 'drop'].forEach(function (name) { $('dropZone').addEventListener(name, function (event) { event.preventDefault(); $('dropZone').classList.remove('dragging'); if (name === 'drop') addFiles(event.dataTransfer.files); }); });
   $('dialogCancel').addEventListener('click', function () { $('manageDialog').close(); });
   $('pvClose').addEventListener('click', closePreview);
+  $('upFolder').addEventListener('click', function () { if (upTarget) navigate(upTarget); });
   $('previewDialog').addEventListener('close', function () { if (previewJob && !$('previewDialog').open) closePreview(); });
   $('manageForm').addEventListener('submit', async function (event) {
     event.preventDefault(); if (!manageAction) return;

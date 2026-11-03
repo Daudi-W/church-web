@@ -7,10 +7,10 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob:; frame-src blob:; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; form-action https: http://127.0.0.1:* http://localhost:*">
   <title>兒童幼幼檔案｜教會服事平台</title>
-  <link rel="stylesheet" href="files.css?v=3">
+  <link rel="stylesheet" href="files.css?v=4">
   <script src="platform-module.js?v=3" defer></script>
   <script src="files-runtime-config.js" defer></script>
-  <script src="files.js?v=3" defer></script>
+  <script src="files.js?v=4" defer></script>
 </head>
 <body>
   <div id="topline" class="topline" aria-hidden="true"></div>
@@ -40,7 +40,7 @@
           <p class="sidebar-note">沿用 Drive 資料夾分類。<br>上傳時請先進入對應資料夾。</p>
         </aside>
         <section class="content" aria-label="檔案內容">
-          <div class="toolbar-top"><nav id="breadcrumbs" aria-label="目前位置"></nav><div class="toolbar-tools"><button id="shareFolder" class="button quiet" aria-label="複製目前資料夾連結">複製連結</button><button id="refresh" class="button quiet" aria-label="重新整理檔案">↻ 重新整理</button></div></div>
+          <div class="toolbar-top"><div class="crumb-row"><button id="upFolder" class="button up" type="button" hidden>← 上一層</button><nav id="breadcrumbs" aria-label="目前位置"></nav></div><div class="toolbar-tools"><button id="shareFolder" class="button quiet" aria-label="複製目前資料夾連結">複製連結</button><button id="refresh" class="button quiet" aria-label="重新整理檔案">↻ 重新整理</button></div></div>
           <div class="toolbar">
             <form id="searchForm" class="search"><label class="sr-only" for="searchInput">搜尋目前資料夾</label><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="搜尋目前資料夾" maxlength="100"><button class="button quiet" type="submit">搜尋</button></form>
             <div class="actions"><button id="newFolder" class="button" hidden>＋ 資料夾</button><button id="chooseFiles" class="button primary">↑ 上傳檔案</button><input id="fileInput" type="file" multiple hidden></div>
