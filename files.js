@@ -1,4 +1,4 @@
-/* 最後更新：2026-11-03（讀取條）。權限只採用檔案後端驗證結果；不讀 svcWhoami 快取判角色。 */
+/* 最後更新：2026-11-03（讀取條、站內預覽）。權限只採用檔案後端驗證結果；不讀 svcWhoami 快取判角色。 */
 (function () {
   'use strict';
   var FOLDER = 'application/vnd.google-apps.folder';
@@ -123,8 +123,49 @@
     });
     $('allFiles').classList.toggle('active', currentId === me.rootId);
   }
+  var previewJob;
+  function closePreview() {
+    if (previewJob) { previewJob.controller.abort(); if (previewJob.url) URL.revokeObjectURL(previewJob.url); previewJob = null; }
+    $('pvBody').replaceChildren(); $('pvActions').replaceChildren();
+    if ($('previewDialog').open) $('previewDialog').close();
+  }
+  // 站內預覽：顯示旌旗綠進度與百分比，載完才顯示；不再開空白新分頁讓人以為卡住。
+  async function showPreview(file) {
+    closePreview();
+    var job = previewJob = { controller: new AbortController(), url: '' };
+    var bar = el('div', 'pv-bar'); var fill = el('span'); bar.append(fill);
+    var label = el('p', 'pv-status', '正在載入預覽…');
+    var total = Number(file.size) || 0;
+    $('pvTitle').textContent = file.name; $('pvBody').replaceChildren(label, bar); $('previewDialog').showModal();
+    try {
+      var response = await fetch(base + '/preview', { method: 'POST', cache: 'no-store', signal: job.controller.signal,
+        body: new URLSearchParams({ fileId: file.id, sessionToken: PlatformModule.getToken() || '' }) });
+      if (!response.ok) { var data = {}; try { data = await response.json(); } catch (e) { } throw new Error(data.error || '暫時無法預覽，請改用下載。'); }
+      var reader = response.body.getReader(); var parts = []; var received = 0;
+      for (;;) {
+        var step = await reader.read(); if (step.done) break;
+        parts.push(step.value); received += step.value.byteLength;
+        if (total) { var percent = Math.min(100, Math.round(received / total * 100)); fill.style.width = percent + '%'; label.textContent = '正在載入預覽・' + percent + '%（' + formatBytes(received) + ' / ' + formatBytes(total) + '）'; }
+        else label.textContent = '正在載入預覽・' + formatBytes(received);
+      }
+      if (previewJob !== job) return;
+      job.url = URL.createObjectURL(new Blob(parts, { type: file.mimeType }));
+      var view;
+      if (file.mimeType === 'application/pdf') { view = el('iframe', 'pv-frame'); view.title = file.name; view.src = job.url; }
+      else { view = el('img', 'pv-image'); view.alt = file.name; view.src = job.url; }
+      $('pvBody').replaceChildren(view);
+      $('pvActions').replaceChildren(
+        button('在新分頁開啟', 'button', function () { window.open(job.url, '_blank', 'noopener'); }),
+        button('↓ 下載', 'button primary', function () { openFile(file, false); }));
+    } catch (error) {
+      if (previewJob !== job || error.name === 'AbortError') return;
+      $('pvBody').replaceChildren(el('p', 'pv-status', error.message || '連線暫時中斷，請稍後重試。'));
+      $('pvActions').replaceChildren(button('↓ 改用下載', 'button primary', function () { openFile(file, false); }));
+    }
+  }
   function openFile(file, inline) {
     if (preview) { toast(inline ? '畫面預覽尚未接通實際檔案預覽。' : '畫面預覽尚未接通下載。'); return; }
+    if (inline) { showPreview(file); return; }
     var form = el('form'); form.method = 'POST'; form.action = base + (inline ? '/preview' : '/download'); form.target = '_blank'; form.rel = 'noopener'; form.hidden = true;
     var fields = { fileId: file.id, sessionToken: PlatformModule.getToken() || '' };
     Object.keys(fields).forEach(function (name) { var input = el('input'); input.name = name; input.value = fields[name]; form.append(input); });
@@ -280,6 +321,8 @@
   ['dragenter', 'dragover'].forEach(function (name) { $('dropZone').addEventListener(name, function (event) { event.preventDefault(); if (!preview) $('dropZone').classList.add('dragging'); }); });
   ['dragleave', 'drop'].forEach(function (name) { $('dropZone').addEventListener(name, function (event) { event.preventDefault(); $('dropZone').classList.remove('dragging'); if (name === 'drop') addFiles(event.dataTransfer.files); }); });
   $('dialogCancel').addEventListener('click', function () { $('manageDialog').close(); });
+  $('pvClose').addEventListener('click', closePreview);
+  $('previewDialog').addEventListener('close', function () { if (previewJob && !$('previewDialog').open) closePreview(); });
   $('manageForm').addEventListener('submit', async function (event) {
     event.preventDefault(); if (!manageAction) return;
     $('dialogSave').disabled = true; $('dialogError').textContent = '';

@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0F6E56">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; form-action https: http://127.0.0.1:* http://localhost:*">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob:; frame-src blob:; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; form-action https: http://127.0.0.1:* http://localhost:*">
   <title>兒童幼幼檔案｜教會服事平台</title>
-  <link rel="stylesheet" href="files.css?v=2">
+  <link rel="stylesheet" href="files.css?v=3">
   <script src="platform-module.js?v=3" defer></script>
   <script src="files-runtime-config.js" defer></script>
-  <script src="files.js?v=2" defer></script>
+  <script src="files.js?v=3" defer></script>
 </head>
 <body>
   <div id="topline" class="topline" aria-hidden="true"></div>
@@ -60,6 +60,11 @@
   </main>
   <dialog id="manageDialog">
     <form id="manageForm"><h2 id="dialogTitle"></h2><p id="dialogMessage"></p><label id="dialogLabel" for="dialogName">名稱</label><input id="dialogName" maxlength="180" autocomplete="off"><p id="dialogError" class="dialog-error" role="alert"></p><div class="dialog-actions"><button id="dialogCancel" type="button" class="button">取消</button><button id="dialogSave" class="button primary" type="submit">儲存</button></div></form>
+  </dialog>
+  <dialog id="previewDialog" class="preview-dialog" aria-labelledby="pvTitle">
+    <div class="pv-head"><h2 id="pvTitle"></h2><button id="pvClose" type="button" class="button quiet" aria-label="關閉預覽">✕</button></div>
+    <div id="pvBody" class="pv-body" aria-live="polite"></div>
+    <div id="pvActions" class="pv-actions"></div>
   </dialog>
   <div id="toast" class="toast" role="status" hidden></div>
 </body>
