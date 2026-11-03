@@ -7,12 +7,13 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; form-action https: http://127.0.0.1:* http://localhost:*">
   <title>兒童幼幼檔案｜教會服事平台</title>
-  <link rel="stylesheet" href="files.css?v=1">
+  <link rel="stylesheet" href="files.css?v=2">
   <script src="platform-module.js?v=3" defer></script>
   <script src="files-runtime-config.js" defer></script>
-  <script src="files.js?v=1" defer></script>
+  <script src="files.js?v=2" defer></script>
 </head>
 <body>
+  <div id="topline" class="topline" aria-hidden="true"></div>
   <header class="topbar">
     <a class="brand" href="service.html"><span class="brand-icon" aria-hidden="true">✦</span><span>教會服事平台<small>兒童・幼幼事工</small></span></a>
     <a class="back-link" href="service.html">← 回平台</a>
@@ -23,6 +24,7 @@
       <span class="gate-icon" aria-hidden="true">▤</span>
       <h1 id="gateTitle">正在開啟事工檔案</h1>
       <p id="gateMessage">正在確認你的平台登入與事工權限。</p>
+      <div id="gateProgress" class="gate-progress" aria-hidden="true"></div>
       <a id="gateLogin" class="button primary" href="service.html?next=files" hidden>回平台登入</a>
       <button id="gateRetry" class="button" hidden>重新嘗試</button>
     </section>

@@ -1,4 +1,4 @@
-/* 最後更新：2026-11-03。權限只採用檔案後端驗證結果；不讀 svcWhoami 快取判角色。 */
+/* 最後更新：2026-11-03（讀取條）。權限只採用檔案後端驗證結果；不讀 svcWhoami 快取判角色。 */
 (function () {
   'use strict';
   var FOLDER = 'application/vnd.google-apps.folder';
@@ -50,12 +50,33 @@
     clearTimeout(toastTimer); $('toast').textContent = message; $('toast').hidden = false;
     toastTimer = setTimeout(function () { $('toast').hidden = true; }, 4500);
   }
+  var pending = 0, toplineTimer;
+  // 讀取中顯示頂端旌旗綠細條；150ms 內完成的請求不閃。上傳另有自己的進度，不計入。
+  function loading(delta) {
+    pending = Math.max(0, pending + delta); clearTimeout(toplineTimer);
+    if (pending) toplineTimer = setTimeout(function () { $('topline').classList.add('on'); }, 150);
+    else $('topline').classList.remove('on');
+  }
+  function skeleton() {
+    var box = el('div', 'skeleton-list'); box.append(el('span', 'sr-only', '正在讀取檔案…'));
+    for (var i = 0; i < 4; i++) {
+      var row = el('div', 'sk-row'); row.setAttribute('aria-hidden', 'true');
+      var text = el('div'); text.append(el('div', 'sk-line'), el('div', 'sk-line short'));
+      row.append(el('div', 'sk-icon'), text); box.append(row);
+    }
+    return box;
+  }
   function gate(title, message, login) {
+    $('gateProgress').hidden = true;
     $('gate').hidden = false; $('workspace').hidden = true; $('gateTitle').textContent = title; $('gateMessage').textContent = message;
     $('gateLogin').hidden = !login; $('gateRetry').hidden = !!login;
     $('gateLogin').href = PlatformModule.loginHref('files');
   }
   async function request(path, options) {
+    var tracked = path.indexOf('/api/uploads/') !== 0; if (tracked) loading(1);
+    try { return await sendRequest(path, options); } finally { if (tracked) loading(-1); }
+  }
+  async function sendRequest(path, options) {
     options = options || {};
     if (preview) {
       if (path === '/api/me') return { name: '示範同工', admin: false, canUpload: false, rootId: 'preview-root', chunkBytes: 8388608, maxUploadBytes: 10737418240 };
@@ -150,7 +171,7 @@
     if (!me) return;
     var version = ++requestVersion; var search = $('searchInput').value.trim(); var page = append ? nextPage : '';
     $('fileList').setAttribute('aria-busy', 'true'); $('loadError').hidden = true; $('loadMore').disabled = true;
-    if (!append) { $('fileList').replaceChildren(el('div', 'loading', '正在讀取檔案…')); }
+    if (!append) { $('fileList').replaceChildren(skeleton()); }
     try {
       var query = new URLSearchParams({ folderId: id, search: search }); if (page) query.set('pageToken', page);
       var data = await request('/api/folders?' + query);
