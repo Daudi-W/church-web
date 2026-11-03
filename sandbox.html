@@ -51,6 +51,10 @@
   #gBtn { display: flex; justify-content: center; margin: 16px 0; }
   #status { font-size: 14px; min-height: 22px; text-align: center; color: var(--mut); }
   .err { color: var(--red); }
+  .first-time { margin-top: 18px; background: var(--tl-50); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #34465a; }
+  .first-time .ft-h { font-weight: 700; color: var(--tl-800); margin-bottom: 4px; }
+  #apGroupBox { display: flex; flex-direction: column; }
+  .first-time ol { margin: 0; padding-left: 20px; line-height: 1.75; }
   .foot { margin-top: 18px; font-size: 12px; color: var(--hint); line-height: 1.7; }
   /* 主畫面 */
   .hdr { padding: 22px 2px 6px; position: relative; }
@@ -283,10 +287,18 @@
 <div class="login-screen" id="loginScreen">
   <div class="card">
     <h1>桃園教會服事平台</h1>
-    <p class="sub">服事查詢、請假、場地申請、新人跟進，一個帳號全搞定。用 Google 登入即可開始。</p>
+    <p class="sub">弟兄姊妹都可以使用：查看自己的服事、請假、看全教會服事表。用 Google 帳號登入就能開始。</p>
     <div id="gBtn"></div>
     <div id="status">請點上方按鈕，用 Google 登入</div>
     <div id="uArea"></div>
+    <div class="first-time" id="firstTime">
+      <div class="ft-h"><i class="ti ti-sparkles"></i> 第一次使用？</div>
+      <ol>
+        <li>用你<b>平常最常用的 Google 帳號</b>登入（之後都用同一個）</li>
+        <li>填寫姓名、區、小組，送出申請</li>
+        <li>全職同工確認後，就能看到自己的服事</li>
+      </ol>
+    </div>
     <p class="foot">登入只做身分驗證，資料來自服事排班試算表。<br>有問題請找全職同工。</p>
   </div>
 </div>
@@ -1243,7 +1255,8 @@
   function renderUnmatched(res) {
     setStatus('✅ 登入成功', false);
     var u = document.getElementById('uArea');
-    var h = '';
+    var ft = document.getElementById('firstTime'); if (ft) ft.style.display = 'none';
+    var h = '', autoApply = false;
     if (res.disabled) {
       h = '<div class="ap-card">🚫 <b>帳號已停用</b><br><span class="hint-s">' + esc(res.note || '請聯繫教會同工。') + '</span></div>';
     } else if (res.applied && res.applyStatus === '待審') {
@@ -1254,12 +1267,15 @@
     } else if (res.note) {
       h = '<div class="ap-card">⚠️ ' + esc(res.note) + '</div>';
     } else {
-      h = '<div class="ap-card">👋 <b>你還不在名單中</b><br><span class="hint-s">送出申請，全職同工核准後就能使用。</span>' +
-        '<div class="pk-btns"><button onclick="openApply()"><i class="ti ti-pencil"></i> 申請帳號</button></div></div>';
+      h = '<div class="ap-card">👋 <b>歡迎第一次來！</b><br><span class="hint-s">填寫申請，全職同工確認後就能使用。</span>' +
+        '<div class="pk-btns"><button onclick="openApply()"><i class="ti ti-pencil"></i> 填寫申請</button></div></div>';
+      autoApply = !APPLY_AUTO_OPENED;
     }
     h += '<button class="btn line" onclick="logout()">登出 / 換帳號</button>';
     u.innerHTML = h;
+    if (autoApply) { APPLY_AUTO_OPENED = true; openApply(); }
   }
+  var APPLY_AUTO_OPENED = false;
 
   function openApply() {
     var p = document.getElementById('picker'); p.style.display = 'flex';
@@ -1269,11 +1285,29 @@
       '<div class="lv-form">' +
       '<label>姓名（全名，必填）<input type="text" id="apName" placeholder="如：王小明"></label>' +
       '<label>區（必填）<select id="apZone"><option value="">請選擇…</option>' +
-      ((LAST_RES && LAST_RES.zones) || []).map(function (z) { return '<option value="' + esc(z) + '">' + esc(z) + '</option>'; }).join('') +
+      applyZoneList().map(function (z) { return '<option value="' + esc(z) + '">' + esc(z) + '</option>'; }).join('') +
       '</select></label>' +
-      '<label>小組（必填）<input type="text" id="apGroup" placeholder="如：約書亞小組"></label>' +
-      '<label>備註（選填）<input type="text" id="apNote" placeholder="如：敬拜團鼓手"></label></div>' +
+      '<label>小組（必填）<span id="apGroupBox"><select id="apGroup" disabled><option value="">請先選區</option></select></span></label>' +
+      '<label>備註（選填）<input type="text" id="apNote" placeholder="想讓審核同工知道的事"></label></div>' +
+      '<div class="hint-s">服事崗位不用填，審核時會從排班系統帶入。找不到自己的小組，請先問小組長或全職同工。</div>' +
       '<div class="pk-btns"><button onclick="submitApply()">送出申請</button><button onclick="closePicker()">取消</button></div>';
+    document.getElementById('apZone').addEventListener('change', fillApplyGroups);
+  }
+  // 申請表的區：有登記小組的區才列出（避免選到沒有小組的區）；後端沒給小組清單時退回全部區
+  function applyZoneList() {
+    var zs = (LAST_RES && LAST_RES.zones) || [], gs = (LAST_RES && LAST_RES.groups) || [];
+    if (!gs.length) return zs;
+    return zs.filter(function (z) { return gs.some(function (g) { return g.zone === z; }); });
+  }
+  // 選區後列出該區小組；這個區還沒登記任何小組時改成手填
+  function fillApplyGroups() {
+    var zone = document.getElementById('apZone').value;
+    var box = document.getElementById('apGroupBox');
+    var gs = ((LAST_RES && LAST_RES.groups) || []).filter(function (g) { return g.zone === zone; });
+    if (!zone) { box.innerHTML = '<select id="apGroup" disabled><option value="">請先選區</option></select>'; return; }
+    if (!gs.length) { box.innerHTML = '<input type="text" id="apGroup" placeholder="如：約書亞小組">'; return; }
+    box.innerHTML = '<select id="apGroup"><option value="">請選擇…</option>' +
+      gs.map(function (g) { return '<option value="' + esc(g.name) + '">' + esc(g.name) + '</option>'; }).join('') + '</select>';
   }
   function submitApply() {
     var name = document.getElementById('apName').value.trim();
@@ -1281,7 +1315,7 @@
     var group = document.getElementById('apGroup').value.trim();
     if (!name) { toast('請填寫姓名（全名）'); return; }
     if (!zone) { toast('請選擇所屬區'); return; }
-    if (!group) { toast('請填寫小組'); return; }
+    if (!group) { toast('請選擇小組'); return; }
     var args = { name: name, zone: zone, group: group, note: document.getElementById('apNote').value.trim() };
     var b = document.querySelector('#picker .pk-body'); b.innerHTML = loadingHtml('送出中…');
     api('apply', args).then(function (res) {
