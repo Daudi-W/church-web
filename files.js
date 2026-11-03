@@ -1,4 +1,4 @@
-/* 最後更新：2026-11-02。權限只採用檔案後端驗證結果；不讀 svcWhoami 快取判角色。 */
+/* 最後更新：2026-11-03。權限只採用檔案後端驗證結果；不讀 svcWhoami 快取判角色。 */
 (function () {
   'use strict';
   var FOLDER = 'application/vnd.google-apps.folder';
@@ -195,7 +195,7 @@
       try {
         if (!job.handle) {
           var session = await jsonRequest('/api/uploads/start', { parentId: job.parentId, name: job.file.name, size: job.file.size, mimeType: job.file.type || 'application/octet-stream' });
-          job.handle = session.handle; job.chunk = session.chunkBytes;
+          job.handle = session.handle; job.chunk = session.chunkBytes; job.uploadUrl = session.uploadUrl || '';
         } else {
           var status = await jsonRequest('/api/uploads/status', { handle: job.handle });
           if (status.done) { job.offset = job.file.size; job.state = 'done'; }
@@ -203,8 +203,17 @@
         }
         while (job.state !== 'done' && job.offset < job.file.size && !job.pause) {
           var range = chunkRange(job.offset, job.file.size, job.chunk);
-          var result = await request('/api/uploads/chunk', { method: 'PUT', headers: { 'X-Upload-Handle': job.handle, 'Content-Range': range.header }, body: job.file.slice(range.start, range.end) });
-          var previousOffset = job.offset;
+          var previousOffset = job.offset; var result;
+          if (job.uploadUrl) {
+            // 檔案直接傳給 Google，不經檔案站後端；進度一律以後端向 Google 核對的結果為準。
+            try { await fetch(job.uploadUrl, { method: 'PUT', headers: { 'Content-Range': range.header }, body: job.file.slice(range.start, range.end) }); }
+            catch (e) { job.uploadUrl = ''; }
+            result = await jsonRequest('/api/uploads/status', { handle: job.handle });
+            // 直傳不通（例如瀏覽器擋跨站）時，這個檔案改走後端轉送，從 Google 已收到的位置接續。
+            if (!job.uploadUrl && !result.done) { job.offset = result.offset; continue; }
+          } else {
+            result = await request('/api/uploads/chunk', { method: 'PUT', headers: { 'X-Upload-Handle': job.handle, 'Content-Range': range.header }, body: job.file.slice(range.start, range.end) });
+          }
           if (result.done) { job.offset = job.file.size; job.state = 'done'; }
           else { job.offset = result.offset; if (job.offset <= previousOffset || job.offset >= job.file.size) throw new Error('上傳進度尚未確認，請重新嘗試。'); }
           job.message = '上傳到「' + job.destination + '」・' + formatBytes(job.offset) + ' / ' + formatBytes(job.file.size); renderUploads();
@@ -213,7 +222,7 @@
         else if (job.state === 'done') { job.message = '上傳完成・' + job.destination; if (currentId === job.parentId) await loadFolder(currentId); }
       } catch (error) {
         job.state = 'error';
-        if (error.code === 'BAD_UPLOAD' || error.code === 'NOT_FOUND') { job.handle = ''; job.offset = 0; }
+        if (error.code === 'BAD_UPLOAD' || error.code === 'NOT_FOUND') { job.handle = ''; job.offset = 0; job.uploadUrl = ''; }
         job.message = error.message + ' 保持頁面開啟，再按「重新嘗試」。';
       }
       renderUploads();
