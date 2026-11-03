@@ -21,13 +21,16 @@
       return url.href.replace(/\/$/, '');
     } catch (e) { return ''; }
   }
+  function canPreview(mimeType) {
+    return ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'].indexOf(mimeType) !== -1;
+  }
   function folderLink(href, id) {
     var url = new URL('files.html', href);
     if (!/^https?:$/.test(url.protocol) || !/^[A-Za-z0-9_-]{10,200}$/.test(id)) throw new Error('資料夾連結不正確。');
     url.search = ''; url.hash = 'folder=' + encodeURIComponent(id);
     return url.href;
   }
-  if (typeof module === 'object' && module.exports) module.exports = { formatBytes: formatBytes, chunkRange: chunkRange, apiBase: apiBase, folderLink: folderLink };
+  if (typeof module === 'object' && module.exports) module.exports = { formatBytes: formatBytes, chunkRange: chunkRange, apiBase: apiBase, folderLink: folderLink, canPreview: canPreview };
   if (typeof document === 'undefined') return;
 
   var $ = function (id) { return document.getElementById(id); };
@@ -99,14 +102,15 @@
     });
     $('allFiles').classList.toggle('active', currentId === me.rootId);
   }
-  function download(file) {
-    if (preview) { toast('畫面預覽尚未接通下載。'); return; }
-    var form = el('form'); form.method = 'POST'; form.action = base + '/download'; form.target = '_blank'; form.rel = 'noopener'; form.hidden = true;
+  function openFile(file, inline) {
+    if (preview) { toast(inline ? '畫面預覽尚未接通實際檔案預覽。' : '畫面預覽尚未接通下載。'); return; }
+    var form = el('form'); form.method = 'POST'; form.action = base + (inline ? '/preview' : '/download'); form.target = '_blank'; form.rel = 'noopener'; form.hidden = true;
     var fields = { fileId: file.id, sessionToken: PlatformModule.getToken() || '' };
     Object.keys(fields).forEach(function (name) { var input = el('input'); input.name = name; input.value = fields[name]; form.append(input); });
     document.body.append(form); form.submit(); form.remove();
-    toast('已開啟下載，請查看瀏覽器的下載進度。');
+    toast(inline ? '已在新分頁開啟預覽。' : '已開啟下載，請查看瀏覽器的下載進度。');
   }
+  function download(file) { openFile(file, false); }
   function openManage(kind, file) {
     if (preview) return;
     manageAction = { kind: kind, file: file, parentId: currentId };
@@ -126,10 +130,11 @@
       var isFolder = file.mimeType === FOLDER; var row = el('div', 'file-row');
       var label = isFolder ? '▰' : file.mimeType === 'application/pdf' ? 'PDF' : file.mimeType.indexOf('video/') === 0 ? '影片' : '檔案';
       var icon = el('span', 'file-icon' + (isFolder ? '' : ' document'), label); icon.setAttribute('aria-hidden', 'true'); row.append(icon);
-      var info = el('div'); info.append(button(file.name, 'file-name', function () { if (isFolder) navigate(file.id); else download(file); }));
+      var info = el('div'); info.append(button(file.name, 'file-name', function () { if (isFolder) navigate(file.id); else openFile(file, canPreview(file.mimeType)); }));
       var date = file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
       info.append(el('div', 'file-meta', [isFolder ? '資料夾' : formatBytes(file.size), date].filter(Boolean).join(' · '))); row.append(info);
       var actions = el('div', 'row-actions');
+      if (canPreview(file.mimeType)) actions.append(button('預覽', 'button quiet', function () { openFile(file, true); }));
       actions.append(button(isFolder ? '開啟 →' : '↓ 下載', 'button quiet', function () { if (isFolder) navigate(file.id); else download(file); }));
       if (me.admin && !preview) {
         var menu = el('details'); var summary = el('summary', '', '⋯'); summary.setAttribute('aria-label', '管理「' + file.name + '」'); menu.append(summary);
