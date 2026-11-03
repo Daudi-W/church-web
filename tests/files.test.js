@@ -28,6 +28,7 @@ test('API 網址禁止主動內容、憑證、參數及一般 HTTP，只允許�
 
 test('分享連結只帶資料夾位置，不帶登入或預覽參數', () => {
   assert.equal(folderLink('https://example.invalid/church-web/files.html?token=secret&preview=1#anything', 'child_folder_12345'), 'https://example.invalid/church-web/files.html#folder=child_folder_12345');
+  assert.equal(folderLink('https://example.invalid/files.html', 'drive123456!sabcdef'), 'https://example.invalid/files.html#folder=drive123456!sabcdef');
   assert.throws(() => folderLink('https://example.invalid/files.html', '../private'));
 });
 

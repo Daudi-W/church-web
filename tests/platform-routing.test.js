@@ -209,6 +209,9 @@ test('分享子資料夾可直接經登入返回原位置，不能注入外部�
   const nested = loadPlatform('?next=files&folder=child_folder_12345');
   nested.api.resumeRequestedModule();
   assert.deepEqual(nested.replacements, ['files.html#folder=child_folder_12345']);
+  const oneDrive = loadPlatform('?next=files&folder=drive123456%21sabcdef');
+  assert.equal(oneDrive.api.resumeRequestedModule(), true);
+  assert.deepEqual(oneDrive.replacements, ['files.html#folder=drive123456!sabcdef']);
   const invalid = loadPlatform('?next=files&folder=https%3A%2F%2Fevil.example');
   invalid.api.resumeRequestedModule();
   assert.deepEqual(invalid.replacements, ['files.html']);

@@ -26,7 +26,7 @@
   }
   function folderLink(href, id) {
     var url = new URL('files.html', href);
-    if (!/^https?:$/.test(url.protocol) || !/^[A-Za-z0-9_-]{10,200}$/.test(id)) throw new Error('資料夾連結不正確。');
+    if (!/^https?:$/.test(url.protocol) || !/^[A-Za-z0-9_!-]{10,200}$/.test(id)) throw new Error('資料夾連結不正確。');
     url.search = ''; url.hash = 'folder=' + encodeURIComponent(id);
     return url.href;
   }
@@ -115,7 +115,7 @@
     if (preview) return;
     manageAction = { kind: kind, file: file, parentId: currentId };
     $('dialogTitle').textContent = kind === 'new' ? '新增資料夾' : kind === 'rename' ? '重新命名' : '移到垃圾桶';
-    $('dialogMessage').textContent = kind === 'trash' ? '「' + file.name + '」會移到 Drive 垃圾桶，不會永久刪除。' : '請使用同工容易辨認的名稱。';
+    $('dialogMessage').textContent = kind === 'trash' ? '「' + file.name + '」會移到雲端硬碟的垃圾桶，不會永久刪除。' : '請使用同工容易辨認的名稱。';
     $('dialogName').value = file ? file.name : '';
     $('dialogName').hidden = kind === 'trash'; $('dialogLabel').hidden = kind === 'trash';
     $('dialogSave').textContent = kind === 'trash' ? '移到垃圾桶' : '儲存';
@@ -125,7 +125,7 @@
   }
   function renderFiles() {
     $('fileList').replaceChildren(); $('itemCount').textContent = items.length + ' 個項目' + (nextPage ? '・尚有更多' : '');
-    if (!items.length) $('fileList').append(el('div', 'empty', $('searchInput').value.trim() ? '這個資料夾裡找不到符合的檔案。' : '這個資料夾目前沒有檔案。'));
+    if (!items.length) $('fileList').append(el('div', 'empty', nextPage ? '這批沒有符合的項目，可以載入更多。' : $('searchInput').value.trim() ? '這個資料夾裡找不到符合的檔案。' : '這個資料夾目前沒有檔案。'));
     items.forEach(function (file) {
       var isFolder = file.mimeType === FOLDER; var row = el('div', 'file-row');
       var label = isFolder ? '▰' : file.mimeType === 'application/pdf' ? 'PDF' : file.mimeType.indexOf('video/') === 0 ? '影片' : '檔案';

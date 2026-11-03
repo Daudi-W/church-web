@@ -59,7 +59,7 @@
   }
 
   function folderId(value) {
-    return typeof value === 'string' && /^[A-Za-z0-9_-]{10,200}$/.test(value) ? value : '';
+    return typeof value === 'string' && /^[A-Za-z0-9_!-]{10,200}$/.test(value) ? value : '';
   }
 
   function resumeRequestedModule() {
