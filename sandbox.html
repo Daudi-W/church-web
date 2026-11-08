@@ -295,7 +295,7 @@
       <div class="ft-h"><i class="ti ti-sparkles"></i> 第一次使用？</div>
       <ol>
         <li>用你<b>平常最常用的 Google 帳號</b>登入</li>
-        <li>填寫姓名、區、小組，送出申請</li>
+        <li>填寫姓名、區、小組，送出申請（要先加入小組）</li>
         <li>全職同工確認後，就能看到自己的服事</li>
       </ol>
     </div>
@@ -1289,7 +1289,7 @@
       '</select></label>' +
       '<label>小組（必填）<span id="apGroupBox"><select id="apGroup" disabled><option value="">請先選區</option></select></span></label>' +
       '<label>備註（選填）<input type="text" id="apNote" placeholder="想讓審核同工知道的事"></label></div>' +
-      '<div class="hint-s">服事崗位不用填，審核時會從排班系統帶入。找不到自己的小組，請先問小組長或全職同工。</div>' +
+      '<div class="hint-s">服事崗位不用填，審核時會從排班系統帶入。要先加入小組才能申請帳號；找不到自己的小組，請先問小組長或全職同工。</div>' +
       '<div class="pk-btns"><button onclick="submitApply()">送出申請</button><button onclick="closePicker()">取消</button></div>';
     document.getElementById('apZone').addEventListener('change', fillApplyGroups);
   }
@@ -1299,13 +1299,13 @@
     if (!gs.length) return zs;
     return zs.filter(function (z) { return gs.some(function (g) { return g.zone === z; }); });
   }
-  // 選區後列出該區小組；這個區還沒登記任何小組時改成手填
+  // 選區後列出該區小組；有小組才能申請（2026-11-08 Pei 定），區沒有小組就提示先找小組長
   function fillApplyGroups() {
     var zone = document.getElementById('apZone').value;
     var box = document.getElementById('apGroupBox');
     var gs = ((LAST_RES && LAST_RES.groups) || []).filter(function (g) { return g.zone === zone; });
     if (!zone) { box.innerHTML = '<select id="apGroup" disabled><option value="">請先選區</option></select>'; return; }
-    if (!gs.length) { box.innerHTML = '<input type="text" id="apGroup" placeholder="如：約書亞小組">'; return; }
+    if (!gs.length) { box.innerHTML = '<select id="apGroup" disabled><option value="">這個區目前沒有可選的小組</option></select>'; return; }
     box.innerHTML = '<select id="apGroup"><option value="">請選擇…</option>' +
       gs.map(function (g) { return '<option value="' + esc(g.name) + '">' + esc(g.name) + '</option>'; }).join('') + '</select>';
   }
