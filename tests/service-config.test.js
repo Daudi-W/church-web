@@ -16,7 +16,7 @@ function loadRuntime(file) {
 test('桃園正式設定抽離後仍保留原本品牌、三個後端與工具入口', () => {
   const config = Config.resolve(loadRuntime('service-runtime-config.js'));
   assert.equal(Config.validate(config).ok, true);
-  assert.equal(config.platformName, '桃園旌旗教會');
+  assert.equal(config.platformName, '桃園旌旗教會服事平台');
   assert.equal(config.defaultBranch, '桃園');
   assert.deepEqual(Array.from(config.branches), ['桃園', '林口']);
   assert.match(config.serviceEndpoint, /script\.google\.com\/macros\/s\/.+\/exec/);
