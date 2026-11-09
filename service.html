@@ -57,6 +57,9 @@
   .first-time .ft-h { font-weight: 700; color: var(--tl-800); margin-bottom: 4px; }
   #apGroupBox { display: flex; flex-direction: column; }
   .first-time ol { margin: 0; padding-left: 20px; line-height: 1.75; }
+  .browser-tip { margin: 0 0 4px; background: #fff4e5; color: #7a4a00; border-radius: 12px; padding: 10px 14px; font-size: 14px; line-height: 1.6; }
+  .browser-tip.warn { background: #fdecea; color: var(--red); border: 1px solid #f5c2bd; }
+  .browser-tip .ext-btn { display: block; width: 100%; margin-top: 10px; border: 0; border-radius: 999px; background: #0F6E56; color: #fff; font-size: 15px; font-weight: 700; padding: 10px 14px; cursor: pointer; }
   .foot { margin-top: 18px; font-size: 12px; color: var(--hint); line-height: 1.7; }
   /* 主畫面 */
   .hdr { padding: 22px 2px 6px; position: relative; }
@@ -272,6 +275,7 @@
   <div class="card">
     <h1 id="loginTitle">教會服事平台</h1>
     <p class="sub">弟兄姊妹都可以使用：查看自己的服事、請假、看全教會服事表。用 Google 帳號登入就能開始。</p>
+    <div class="browser-tip" id="browserTip"><i class="ti ti-alert-triangle"></i> <b>請不要在 LINE 裡直接開啟。</b>從 LINE 點連結進來的話，請點右上角選單，選「使用預設瀏覽器開啟」（Safari 或 Chrome），再登入或申請帳號。</div>
     <div id="gBtn"></div>
     <div id="status">請點上方按鈕，用 Google 登入</div>
     <div id="uArea"></div>
@@ -335,6 +339,28 @@
     if (loginTitle) loginTitle.textContent = title;
   }
   applyDeploymentBranding();
+
+  // LINE 等 App 內建瀏覽器不能用 Google 登入：登入頁提醒改用預設瀏覽器，LINE 內再給一鍵跳出
+  function setupBrowserTip() {
+    var ua = navigator.userAgent || '';
+    var inLine = /\bLine\//i.test(ua);
+    var inApp = inLine || /FBAN|FBAV|FB_IAB|Instagram|MicroMessenger/i.test(ua);
+    if (!inLine && /[?&]openExternalBrowser=1/.test(location.search) && history.replaceState) {
+      try { var cu = new URL(location.href); cu.searchParams.delete('openExternalBrowser'); history.replaceState(null, '', cu.toString()); } catch (e) { }
+    }
+    var tip = document.getElementById('browserTip');
+    if (!tip || !inApp) return;
+    tip.className = 'browser-tip warn';
+    tip.innerHTML = '<i class="ti ti-alert-triangle"></i> <b>你現在是在 ' + (inLine ? 'LINE' : 'App') + ' 裡開啟，這裡沒辦法用 Google 登入。</b>' +
+      (inLine ? '請點下方按鈕，改用預設瀏覽器開啟。' : '請點右上角選單，選「用瀏覽器開啟」（Safari 或 Chrome），再登入或申請帳號。') +
+      (inLine ? '<button class="ext-btn" type="button" onclick="openInDefaultBrowser()">用預設瀏覽器開啟</button>' : '');
+  }
+  window.openInDefaultBrowser = function () {
+    var u = new URL(location.href);
+    u.searchParams.set('openExternalBrowser', '1');
+    location.href = u.toString();
+  };
+  setupBrowserTip();
 
   function initGoogleLogin() {
     var configCheck = window.ChurchServiceConfigTools && ChurchServiceConfigTools.validate(SERVICE_CONFIG);
