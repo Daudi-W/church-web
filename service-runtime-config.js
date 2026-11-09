@@ -19,7 +19,7 @@
       calendar: true
     },
     frontend: {
-      platformName: '桃園教會服事平台',
+      platformName: '桃園旌旗教會',
       scheduleUrl: 'https://docs.google.com/spreadsheets/d/1XAtW7ns2r4bc6uq-CqylVYIAY1qVTbdbJvygFUjzvu0/edit?usp=sharing',
       platformUrl: 'https://daudi-w.github.io/church-web/service.html',
       defaultBranch: '桃園',

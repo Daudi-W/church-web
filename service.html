@@ -285,11 +285,11 @@
       <ol>
         <li>用手機瀏覽器開啟，<b>不要用 LINE 開</b></li>
         <li>用你<b>平常最常用的 Google 帳號</b>登入</li>
-        <li>填寫姓名、區、小組，送出申請（要先加入小組）</li>
+        <li>填寫姓名、區、小組，送出申請</li>
         <li>全職同工確認後，就能看到自己的服事</li>
       </ol>
     </div>
-    <p class="foot">登入只做身分驗證，資料來自教會自己的服事排班試算表。<br>有問題請找教會平台管理者。</p>
+    <p class="foot">登入只用來確認身分；有問題請找全職同工。</p>
   </div>
 </div>
 
@@ -358,8 +358,8 @@
       '<div>' + (inLine ? 'LINE' : '這個 App') + ' 裡沒辦法用 Google 登入。</div>' +
       (inLine
         ? '<button class="ext-btn" type="button" onclick="openInDefaultBrowser()">用預設瀏覽器開啟</button>' +
-          '<div class="bt-note">沒有跳出去？點右上角選單，選「使用預設瀏覽器開啟」。</div>'
-        : '<div>請點右上角選單，選「用瀏覽器開啟」。</div>');
+          '<div class="bt-note">沒有跳出去？點 LINE 畫面上的選單（⋯ 或 ⋮），選「使用預設瀏覽器開啟」。</div>'
+        : '<div>請點畫面上的選單（⋯ 或 ⋮），選「用瀏覽器開啟」。</div>');
     tip.style.display = 'block';
   }
   window.openInDefaultBrowser = function () {
