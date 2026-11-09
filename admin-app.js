@@ -289,7 +289,7 @@ function renderHome(){
       <span class="lmeta">${x.zone ? `排班用「${esc(x.p.dbRegion)}」，白名單是「${esc(x.p.region)}」` : '登記為團員，但排班沒有崗位'}</span>
     </span><span class="chev" aria-hidden="true">›</span></button></li>`;
   return `
-  <header class="page-h"><div class="row-between"><h1>管理後台</h1><a class="back-link" href="${esc(ENV.platformUrl || 'service.html')}">回服事平台</a></div><p>帳號、小組與事工團維護</p></header>
+  <header class="page-h"><div class="row-between"><h1>管理後台</h1><a class="back-link" href="${esc(ENV.platformUrl || 'service.html')}">← 回平台</a></div><p>帳號、小組與事工團維護</p></header>
   ${need.length ? `<section class="card attention" aria-labelledby="h-audit">
     <h2 id="h-audit">待核對 ${need.length} 件</h2>
     <p class="hint">點進去處理。區不一致：排班會用錯區的牧區限制，建議統一成白名單的區。團員沒有崗位：不會被排到，請補崗位或讓他退出。</p>

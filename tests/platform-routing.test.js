@@ -78,7 +78,7 @@ test('平台首頁只以同源頁面開啟場地與新人模組', () => {
   for (const file of ['venue.html', 'newcomer.html']) {
     const html = read(file);
     assert.match(html, /<script src="platform-module\.js\?v=3"><\/script>/);
-    assert.match(html, /href="service\.html"[^>]*>← 回首頁<\/a>/);
+    assert.match(html, /href="service\.html"[^>]*>← 回平台<\/a>/);
     assert.match(html, /PlatformModule\.requirePlatformLogin\('/);
     assert.match(html, /PlatformModule\.markModuleAuthenticated\('/);
   }

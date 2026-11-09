@@ -9,7 +9,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      font-family: system-ui, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
       background: #f4f6f8;
       min-height: 100vh;
     }
@@ -22,8 +22,8 @@
     }
 
     .header { text-align: center; margin-bottom: 20px; }
-    .header .church-name { font-size: 11px; color: #8fa3b1; letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase; }
-    .header h1 { font-size: 22px; color: #1f2d3d; font-weight: 800; }
+    .header .church-name { font-size: 13px; color: #8fa3b1; letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase; }
+    .header h1 { font-size: 22px; color: #1f2d3d; font-weight: 700; }
     .header .subtitle { font-size: 15px; color: #475569; margin-top: 6px; line-height: 1.6; }
     .divider { height: 1px; background: #edf2f7; margin: 0 0 22px; }
 
@@ -40,7 +40,7 @@
     .branch-tab {
       padding: 12px 8px;
       border: none;
-      border-radius: 9px;
+      border-radius: 8px;
       background: transparent;
       font-size: 15px;
       font-weight: 700;
@@ -86,7 +86,7 @@
 
     .time-row { display: flex; gap: 8px; align-items: center; }
     .time-row input { flex: 1; min-width: 0; text-align: center; padding: 14px 8px; }
-    .time-sep { color: #a0aec0; font-size: 20px; flex-shrink: 0; }
+    .time-sep { color: #a0aec0; font-size: 22px; flex-shrink: 0; }
 
     .venue-grid {
       display: grid;
@@ -96,13 +96,13 @@
     .venue-btn {
       padding: 14px 6px;
       border: 2px solid #e2e8f0;
-      border-radius: 14px;
+      border-radius: 16px;
       background: #f8fafc;
       cursor: pointer;
       text-align: center;
-      font-size: 14px;
+      font-size: 15px;
       color: #4a5568;
-      font-weight: 600;
+      font-weight: 700;
       transition: all 0.15s;
       user-select: none;
       min-height: 76px;
@@ -123,7 +123,7 @@
     }
     .venue-icon { font-size: 22px; display: block; margin-bottom: 4px; }
 
-    .email-hint { font-size: 14px; color: #64748b; margin-top: 7px; line-height: 1.6; }
+    .email-hint { font-size: 15px; color: #64748b; margin-top: 7px; line-height: 1.6; }
     .email-status {
       margin-top: 8px; font-size: 13px; line-height: 1.5;
       display: none; padding: 8px 12px; border-radius: 8px;
@@ -135,23 +135,22 @@
     .submit-btn {
       width: 100%;
       padding: 18px;
-      background: linear-gradient(135deg, #0F6E56, #085041);
+      background: #0F6E56;
       color: white;
       border: none;
-      border-radius: 14px;
-      font-size: 17px;
+      border-radius: 16px;
+      font-size: 18px;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
       min-height: 58px;
       margin-top: 8px;
       -webkit-tap-highlight-color: transparent;
-      box-shadow: 0 4px 20px rgba(15,110,86,0.30);
     }
-    .submit-btn:active:not(:disabled) { transform: scale(0.98); opacity: 0.9; }
-    .submit-btn:disabled { background: #a0aec0; cursor: not-allowed; box-shadow: none; }
+    .submit-btn:active:not(:disabled) { background: #085041; }
+    .submit-btn:disabled { background: #e9eef3; color: #9aa7b4; cursor: not-allowed; box-shadow: none; }
 
-    .loading { display: none; text-align: center; color: #718096; font-size: 14px; margin-top: 14px; }
+    .loading { display: none; text-align: center; color: #718096; font-size: 15px; margin-top: 14px; }
     .spinner {
       display: inline-block; width: 16px; height: 16px;
       border: 2px solid #e2e8f0; border-top-color: #0F6E56;
@@ -162,7 +161,7 @@
 
     .result {
       margin-top: 20px; padding: 16px 18px;
-      border-radius: 14px; font-size: 14px;
+      border-radius: 16px; font-size: 15px;
       line-height: 1.8; white-space: pre-line; display: none;
     }
     .result.success { background: #E1F5EE; border: 1.5px solid #9ae6b4; color: #22543d; }
@@ -179,11 +178,11 @@
     .calendar-section h2 {
       font-size: 18px;
       color: #1f2d3d;
-      font-weight: 800;
+      font-weight: 700;
       margin-bottom: 4px;
     }
     .calendar-section .cal-subtitle {
-      font-size: 14px;
+      font-size: 15px;
       color: #64748b;
       margin-bottom: 16px;
       line-height: 1.6;
@@ -196,15 +195,15 @@
       gap: 8px;
       background: #f1f5f9;
       padding: 4px;
-      border-radius: 10px;
+      border-radius: 12px;
       margin-bottom: 14px;
     }
     .cal-branch-tab {
       padding: 9px 8px;
       border: none;
-      border-radius: 7px;
+      border-radius: 8px;
       background: transparent;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       color: #64748b;
       cursor: pointer;
@@ -230,7 +229,7 @@
       width: 36px; height: 36px;
       border: 1.5px solid #e2e8f0;
       background: #fff;
-      border-radius: 9px;
+      border-radius: 8px;
       font-size: 16px;
       color: #4a5568;
       cursor: pointer;
@@ -241,7 +240,7 @@
     .cal-controls select {
       padding: 8px 10px;
       min-height: 36px;
-      font-size: 14px;
+      font-size: 15px;
       flex: 1;
       min-width: 0;
     }
@@ -250,9 +249,9 @@
       min-height: 36px;
       border: 1.5px solid #e2e8f0;
       background: #fff;
-      border-radius: 9px;
+      border-radius: 8px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       color: #4a5568;
       cursor: pointer;
       flex-shrink: 0;
@@ -262,14 +261,14 @@
     .cal-view-toggle {
       display: flex;
       background: #f1f5f9;
-      border-radius: 9px;
+      border-radius: 8px;
       padding: 3px;
       flex-shrink: 0;
     }
     .cal-view-toggle button {
       padding: 6px 14px;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       background: transparent;
       font-size: 13px;
       font-weight: 700;
@@ -290,7 +289,7 @@
       background: #fff5f5;
       border: 1px solid #feb2b2;
       color: #c53030;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 13px;
     }
 
@@ -301,9 +300,9 @@
       gap: 1px;
       background: #e2e8f0;
       border: 1px solid #e2e8f0;
-      border-radius: 10px;
+      border-radius: 12px;
       overflow: hidden;
-      font-size: 11px;
+      font-size: 13px;
     }
     .month-weekday {
       background: #f8fafc;
@@ -311,7 +310,7 @@
       padding: 8px 2px;
       font-weight: 700;
       color: #64748b;
-      font-size: 12px;
+      font-size: 13px;
     }
     .month-cell {
       background: #fff;
@@ -335,17 +334,17 @@
       content: '休';
       position: absolute;
       top: 2px; right: 3px;
-      font-size: 9px;
+      font-size: 13px;
       color: #a16207;
       font-weight: 700;
       background: #fef9c3;
       padding: 1px 4px;
-      border-radius: 3px;
+      border-radius: 8px;
     }
     .day-num {
-      font-size: 12px;
+      font-size: 13px;
       color: #1f2d3d;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 2px;
       display: inline-block;
       width: 20px; height: 20px;
@@ -354,10 +353,10 @@
     }
     .month-cell.other-month .day-num { color: #cbd5e0; }
     .booking-pill {
-      font-size: 9px;
+      font-size: 13px;
       line-height: 1.3;
       padding: 1px 4px;
-      border-radius: 3px;
+      border-radius: 8px;
       margin-bottom: 1px;
       white-space: nowrap;
       overflow: hidden;
@@ -365,7 +364,7 @@
       color: #fff;
     }
     .booking-more {
-      font-size: 9px;
+      font-size: 13px;
       color: #64748b;
       padding: 0 3px;
     }
@@ -373,7 +372,7 @@
     /* ── 週檢視(資源欄位) ── */
     .week-wrap {
       border: 1px solid #e2e8f0;
-      border-radius: 10px;
+      border-radius: 12px;
       overflow: hidden;
       background: #fff;
     }
@@ -381,7 +380,7 @@
       display: grid;
       background: #f8fafc;
       border-bottom: 1px solid #e2e8f0;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 700;
       color: #64748b;
     }
@@ -398,7 +397,7 @@
     }
     .wd-cell:active { background: #edf2f7; }
     .wd-name {
-      font-size: 11px;
+      font-size: 13px;
       color: #64748b;
       margin-bottom: 4px;
     }
@@ -432,7 +431,7 @@
       position: absolute;
       left: 0; right: 0;
       border-top: 1px dashed #f1f5f9;
-      font-size: 9px;
+      font-size: 13px;
       color: #cbd5e0;
       padding-left: 3px;
     }
@@ -444,30 +443,30 @@
     .week-time-label {
       position: absolute;
       right: 4px;
-      font-size: 10px;
+      font-size: 13px;
       color: #94a3b8;
       transform: translateY(-50%);
     }
     .week-event {
       position: absolute;
       left: 2px; right: 2px;
-      border-radius: 4px;
+      border-radius: 8px;
       padding: 3px 4px;
-      font-size: 10px;
+      font-size: 13px;
       line-height: 1.25;
       color: #fff;
       overflow: hidden;
       box-shadow: 0 1px 2px rgba(0,0,0,0.08);
     }
     .week-event .we-venue { font-weight: 700; }
-    .week-event .we-time  { opacity: 0.9; font-size: 9px; }
+    .week-event .we-time  { opacity: 0.9; font-size: 13px; }
     .week-holiday-banner {
       position: absolute;
       left: 0; right: 0;
       top: 0;
       background: #fef9c3;
       color: #854d0e;
-      font-size: 10px;
+      font-size: 13px;
       font-weight: 700;
       text-align: center;
       padding: 3px 0;
@@ -499,7 +498,7 @@
       background: #fff;
       width: 100%;
       max-height: 80vh;
-      border-radius: 18px 18px 0 0;
+      border-radius: 16px 16px 0 0;
       padding: 8px 0 24px;
       animation: slideUp 0.22s ease-out;
       display: flex;
@@ -509,7 +508,7 @@
     .day-modal-handle {
       width: 40px; height: 4px;
       background: #cbd5e0;
-      border-radius: 2px;
+      border-radius: 8px;
       margin: 0 auto 10px;
       flex-shrink: 0;
     }
@@ -522,14 +521,14 @@
       flex-shrink: 0;
     }
     .day-modal-title {
-      font-size: 17px;
-      font-weight: 800;
+      font-size: 18px;
+      font-weight: 700;
       color: #1f2d3d;
     }
     .day-modal-title .dm-weekday {
       font-size: 13px;
       color: #64748b;
-      font-weight: 600;
+      font-weight: 700;
       margin-left: 6px;
     }
     .day-modal-close {
@@ -555,16 +554,16 @@
       display: inline-block;
       background: #fef9c3;
       color: #854d0e;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
       padding: 4px 10px;
-      border-radius: 6px;
+      border-radius: 8px;
       margin-bottom: 12px;
     }
     .day-empty {
       text-align: center;
       color: #94a3b8;
-      font-size: 14px;
+      font-size: 15px;
       padding: 24px 0;
     }
     .day-event-item {
@@ -578,7 +577,7 @@
     .day-event-bar {
       width: 4px;
       align-self: stretch;
-      border-radius: 2px;
+      border-radius: 8px;
       flex-shrink: 0;
     }
     .day-event-info { flex: 1; min-width: 0; }
@@ -596,7 +595,7 @@
     /* ── 天檢視(彈窗內) ── */
     .day-view {
       border: 1px solid #e2e8f0;
-      border-radius: 10px;
+      border-radius: 12px;
       overflow: hidden;
       background: #fff;
     }
@@ -604,7 +603,7 @@
       display: grid;
       background: #f8fafc;
       border-bottom: 1px solid #e2e8f0;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 700;
       color: #64748b;
     }
@@ -627,7 +626,7 @@
     .dv-time-label {
       position: absolute;
       right: 4px;
-      font-size: 10px;
+      font-size: 13px;
       color: #94a3b8;
       transform: translateY(-50%);
     }
@@ -644,23 +643,23 @@
     .dv-event {
       position: absolute;
       left: 2px; right: 2px;
-      border-radius: 4px;
+      border-radius: 8px;
       padding: 4px 5px;
-      font-size: 10px;
+      font-size: 13px;
       line-height: 1.3;
       color: #fff;
       overflow: hidden;
       box-shadow: 0 1px 2px rgba(0,0,0,0.08);
     }
-    .dv-event .dv-venue { font-weight: 700; font-size: 11px; }
-    .dv-event .dv-time { opacity: 0.95; font-size: 10px; }
+    .dv-event .dv-venue { font-weight: 700; font-size: 13px; }
+    .dv-event .dv-time { opacity: 0.95; font-size: 13px; }
     .dv-holiday-banner {
       position: absolute;
       left: 0; right: 0;
       top: 0;
       background: #fef9c3;
       color: #854d0e;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 700;
       text-align: center;
       padding: 4px 0;
@@ -673,11 +672,11 @@
       flex-wrap: wrap;
       gap: 10px;
       margin-top: 12px;
-      font-size: 11px;
+      font-size: 13px;
       color: #64748b;
     }
     .legend-item { display: inline-flex; align-items: center; gap: 4px; }
-    .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 8px; display: inline-block; }
 
     /* 桌機版 */
     @media (min-width: 601px) {
@@ -685,20 +684,20 @@
       .container {
         max-width: 720px;
         margin: 0 auto;
-        border-radius: 18px;
+        border-radius: 16px;
         padding: 40px 36px 36px;
         box-shadow: 0 4px 28px rgba(0,0,0,0.09);
         min-height: unset;
       }
       .time-row input { padding: 14px 16px; }
       .venue-btn { font-size: 15px; padding: 16px 8px; min-height: 80px; }
-      .venue-icon { font-size: 24px; margin-bottom: 5px; }
-      .month-grid { font-size: 12px; }
+      .venue-icon { font-size: 22px; margin-bottom: 5px; }
+      .month-grid { font-size: 13px; }
       .month-cell { min-height: 90px; padding: 6px 5px; }
       .day-num { font-size: 13px; }
-      .booking-pill { font-size: 10px; padding: 2px 5px; }
-      .week-header-row { font-size: 12px; }
-      .week-event { font-size: 11px; }
+      .booking-pill { font-size: 13px; padding: 2px 5px; }
+      .week-header-row { font-size: 13px; }
+      .week-event { font-size: 13px; }
 
       .day-modal-overlay { align-items: center; }
       .day-modal {
@@ -715,6 +714,7 @@
       .cal-controls-row.row-tools { flex: 0 0 auto; gap: 8px; }
     }
   </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
   <link rel="stylesheet" href="platform-module.css?v=3">
   <script src="service-runtime-config.js"></script>
   <script src="service-config.js"></script>
@@ -722,7 +722,7 @@
 </head>
 <body class="platform-module-body">
 <header class="platform-module-bar">
-  <a class="platform-module-home" href="service.html" aria-label="回首頁">← 回首頁</a>
+  <a class="platform-module-home" href="service.html" aria-label="回平台">← 回平台</a>
   <h1 class="platform-module-title">場地登記</h1>
   <span class="platform-module-bar-spacer" aria-hidden="true"></span>
 </header>
@@ -733,7 +733,7 @@
     <h2 id="moduleStateTitle">載入中…</h2>
     <p id="moduleStateMessage" hidden></p>
     <div class="platform-module-actions" id="moduleStateActions" hidden>
-      <a class="platform-module-action is-secondary" href="service.html">回首頁</a>
+      <a class="platform-module-action is-secondary" href="service.html">回平台</a>
       <button class="platform-module-action" type="button" onclick="PlatformModule.retryCurrentPage()">再試一次</button>
     </div>
   </div>
@@ -742,14 +742,14 @@
 <main class="container" id="moduleContent" hidden>
   <div class="header">
     <div class="subtitle">請填寫以下資料，系統將確認場地是否可用，最下方可查看各場地使用情形</div>
-    <div class="subtitle">❗️如遇教會活動場地衝突，將由全職同工協調場地使用，若教會已無場地時，則需自行另尋教會以外的場地❗️</div>
+    <div class="subtitle"><i class="ti ti-alert-triangle"></i> 如遇教會活動場地衝突，將由全職同工協調場地使用，若教會已無場地時，則需自行另尋教會以外的場地</div>
   </div>
   <div class="divider"></div>
 
   <!-- ── 分堂切換 ── -->
   <div class="branch-tabs" role="tablist">
-    <button type="button" class="branch-tab active" data-branch="桃園" onclick="selectBranch('桃園')">🏛 桃園</button>
-    <button type="button" class="branch-tab" data-branch="林口" onclick="selectBranch('林口')">🏛 林口</button>
+    <button type="button" class="branch-tab active" data-branch="桃園" onclick="selectBranch('桃園')">桃園</button>
+    <button type="button" class="branch-tab" data-branch="林口" onclick="selectBranch('林口')">林口</button>
   </div>
 
   <form id="bookingForm">
@@ -806,7 +806,7 @@
 
   <!-- ════ 借用情形檢視 ════ -->
   <div class="calendar-section">
-    <h2>📅 場地借用情形</h2>
+    <h2><i class="ti ti-calendar"></i> 場地借用情形</h2>
     <div class="cal-subtitle">為保護同工隱私,僅顯示時段與場地。標示「休」的日期為教會休假日(仍可借用)。</div>
 
     <div class="cal-branch-tabs">
@@ -907,11 +907,11 @@
           })) return;
           PlatformModule.showGateError(
             '目前無法確認登入',
-            '已重新登入過，但場地系統仍無法確認身分。請先回首頁，稍後再試。'
+            '已重新登入過，但場地系統仍無法確認身分。請先回平台，稍後再試。'
           );
           return;
         }
-        PlatformModule.showGateError('場地系統暫時無法開啟', res.message || '請稍後再試，或先回首頁。');
+        PlatformModule.showGateError('場地系統暫時無法開啟', res.message || '請稍後再試，或先回平台。');
         return;
       }
       USER_EMAIL = res.email;
@@ -930,7 +930,7 @@
       loadAndRenderCalendar();  // 登入後才載入借用情形
     })
     .catch(function() {
-      PlatformModule.showGateError('連線失敗', '目前連不到場地系統，請稍後再試，或先回首頁。');
+      PlatformModule.showGateError('連線失敗', '目前連不到場地系統，請稍後再試，或先回平台。');
     });
   }
 
@@ -943,7 +943,7 @@
     })) {
       PlatformModule.showGateError(
         '登入狀態無法驗證',
-        '已嘗試重新登入，但場地系統仍無法確認身分。請先回首頁，稍後再試。'
+        '已嘗試重新登入，但場地系統仍無法確認身分。請先回平台，稍後再試。'
       );
     }
   }
@@ -951,16 +951,16 @@
   // ── 場地清單(必須與後端 VENUES 一致) ──
   var VENUES_BY_BRANCH = {
     '桃園': [
-      { name: '501教室', icon: '🏫' },
-      { name: '502教室', icon: '🏫' },
-      { name: '副堂',    icon: '⛪' },
-      { name: '主堂',    icon: '✝️' }
+      { name: '501教室', icon: 'ti-school' },
+      { name: '502教室', icon: 'ti-school' },
+      { name: '副堂',    icon: 'ti-building-church' },
+      { name: '主堂',    icon: 'ti-cross' }
     ],
     '林口': [
-      { name: '201教室', icon: '🏫' },
-      { name: '202教室', icon: '🏫' },
-      { name: '203教室', icon: '🏫' },
-      { name: '主堂',    icon: '✝️' }
+      { name: '201教室', icon: 'ti-school' },
+      { name: '202教室', icon: 'ti-school' },
+      { name: '203教室', icon: 'ti-school' },
+      { name: '主堂',    icon: 'ti-cross' }
     ]
   };
 
@@ -1039,7 +1039,7 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'venue-btn';
-      btn.innerHTML = '<span class="venue-icon">' + v.icon + '</span>' + v.name;
+      btn.innerHTML = '<span class="venue-icon"><i class="ti ' + v.icon + '"></i></span>' + v.name;
       btn.onclick = function() { selectVenue(v.name, btn); };
       grid.appendChild(btn);
     });
@@ -1270,7 +1270,7 @@
       doRender(res, rangeStart, rangeEnd);
     })
     .catch(function() {
-      content.innerHTML = '<div class="cal-error">⚠️ 載入失敗,請稍後再試</div>';
+      content.innerHTML = '<div class="cal-error"><i class="ti ti-alert-triangle"></i> 載入失敗，請稍後再試</div>';
     });
   }
 
@@ -1575,7 +1575,7 @@
     bodyHtml += '<div></div>';
     venues.forEach(function(v) {
       var color = (VENUE_COLORS[calBranch] && VENUE_COLORS[calBranch][v]) || '#64748b';
-      bodyHtml += '<div><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' +
+      bodyHtml += '<div><span style="display:inline-block;width:8px;height:8px;border-radius:8px;background:' +
                   color + ';margin-right:4px;vertical-align:middle;"></span>' +
                   escapeHtml(v) + '</div>';
     });

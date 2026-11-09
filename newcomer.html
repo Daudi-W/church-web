@@ -17,11 +17,11 @@
   --gray: #94a3b8;
   --bg: #f4f6f8;
   --card: #ffffff;
-  --radius: 14px;
+  --radius: 16px;
 }
 
 body {
-  font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  font-family: system-ui, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
   background: var(--bg);
   color: #1f2d3d;
   min-height: 100vh;
@@ -50,17 +50,17 @@ button:active { opacity: 0.75; transform: scale(0.97); }
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 .topbar-title { font-size: 16px; font-weight: 700; }
-.topbar-sub { font-size: 12px; opacity: 0.8; margin-top: 1px; }
+.topbar-sub { font-size: 13px; opacity: 0.8; margin-top: 1px; }
 .topbar-buttons { display: flex; gap: 6px; align-items: center; }
 #btn-back, #btn-font {
   background: rgba(255,255,255,0.2);
   color: white;
   padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 700;
 }
-body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
+body.large-font #btn-font { background: #0F6E56; color: #fff; }
 
 #screen-loading {
   display: flex;
@@ -70,7 +70,7 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
   min-height: 80vh;
   gap: 16px;
   color: #64748b;
-  font-size: 14px;
+  font-size: 15px;
 }
 .big-spinner {
   width: 40px; height: 40px;
@@ -95,8 +95,8 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
   text-align: center;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
-.stat-num { font-size: 24px; font-weight: 800; color: var(--primary); }
-.stat-lbl { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+.stat-num { font-size: 22px; font-weight: 700; color: var(--primary); }
+.stat-lbl { font-size: 13px; color: #94a3b8; margin-top: 1px; }
 
 .filter-row {
   display: flex;
@@ -109,9 +109,9 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
 .filter-row::-webkit-scrollbar { display: none; }
 .filter-btn {
   padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 700;
   white-space: nowrap;
   background: white;
   color: #64748b;
@@ -125,17 +125,17 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
   justify-content: flex-end;
   gap: 6px;
   margin-bottom: 10px;
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
 }
-.sort-label { font-size: 12px; color: #94a3b8; }
+.sort-label { font-size: 13px; color: #94a3b8; }
 .btn-sort {
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+  border-radius: 16px;
+  font-size: 13px;
   font-weight: 700;
   background: var(--primary);
   color: white;
@@ -151,7 +151,7 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
   box-shadow: 0 1px 6px rgba(0,0,0,0.07);
 }
 .district-header h2 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-.district-header p  { font-size: 12px; color: #94a3b8; }
+.district-header p  { font-size: 13px; color: #94a3b8; }
 
 .district-stats {
   display: grid;
@@ -159,7 +159,7 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
   gap: 8px;
   margin-bottom: 14px;
 }
-.district-stats .stat-chip .stat-num { font-size: 20px; }
+.district-stats .stat-chip .stat-num { font-size: 22px; }
 
 .leader-card {
   background: white;
@@ -178,8 +178,8 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
 .leader-name { font-size: 16px; font-weight: 700; }
 .leader-badges { display: flex; gap: 6px; flex-wrap: wrap; }
 .badge {
-  font-size: 11px; font-weight: 700;
-  padding: 3px 9px; border-radius: 20px;
+  font-size: 13px; font-weight: 700;
+  padding: 3px 9px; border-radius: 16px;
 }
 .badge-total { background: #e0e7ff; color: #3730a3; }
 .badge-done  { background: #dcfce7; color: #14532d; }
@@ -190,7 +190,7 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
   padding: 9px;
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   background: #f1f5f9;
   color: #0F6E56;
   text-align: center;
@@ -206,14 +206,14 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
   justify-content: space-between;
   align-items: center;
 }
-.mini-member-left .mini-name { font-size: 14px; font-weight: 700; }
-.mini-member-left .mini-sub  { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.mini-member-left .mini-name { font-size: 15px; font-weight: 700; }
+.mini-member-left .mini-sub  { font-size: 13px; color: #94a3b8; margin-top: 2px; }
 .mini-dots { display: flex; gap: 4px; }
 .mini-dot {
   width: 22px; height: 22px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 9px; font-weight: 700;
+  font-size: 13px; font-weight: 700;
 }
 .dot-empty    { background: #f1f5f9; color: #cbd5e0; border: 1.5px dashed #e2e8f0; }
 .dot-跟進中   { background: #fef9c3; color: #92400e; border: 1.5px solid #fbbf24; }
@@ -240,7 +240,7 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
   gap: 8px;
   margin-bottom: 12px;
 }
-.pastor-total-stats .stat-chip .stat-num { font-size: 20px; }
+.pastor-total-stats .stat-chip .stat-num { font-size: 22px; }
 
 /* 未分配新人警示卡片 */
 .unassigned-card {
@@ -262,19 +262,19 @@ body.large-font #btn-font { background: #fbbf24; color: #1f2d3d; }
 .unassigned-card-left { display: flex; align-items: center; gap: 12px; flex: 1; }
 .unassigned-icon { font-size: 28px; line-height: 1; }
 .unassigned-text-title { font-size: 15px; font-weight: 700; color: #991b1b; }
-.unassigned-text-sub   { font-size: 12px; color: #b45309; margin-top: 2px; }
+.unassigned-text-sub   { font-size: 13px; color: #b45309; margin-top: 2px; }
 .unassigned-count {
-  font-size: 26px;
-  font-weight: 800;
+  font-size: 28px;
+  font-weight: 700;
   color: #ef4444;
   min-width: 36px;
   text-align: right;
 }
 .unassigned-arrow { font-size: 22px; color: #ef4444; font-weight: 700; }
-body.large-font .unassigned-text-title { font-size: 19px; }
+body.large-font .unassigned-text-title { font-size: 18px; }
 body.large-font .unassigned-text-sub   { font-size: 15px; }
-body.large-font .unassigned-count      { font-size: 32px; }
-body.large-font .unassigned-icon       { font-size: 36px; }
+body.large-font .unassigned-count      { font-size: 28px; }
+body.large-font .unassigned-icon       { font-size: 28px; }
 
 /* View 切換 tabs (區長/區牧畫面用) */
 .view-tabs {
@@ -289,7 +289,7 @@ body.large-font .unassigned-icon       { font-size: 36px; }
 .view-tab {
   flex: 1;
   padding: 9px 8px;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   color: #64748b;
   font-size: 13px;
@@ -303,7 +303,7 @@ body.large-font .unassigned-icon       { font-size: 36px; }
   color: white;
   box-shadow: 0 1px 3px rgba(26,82,118,0.3);
 }
-body.large-font .view-tab { font-size: 17px; padding: 12px 10px; }
+body.large-font .view-tab { font-size: 18px; padding: 12px 10px; }
 
 /* 「依新人」清單的分群標題(區長視角的小組長橫條) */
 .flat-group {
@@ -315,23 +315,23 @@ body.large-font .view-tab { font-size: 17px; padding: 12px 10px; }
   justify-content: space-between;
   background: #ede9fe;
   color: #5b21b6;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 7px 12px;
   margin-bottom: 8px;
   border-left: 3px solid #a78bfa;
   cursor: pointer;
 }
 .flat-group-header:active { background: #ddd6fe; }
-.flat-group-title { font-size: 12px; font-weight: 700; color: #5b21b6; }
+.flat-group-title { font-size: 13px; font-weight: 700; color: #5b21b6; }
 .flat-group-badges { display: flex; gap: 5px; align-items: center; }
 .flat-group-badges .badge {
   background: rgba(255,255,255,0.7);
   color: #5b21b6;
   font-weight: 700;
-  font-size: 10px;
+  font-size: 13px;
   padding: 2px 7px;
 }
-.flat-group-toggle { font-size: 12px; color: #7c3aed; margin-left: 2px; font-weight: 700; }
+.flat-group-toggle { font-size: 13px; color: #7c3aed; margin-left: 2px; font-weight: 700; }
 body.large-font .flat-group-title { font-size: 15px; }
 body.large-font .flat-group-badges .badge { font-size: 13px; padding: 3px 9px; }
 
@@ -339,10 +339,10 @@ body.large-font .flat-group-badges .badge { font-size: 13px; padding: 3px 9px; }
 .flat-group-self-tag {
   background: #fbbf24;
   color: #78350f;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   padding: 2px 7px;
-  border-radius: 10px;
+  border-radius: 12px;
   margin-left: 6px;
   vertical-align: middle;
 }
@@ -370,8 +370,8 @@ body.large-font .flat-group-self-tag { font-size: 13px; padding: 3px 10px; }
 }
 .district-group-header:active { background: #bfdbfe; }
 .district-group-title {
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--primary);
   letter-spacing: 0.3px;
 }
@@ -380,7 +380,7 @@ body.large-font .flat-group-self-tag { font-size: 13px; padding: 3px 10px; }
   background: rgba(255,255,255,0.75);
   color: var(--primary);
   font-weight: 700;
-  font-size: 11px;
+  font-size: 13px;
   padding: 2px 8px;
 }
 .district-group-toggle { font-size: 13px; color: var(--primary-light); margin-left: 2px; font-weight: 700; }
@@ -392,21 +392,21 @@ body.large-font .flat-group-self-tag { font-size: 13px; padding: 3px 10px; }
   gap: 8px;
   margin: 14px 2px 8px;
   padding: 7px 12px;
-  font-size: 12px;
+  font-size: 13px;
   color: #5b21b6;
   font-weight: 700;
   background: #ede9fe;
   border-left: 3px solid #a78bfa;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 .district-leader-sub-name { color: #5b21b6; }
-.district-leader-sub-count { color: #7c3aed; font-weight: 700; margin-left: auto; font-size: 11px; background: rgba(255,255,255,0.6); padding: 2px 8px; border-radius: 10px; }
+.district-leader-sub-count { color: #7c3aed; font-weight: 700; margin-left: auto; font-size: 13px; background: rgba(255,255,255,0.6); padding: 2px 8px; border-radius: 12px; }
 
-body.large-font .district-group-title { font-size: 17px; }
+body.large-font .district-group-title { font-size: 18px; }
 body.large-font .district-group-badges .badge { font-size: 13px; padding: 3px 10px; }
 body.large-font .district-group-toggle { font-size: 16px; }
 body.large-font .district-leader-sub { font-size: 15px; }
-body.large-font .district-leader-sub-count { font-size: 14px; }
+body.large-font .district-leader-sub-count { font-size: 15px; }
 
 /* 進入此區按鈕 */
 .btn-enter-district {
@@ -415,23 +415,23 @@ body.large-font .district-leader-sub-count { font-size: 14px; }
   border: none;
   border-radius: 8px;
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   margin-left: 6px;
   white-space: nowrap;
 }
 .btn-enter-district:active { opacity: 0.8; }
-body.large-font .btn-enter-district { font-size: 14px; padding: 8px 14px; }
+body.large-font .btn-enter-district { font-size: 15px; padding: 8px 14px; }
 
 /* 「進入 ›」按鈕(嵌在藍色區標題列中,白色半透明風格) */
 .btn-enter-district-inline {
   background: var(--primary);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 4px 9px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -439,17 +439,17 @@ body.large-font .btn-enter-district { font-size: 14px; padding: 8px 14px; }
 }
 .btn-enter-district-inline:hover { background: var(--primary-light); }
 .btn-enter-district-inline:active { transform: scale(0.97); }
-body.large-font .btn-enter-district-inline { font-size: 14px; padding: 6px 11px; }
+body.large-font .btn-enter-district-inline { font-size: 15px; padding: 6px 11px; }
 
 /* 在依新人卡片上顯示「所屬小組長 / 區」的小標籤 */
 .member-belongs {
   display: inline-block;
   background: #eef2ff;
   color: #4338ca;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 12px;
   margin-left: 6px;
   vertical-align: middle;
 }
@@ -458,7 +458,7 @@ body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
 /* 「依新人」精簡列卡片 */
 .flat-row {
   background: white;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 10px 12px;
   margin-bottom: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -502,7 +502,7 @@ body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
   width: 22px; height: 22px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 9px; font-weight: 700;
+  font-size: 13px; font-weight: 700;
   flex-shrink: 0;
 }
 .flat-row-mini-dot.dot-empty    { background: #f1f5f9; color: #cbd5e0; border: 1.5px dashed #e2e8f0; }
@@ -512,10 +512,10 @@ body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
 .flat-row-mini-dot.dot-沒興趣   { background: #f1f5f9; color: #64748b; border: 1.5px solid #cbd5e0; }
 .flat-row-mini-dot.dot-其他     { background: #ede9fe; color: #6b21a8; border: 1.5px solid #c4b5fd; }
 .flat-row-status-mini {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 12px;
   white-space: nowrap;
 }
 .flat-row-icon-btn {
@@ -523,7 +523,7 @@ body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
   border: none;
   border-radius: 8px;
   width: 44px; height: 44px; padding: 0;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
   flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
@@ -531,7 +531,7 @@ body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
 .flat-row-icon-btn.btn-write { background: #e0e7ff; }
 .flat-row-icon-btn:active { opacity: 0.7; }
 .flat-row-sub {
-  font-size: 11px;
+  font-size: 13px;
   color: #94a3b8;
   margin-top: 4px;
   display: flex;
@@ -539,14 +539,14 @@ body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
   gap: 6px;
   flex-wrap: wrap;
 }
-.flat-row-sub a { color: #0F6E56; font-weight: 600; text-decoration: none; }
+.flat-row-sub a { color: #0F6E56; font-weight: 700; text-decoration: none; }
 
 /* ─── 新增:flat 卡片底部最新一週備註預覽 ─── */
 .flat-row-latest {
   margin-top: 8px;
   padding: 7px 10px;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 13px;
   line-height: 1.45;
   border-left: 3px solid;
   display: flex;
@@ -554,10 +554,10 @@ body.large-font .member-belongs { font-size: 13px; padding: 3px 10px; }
   align-items: flex-start;
 }
 .flat-row-latest .latest-tag {
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: 8px;
   flex-shrink: 0;
   white-space: nowrap;
   letter-spacing: 0.3px;
@@ -593,24 +593,24 @@ body.large-font .flat-row-latest .latest-tag { font-size: 13px; padding: 2px 8px
 /* 未分配新人 — 指派按鈕 */
 .btn-assign {
   width: 100%; background: #f97316; color: white;
-  padding: 11px; border-radius: 10px;
-  font-size: 14px; font-weight: 700; margin-top: 10px;
+  padding: 11px; border-radius: 12px;
+  font-size: 15px; font-weight: 700; margin-top: 10px;
   border: none; cursor: pointer;
 }
 .btn-assign:active { opacity: 0.85; }
-body.large-font .btn-assign { font-size: 17px; padding: 14px; }
+body.large-font .btn-assign { font-size: 18px; padding: 14px; }
 
 /* 指派 modal 內的選項列 */
 .assign-section { margin-bottom: 14px; }
 .assign-district-list {
   display: flex; flex-wrap: wrap; gap: 6px;
   max-height: 140px; overflow-y: auto;
-  padding: 4px; background: #f8fafc; border-radius: 10px;
+  padding: 4px; background: #f8fafc; border-radius: 12px;
 }
 .assign-chip {
-  padding: 7px 13px; border-radius: 18px;
+  padding: 7px 13px; border-radius: 16px;
   border: 2px solid #e2e8f0; background: white;
-  font-size: 13px; font-weight: 600; color: #475569;
+  font-size: 13px; font-weight: 700; color: #475569;
   cursor: pointer;
 }
 .assign-chip.selected {
@@ -618,7 +618,7 @@ body.large-font .btn-assign { font-size: 17px; padding: 14px; }
 }
 .assign-leader-list {
   max-height: 240px; overflow-y: auto;
-  background: #f8fafc; border-radius: 10px; padding: 6px;
+  background: #f8fafc; border-radius: 12px; padding: 6px;
 }
 .assign-leader-row {
   padding: 10px 14px; border-radius: 8px;
@@ -629,19 +629,19 @@ body.large-font .btn-assign { font-size: 17px; padding: 14px; }
 .assign-leader-row.selected {
   border-color: var(--primary); background: #eff6ff;
 }
-.assign-leader-row .lname { font-size: 14px; font-weight: 700; color: #1f2d3d; }
-.assign-leader-row .lgroup { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.assign-leader-row .lname { font-size: 15px; font-weight: 700; color: #1f2d3d; }
+.assign-leader-row .lgroup { font-size: 13px; color: #94a3b8; margin-top: 2px; }
 body.large-font .assign-chip { font-size: 16px; padding: 9px 16px; }
 body.large-font .assign-leader-row .lname { font-size: 18px; }
-body.large-font .assign-leader-row .lgroup { font-size: 14px; }
+body.large-font .assign-leader-row .lgroup { font-size: 15px; }
 
 .assign-empty {
   text-align: center; padding: 20px;
   color: #94a3b8; font-size: 13px;
 }
-body.large-font .flat-row-name { font-size: 19px; }
-body.large-font .flat-row-sub { font-size: 14px; }
-body.large-font .flat-row-mini-dot { width: 28px; height: 28px; font-size: 12px; }
+body.large-font .flat-row-name { font-size: 18px; }
+body.large-font .flat-row-sub { font-size: 15px; }
+body.large-font .flat-row-mini-dot { width: 28px; height: 28px; font-size: 13px; }
 body.large-font .flat-row-status-mini { font-size: 13px; padding: 3px 10px; }
 body.large-font .flat-row-icon-btn { font-size: 18px; padding: 7px 11px; }
 
@@ -690,8 +690,8 @@ body.large-font .flat-row-right {
   border-bottom: 1px solid #f1f5f9;
 }
 .pastor-leader-row:last-child { border-bottom: none; }
-.pastor-leader-name { font-size: 14px; font-weight: 700; }
-.pastor-leader-sub  { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.pastor-leader-name { font-size: 15px; font-weight: 700; }
+.pastor-leader-sub  { font-size: 13px; color: #94a3b8; margin-top: 2px; }
 
 /* 新人卡片 */
 .member-card {
@@ -715,12 +715,12 @@ body.large-font .flat-row-right {
   align-items: flex-start;
   margin-bottom: 10px;
 }
-.card-name { font-size: 20px; font-weight: 700; }
+.card-name { font-size: 22px; font-weight: 700; }
 .card-sub  { font-size: 13px; color: #64748b; margin-top: 4px; line-height: 1.6; }
 
 .status-pill {
   font-size: 13px; font-weight: 700;
-  padding: 6px 14px; border-radius: 20px;
+  padding: 6px 14px; border-radius: 16px;
   white-space: nowrap; flex-shrink: 0;
 }
 .pill-跟進中   { background: #fef9c3; color: #92400e; }
@@ -734,13 +734,13 @@ body.large-font .flat-row-right {
   display: flex; align-items: center;
   gap: 8px; margin: 10px 0;
 }
-.prog-label { font-size: 11px; color: #94a3b8; width: 32px; flex-shrink: 0; }
+.prog-label { font-size: 13px; color: #94a3b8; width: 32px; flex-shrink: 0; }
 .dots { display: flex; gap: 6px; }
 .dot {
   width: 34px; height: 34px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700;
+  font-size: 13px; font-weight: 700;
 }
 
 .note-box {
@@ -754,36 +754,36 @@ body.large-font .flat-row-right {
   white-space: pre-wrap;
   word-wrap: break-word;
 }
-.note-tag { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 6px; }
+.note-tag { font-size: 13px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 6px; }
 .info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 6px; margin: 10px 0;
 }
 .info-item { background: #f8fafc; border-radius: 8px; padding: 8px 10px; }
-.info-item .lbl { font-size: 10px; color: #94a3b8; font-weight: 700; margin-bottom: 2px; }
-.info-item .val { font-size: 13px; font-weight: 600; color: #1f2d3d; }
+.info-item .lbl { font-size: 13px; color: #94a3b8; font-weight: 700; margin-bottom: 2px; }
+.info-item .val { font-size: 13px; font-weight: 700; color: #1f2d3d; }
 .note-warn  { background: #fff7ed; border-left: 3px solid #f97316; }
 .note-alert { background: #fff1f2; border-left: 3px solid #f43f5e; }
 
 .btn-contact {
   flex: 1; min-width: 120px;
   padding: 9px 12px; border-radius: 8px;
-  font-size: 13px; font-weight: 600;
+  font-size: 13px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; gap: 5px;
 }
-.btn-tel { background: #0F6E56; color: white; font-size: 14px; font-weight: 700; }
+.btn-tel { background: #0F6E56; color: white; font-size: 15px; font-weight: 700; }
 
 .btn-report {
   width: 100%; background: var(--primary); color: white;
-  padding: 10px 8px; border-radius: 10px;
+  padding: 10px 8px; border-radius: 12px;
   font-size: 13px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; gap: 4px;
 }
 .btn-conclude {
   width: 100%; background: white; color: var(--primary);
   border: 2px solid var(--primary);
-  padding: 9px 8px; border-radius: 10px;
+  padding: 9px 8px; border-radius: 12px;
   font-size: 13px; font-weight: 700;
 }
 
@@ -793,7 +793,7 @@ body.large-font .flat-row-right {
   border: 0; border-radius: 50%;
   background: transparent;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 19px; line-height: 1;
+  font-size: 18px; line-height: 1;
   cursor: pointer; vertical-align: middle;
   transition: background 0.15s, transform 0.15s;
 }
@@ -805,10 +805,10 @@ body.large-font .flat-row-right {
 }
 .detail-item { background: #f8fafc; border-radius: 8px; padding: 10px 12px; }
 .detail-item.full { grid-column: 1 / -1; }
-.detail-item .lbl { font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 3px; }
-.detail-item .val { font-size: 14px; font-weight: 600; color: #1f2d3d; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+.detail-item .lbl { font-size: 13px; color: #94a3b8; font-weight: 700; margin-bottom: 3px; }
+.detail-item .val { font-size: 15px; font-weight: 700; color: #1f2d3d; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
 .detail-section-title {
-  font-size: 11px; font-weight: 700; color: #64748b;
+  font-size: 13px; font-weight: 700; color: #64748b;
   letter-spacing: 0.5px; margin: 14px 0 6px;
 }
 
@@ -838,16 +838,16 @@ body.large-font .flat-row-right {
   margin-bottom: 4px;
 }
 .detail-week-label {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   color: #475569;
   letter-spacing: 0.5px;
 }
 .detail-week-status {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 .detail-week-row[data-st="跟進中"]   .detail-week-status { background: #fef3c7; color: #92400e; }
 .detail-week-row[data-st="聯絡不上"] .detail-week-status { background: #fee2e2; color: #991b1b; }
@@ -856,7 +856,7 @@ body.large-font .flat-row-right {
 .detail-week-row[data-st="其他"]     .detail-week-status { background: #ede9fe; color: #6b21a8; }
 .detail-week-row[data-st=""]         .detail-week-status { background: #f1f5f9; color: #94a3b8; font-style: italic; }
 .detail-week-note {
-  font-size: 14px;
+  font-size: 15px;
   color: #1f2d3d;
   line-height: 1.55;
   white-space: pre-wrap;
@@ -866,11 +866,11 @@ body.large-font .flat-row-right {
 .detail-week-note.empty {
   color: #94a3b8;
   font-style: italic;
-  font-size: 12px;
+  font-size: 13px;
 }
 body.large-font .detail-week-label { font-size: 15px; }
-body.large-font .detail-week-status { font-size: 14px; padding: 3px 10px; }
-body.large-font .detail-week-note { font-size: 17px; }
+body.large-font .detail-week-status { font-size: 15px; padding: 3px 10px; }
+body.large-font .detail-week-note { font-size: 18px; }
 body.large-font .detail-week-note.empty { font-size: 15px; }
 
 .modal-overlay {
@@ -881,7 +881,7 @@ body.large-font .detail-week-note.empty { font-size: 15px; }
 }
 .modal {
   background: white;
-  border-radius: 20px 20px 0 0;
+  border-radius: 16px 16px 0 0;
   padding: 20px 20px 36px;
   width: 100%; max-width: 480px;
   max-height: 90vh; overflow-y: auto;
@@ -895,11 +895,11 @@ body.large-font .detail-week-note.empty { font-size: 15px; }
 }
 .modal-handle {
   width: 40px; height: 4px;
-  background: #e2e8f0; border-radius: 2px;
+  background: #e2e8f0; border-radius: 8px;
   margin: 0 auto 16px;
 }
-.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
-.modal-sub   { font-size: 12px; color: #94a3b8; margin-bottom: 20px; }
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.modal-sub   { font-size: 13px; color: #94a3b8; margin-bottom: 20px; }
 
 .detail-modal {
   padding: 0 20px calc(24px + env(safe-area-inset-bottom));
@@ -924,21 +924,21 @@ body.large-font .detail-week-note.empty { font-size: 15px; }
   border: 0; border-radius: 50%;
   background: #f1f5f9; color: #334155;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 30px; font-weight: 300; line-height: 1;
+  font-size: 28px; font-weight: 400; line-height: 1;
   cursor: pointer;
 }
 .modal-close:active { background: #e2e8f0; transform: scale(0.95); }
 
 .modal.compact .modal-title  { font-size: 15px; }
-.modal.compact .section-label { font-size: 11px; }
-.modal.compact .status-option { font-size: 12px; padding: 9px; }
+.modal.compact .section-label { font-size: 13px; }
+.modal.compact .status-option { font-size: 13px; padding: 9px; }
 .modal.compact textarea       { font-size: 13px; min-height: 60px; margin-bottom: 10px; }
-.modal.compact .btn-submit    { font-size: 14px; padding: 11px; margin-bottom: 8px; }
-.modal.compact .btn-cancel    { font-size: 12px; padding: 9px; }
-.modal.compact .week-pill     { font-size: 12px; padding: 6px 12px; }
+.modal.compact .btn-submit    { font-size: 15px; padding: 11px; margin-bottom: 8px; }
+.modal.compact .btn-cancel    { font-size: 13px; padding: 9px; }
+.modal.compact .week-pill     { font-size: 13px; padding: 6px 12px; }
 
 .section-label {
-  font-size: 12px; font-weight: 700; color: #64748b;
+  font-size: 13px; font-weight: 700; color: #64748b;
   margin-bottom: 8px; letter-spacing: 0.5px;
 }
 .status-grid {
@@ -946,9 +946,9 @@ body.large-font .detail-week-note.empty { font-size: 15px; }
   gap: 8px; margin-bottom: 16px;
 }
 .status-option {
-  padding: 12px; border-radius: 10px;
+  padding: 12px; border-radius: 12px;
   border: 2px solid #e2e8f0; background: white;
-  font-size: 14px; font-weight: 600; text-align: center;
+  font-size: 15px; font-weight: 700; text-align: center;
   cursor: pointer; transition: all 0.15s;
 }
 .status-option.selected { border-width: 3px; }
@@ -962,16 +962,16 @@ body.large-font .detail-week-note.empty { font-size: 15px; }
 
 .week-pills { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .week-pill {
-  padding: 8px 16px; border-radius: 20px;
+  padding: 8px 16px; border-radius: 16px;
   border: 2px solid #e2e8f0; background: white;
-  font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer;
+  font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer;
 }
 .week-pill.selected { background: var(--primary); color: white; border-color: var(--primary); }
 
 textarea {
   width: 100%; padding: 12px;
-  border: 2px solid #e2e8f0; border-radius: 10px;
-  font-size: 14px; font-family: inherit;
+  border: 2px solid #e2e8f0; border-radius: 12px;
+  font-size: 15px; font-family: inherit;
   resize: none; min-height: 80px;
   transition: border-color 0.2s; margin-bottom: 16px;
 }
@@ -979,7 +979,7 @@ textarea:focus { outline: none; border-color: var(--primary); }
 
 input[type="text"] {
   width: 100%; padding: 12px 14px;
-  border: 2px solid #e2e8f0; border-radius: 10px;
+  border: 2px solid #e2e8f0; border-radius: 12px;
   font-size: 15px; font-family: inherit;
   transition: border-color 0.2s; margin-bottom: 16px;
 }
@@ -987,28 +987,29 @@ input[type="text"]:focus { outline: none; border-color: var(--primary); }
 
 .btn-submit {
   width: 100%; background: var(--primary); color: white;
-  padding: 14px; border-radius: 10px;
+  padding: 14px; border-radius: 12px;
   font-size: 16px; font-weight: 700; margin-bottom: 10px;
 }
 .btn-cancel {
   width: 100%; background: #f1f5f9; color: #64748b;
-  padding: 12px; border-radius: 10px;
-  font-size: 14px; font-weight: 600;
+  padding: 12px; border-radius: 12px;
+  font-size: 15px; font-weight: 700;
 }
 
 .toast {
-  position: fixed; bottom: 24px; left: 50%;
+  position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: 50%;
   transform: translateX(-50%);
-  background: #1f2d3d; color: white;
-  padding: 12px 20px; border-radius: 24px;
-  font-size: 14px; font-weight: 600;
-  z-index: 999; white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  animation: fadeInUp 0.3s ease;
+  max-width: calc(100% - 32px); width: max-content;
+  background: #1f2d3d; color: #fff;
+  padding: 12px 16px; border-left: 4px solid #0F6E56; border-radius: 12px;
+  font-size: 15px; line-height: 1.6;
+  z-index: 999;
+  box-shadow: 0 2px 8px rgba(31,45,61,.06);
+  animation: fadeIn 0.2s ease;
 }
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 .spinner {
   display: inline-block; width: 18px; height: 18px;
@@ -1021,15 +1022,15 @@ input[type="text"]:focus { outline: none; border-color: var(--primary); }
 
 .empty-hint {
   text-align: center; padding: 40px 20px;
-  color: #94a3b8; font-size: 14px;
+  color: #94a3b8; font-size: 15px;
 }
-.empty-hint .icon { font-size: 36px; margin-bottom: 10px; }
+.empty-hint .icon { font-size: 28px; margin-bottom: 10px; }
 
 .badge-new {
   display: inline-block;
   background: linear-gradient(135deg, #f97316, #ef4444);
-  color: white; font-size: 10px; font-weight: 800;
-  padding: 2px 7px; border-radius: 20px;
+  color: white; font-size: 13px; font-weight: 700;
+  padding: 2px 7px; border-radius: 16px;
   margin-left: 6px; vertical-align: middle;
   animation: pulse-badge 1.8s ease-in-out infinite;
 }
@@ -1048,17 +1049,17 @@ input[type="text"]:focus { outline: none; border-color: var(--primary); }
 /* 大字模式 */
 body.large-font .info-item { padding: 14px 16px; }
 body.large-font .info-item .lbl { font-size: 15px; margin-bottom: 6px; }
-body.large-font .info-item .val { font-size: 19px; }
-body.large-font .card-name { font-size: 26px; }
-body.large-font .card-sub { font-size: 17px; }
+body.large-font .info-item .val { font-size: 18px; }
+body.large-font .card-name { font-size: 28px; }
+body.large-font .card-sub { font-size: 18px; }
 body.large-font .status-pill { font-size: 16px; padding: 8px 18px; }
-body.large-font .note-box { font-size: 19px; padding: 16px 18px; line-height: 1.6; }
-body.large-font .note-tag { font-size: 14px; }
-body.large-font .btn-contact { font-size: 17px; padding: 12px 16px; }
+body.large-font .note-box { font-size: 18px; padding: 16px 18px; line-height: 1.6; }
+body.large-font .note-tag { font-size: 15px; }
+body.large-font .btn-contact { font-size: 18px; padding: 12px 16px; }
 body.large-font .btn-tel { font-size: 18px; font-weight: bold; }
-body.large-font .btn-report, body.large-font .btn-conclude { font-size: 17px; padding: 14px 12px; }
+body.large-font .btn-report, body.large-font .btn-conclude { font-size: 18px; padding: 14px 12px; }
 body.large-font .filter-btn { font-size: 16px; padding: 10px 20px; }
-body.large-font .stat-num { font-size: 32px; }
+body.large-font .stat-num { font-size: 28px; }
 body.large-font .stat-lbl { font-size: 15px; }
 body.large-font .detail-item .lbl { font-size: 15px; margin-bottom: 6px; }
 body.large-font .detail-item .val { font-size: 18px; }
@@ -1066,19 +1067,19 @@ body.large-font .detail-section-title { font-size: 15px; }
 body.large-font .modal-title { font-size: 22px; }
 body.large-font .section-label { font-size: 16px; }
 body.large-font .status-option { font-size: 18px; padding: 16px; }
-body.large-font .week-pill { font-size: 17px; padding: 12px 20px; }
+body.large-font .week-pill { font-size: 18px; padding: 12px 20px; }
 body.large-font .district-header h2 { font-size: 22px; }
 body.large-font .district-header p { font-size: 16px; }
 body.large-font .district-stats .stat-chip .stat-num { font-size: 28px; }
 body.large-font .leader-name { font-size: 22px; }
-body.large-font .badge { font-size: 14px; padding: 5px 12px; }
-body.large-font .btn-expand { font-size: 17px; padding: 13px; }
+body.large-font .badge { font-size: 15px; padding: 5px 12px; }
+body.large-font .btn-expand { font-size: 18px; padding: 13px; }
 body.large-font .mini-member { padding: 14px 16px; }
-body.large-font .mini-member-left .mini-name { font-size: 19px; }
+body.large-font .mini-member-left .mini-name { font-size: 18px; }
 body.large-font .mini-member-left .mini-sub { font-size: 15px; margin-top: 4px; }
 body.large-font .mini-dot { width: 30px; height: 30px; font-size: 13px; }
 body.large-font .pastor-district-name { font-size: 22px; }
-body.large-font .pastor-leader-name { font-size: 19px; }
+body.large-font .pastor-leader-name { font-size: 18px; }
 body.large-font .pastor-summary h2 { font-size: 22px; }
 body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
 
@@ -1098,13 +1099,14 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
 .newcomer-toolbar #btn-font {
   min-height: 44px;
   padding: 8px 12px !important;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #E1F5EE;
   color: #0F6E56;
   font-size: 15px !important;
 }
 
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
 <link rel="stylesheet" href="platform-module.css?v=3">
 <script src="service-runtime-config.js"></script>
 <script src="service-config.js"></script>
@@ -1112,7 +1114,7 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
 </head>
 <body class="platform-module-body">
 <header class="platform-module-bar">
-  <a class="platform-module-home" href="service.html" aria-label="回首頁">← 回首頁</a>
+  <a class="platform-module-home" href="service.html" aria-label="回平台">← 回平台</a>
   <h1 class="platform-module-title">新人跟進</h1>
   <span class="platform-module-bar-spacer" aria-hidden="true"></span>
 </header>
@@ -1123,7 +1125,7 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
     <h2 id="moduleStateTitle">載入中…</h2>
     <p id="moduleStateMessage" hidden></p>
     <div class="platform-module-actions" id="moduleStateActions" hidden>
-      <a class="platform-module-action is-secondary" href="service.html">回首頁</a>
+      <a class="platform-module-action is-secondary" href="service.html">回平台</a>
       <button class="platform-module-action" type="button" onclick="PlatformModule.retryCurrentPage()">再試一次</button>
     </div>
   </div>
@@ -1133,8 +1135,8 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
 <div class="topbar newcomer-toolbar">
   <div class="topbar-sub" id="topbar-sub">我的跟進清單</div>
   <div class="topbar-buttons">
-    <button id="btn-font" onclick="toggleFontSize()" style="font-size: 20px; padding: 10px 20px; cursor: pointer;">🔍 大字</button>
-    <button id="btn-back" class="hidden" onclick="goBack()" style="font-size: 20px; padding: 10px 20px; cursor: pointer;">返回上一層</button>
+    <button id="btn-font" onclick="toggleFontSize()" style="font-size: 22px; padding: 10px 20px; cursor: pointer;"><i class="ti ti-text-size"></i> 大字</button>
+    <button id="btn-back" class="hidden" onclick="goBack()" style="font-size: 22px; padding: 10px 20px; cursor: pointer;">返回上一層</button>
   </div>
 </div>
 
@@ -1161,19 +1163,19 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
     </div>
   </div>
 
-  <div id="unassigned-banner" class="hidden" style="background:linear-gradient(135deg,#fff7ed 0%,#fef2f2 100%);border:2px solid #f97316;border-left:6px solid #ef4444;border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(239,68,68,0.12)">
-    <div style="font-size:24px">⚠️</div>
+  <div id="unassigned-banner" class="hidden" style="background:linear-gradient(135deg,#fff7ed 0%,#fef2f2 100%);border:2px solid #f97316;border-left:6px solid #ef4444;border-radius:16px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(239,68,68,0.12)">
+    <div style="font-size:22px"><i class="ti ti-alert-triangle"></i></div>
     <div style="flex:1">
-      <div style="font-size:14px;font-weight:700;color:#991b1b">未分配新人</div>
-      <div style="font-size:12px;color:#b45309;margin-top:2px" id="unassigned-banner-sub">尚未指派跟進小組長</div>
+      <div style="font-size:15px;font-weight:700;color:#991b1b">未分配新人</div>
+      <div style="font-size:13px;color:#b45309;margin-top:2px" id="unassigned-banner-sub">尚未指派跟進小組長</div>
     </div>
-    <div style="font-size:22px;font-weight:800;color:#ef4444" id="unassigned-banner-count">—</div>
+    <div style="font-size:22px;font-weight:700;color:#ef4444" id="unassigned-banner-count">—</div>
   </div>
 
   <div class="filter-row" id="main-filter-row">
     <button class="filter-btn"        onclick="setFilter(this,'all')">全部</button>
     <button class="filter-btn active" onclick="setFilter(this,'active')">跟進中</button>
-    <button class="filter-btn"        onclick="setFilter(this,'done')">✅ 已結案</button>
+    <button class="filter-btn"        onclick="setFilter(this,'done')"><i class="ti ti-circle-check"></i> 已結案</button>
   </div>
   <div class="sort-row" id="main-sort-row">
     <span class="sort-label">排序：</span>
@@ -1190,7 +1192,7 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
   <div class="district-header">
     <h2 id="district-title">我的區</h2>
     <p id="district-sub">載入中⋯</p>
-    <button id="btn-my-members" onclick="switchToMyMembers()" style="margin-top:10px;width:100%;padding:10px;border-radius:10px;background:var(--primary);color:white;font-size:14px;font-weight:700;border:none;cursor:pointer">👤 查看我的新人</button>
+    <button id="btn-my-members" onclick="switchToMyMembers()" style="margin-top:10px;width:100%;padding:10px;border-radius:12px;background:var(--primary);color:white;font-size:15px;font-weight:700;border:none;cursor:pointer"><i class="ti ti-user"></i> 查看我的新人</button>
   </div>
   <div class="district-stats">
     <div class="stat-chip"><div class="stat-num" id="d-stat-leaders" style="color:#0F6E56">—</div><div class="stat-lbl">小組長</div></div>
@@ -1201,8 +1203,8 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
 
   <!-- View tab 切換 -->
   <div class="view-tabs">
-    <button class="view-tab"        data-view="byLeader" onclick="setDistrictListView('byLeader')">👥 各小組新人</button>
-    <button class="view-tab active" data-view="allFlat"  onclick="setDistrictListView('allFlat')">📋 全部新人</button>
+    <button class="view-tab"        data-view="byLeader" onclick="setDistrictListView('byLeader')"><i class="ti ti-users"></i> 各小組新人</button>
+    <button class="view-tab active" data-view="allFlat"  onclick="setDistrictListView('allFlat')"><i class="ti ti-clipboard-list"></i> 全部新人</button>
   </div>
 
   <!-- 收合全部小組長(只在 byLeader 時顯示) -->
@@ -1211,7 +1213,7 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
   <div class="filter-row">
     <button class="filter-btn active" onclick="setFlatFilter(this,'all','district')">全部</button>
     <button class="filter-btn"        onclick="setFlatFilter(this,'active','district')">跟進中</button>
-    <button class="filter-btn"        onclick="setFlatFilter(this,'done','district')">✅ 已結案</button>
+    <button class="filter-btn"        onclick="setFlatFilter(this,'done','district')"><i class="ti ti-circle-check"></i> 已結案</button>
   </div>
 
   <!-- 各小組新人(分群) -->
@@ -1231,7 +1233,7 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
     <!-- 未分配新人警示卡片(staff 才看得到) -->
     <div id="unassigned-card" class="unassigned-card hidden" onclick="openUnassignedList()">
       <div class="unassigned-card-left">
-        <div class="unassigned-icon">⚠️</div>
+        <div class="unassigned-icon"><i class="ti ti-alert-triangle"></i></div>
         <div>
           <div class="unassigned-text-title">未分配新人</div>
           <div class="unassigned-text-sub">尚未指派跟進小組長</div>
@@ -1243,20 +1245,20 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
 
     <!-- 全區加總 -->
     <div class="pastor-summary">
-      <h2>📊 全教會統計</h2>
+      <h2><i class="ti ti-chart-bar"></i> 全教會統計</h2>
       <div class="pastor-total-stats">
         <div class="stat-chip"><div class="stat-num" id="p-stat-districts" style="color:#0F6E56">—</div><div class="stat-lbl">區數</div></div>
         <div class="stat-chip"><div class="stat-num" id="p-stat-total">—</div><div class="stat-lbl">總新人</div></div>
         <div class="stat-chip"><div class="stat-num" id="p-stat-active" style="color:#f59e0b">—</div><div class="stat-lbl">跟進中</div></div>
         <div class="stat-chip"><div class="stat-num" id="p-stat-done" style="color:#22c55e">—</div><div class="stat-lbl">已結案</div></div>
       </div>
-      <button id="btn-pastor-my-members" onclick="switchToMyMembersAsPastor()" style="width:100%;margin-bottom:8px;padding:10px;border-radius:10px;background:var(--primary);color:white;font-size:14px;font-weight:700;border:none;cursor:pointer">👤 查看我的新人 <span id="p-my-count" style="opacity:0.85"></span></button>
+      <button id="btn-pastor-my-members" onclick="switchToMyMembersAsPastor()" style="width:100%;margin-bottom:8px;padding:10px;border-radius:12px;background:var(--primary);color:white;font-size:15px;font-weight:700;border:none;cursor:pointer"><i class="ti ti-user"></i> 查看我的新人 <span id="p-my-count" style="opacity:0.85"></span></button>
     </div>
 
     <!-- View tab 切換 -->
     <div class="view-tabs">
-      <button class="view-tab"        data-view="byDistrict" onclick="setPastorListView('byDistrict')">🏘 各區新人</button>
-      <button class="view-tab active" data-view="allFlat"    onclick="setPastorListView('allFlat')">📋 全部新人</button>
+      <button class="view-tab"        data-view="byDistrict" onclick="setPastorListView('byDistrict')"><i class="ti ti-building-community"></i> 各區新人</button>
+      <button class="view-tab active" data-view="allFlat"    onclick="setPastorListView('allFlat')"><i class="ti ti-clipboard-list"></i> 全部新人</button>
     </div>
 
     <!-- 收合全部(只在 byDistrict 時顯示) -->
@@ -1268,7 +1270,7 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
     <div class="filter-row">
       <button class="filter-btn active" onclick="setFlatFilter(this,'all','pastor')">全部</button>
       <button class="filter-btn"        onclick="setFlatFilter(this,'active','pastor')">跟進中</button>
-      <button class="filter-btn"        onclick="setFlatFilter(this,'done','pastor')">✅ 已結案</button>
+      <button class="filter-btn"        onclick="setFlatFilter(this,'done','pastor')"><i class="ti ti-circle-check"></i> 已結案</button>
     </div>
   </div>
 
@@ -1293,15 +1295,15 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
     <div class="week-pills" id="week-pills"></div>
     <div class="section-label">本週狀況</div>
     <div class="status-grid">
-      <button class="status-option" data-val="跟進中"   onclick="selectStatus(this)">🟡 跟進中</button>
-      <button class="status-option" data-val="加入小組" onclick="selectStatus(this)">✅ 加入小組</button>
-      <button class="status-option" data-val="聯絡不上" onclick="selectStatus(this)">🔴 聯絡不上</button>
+      <button class="status-option" data-val="跟進中"   onclick="selectStatus(this)"><i class="ti ti-circle-filled" style="color:#b26a00"></i> 跟進中</button>
+      <button class="status-option" data-val="加入小組" onclick="selectStatus(this)"><i class="ti ti-circle-check"></i> 加入小組</button>
+      <button class="status-option" data-val="聯絡不上" onclick="selectStatus(this)"><i class="ti ti-circle-filled" style="color:#c0392b"></i> 聯絡不上</button>
       <button class="status-option" data-val="沒興趣"   onclick="selectStatus(this)">⬜ 沒興趣</button>
-      <button class="status-option" data-val="其他"     onclick="selectStatus(this)" style="grid-column:1/-1">📝 其他</button>
+      <button class="status-option" data-val="其他"     onclick="selectStatus(this)" style="grid-column:1/-1"><i class="ti ti-notes"></i> 其他</button>
     </div>
     <div class="section-label">備註（選填）</div>
     <textarea id="report-note" placeholder="例：有接電話但說這週很忙，下週再約⋯"></textarea>
-    <button class="btn-submit" onclick="submitReport()">✍️ 送出本週回報</button>
+    <button class="btn-submit" onclick="submitReport()"><i class="ti ti-pencil"></i> 送出本週回報</button>
     <button class="btn-cancel" onclick="closeModal('modal-report')">取消</button>
   </div>
 </div>
@@ -1314,11 +1316,11 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
     <div class="modal-sub">請選擇結案原因</div>
     <div class="section-label">結案狀況</div>
     <div class="status-grid" id="conclude-grid">
-      <button class="status-option" data-val="加入小組"     onclick="selectConclude(this)">✅ 加入小組</button>
+      <button class="status-option" data-val="加入小組"     onclick="selectConclude(this)"><i class="ti ti-circle-check"></i> 加入小組</button>
       <button class="status-option" data-val="不跟進"       onclick="selectConclude(this)">⬜ 不跟進</button>
-      <button class="status-option" data-val="轉介其他分堂" onclick="selectConclude(this)">🔀 轉介其他分堂</button>
-      <button class="status-option" data-val="聯絡不上"     onclick="selectConclude(this)">🔴 聯絡不上</button>
-      <button class="status-option" data-val="其他"         onclick="selectConclude(this)" style="grid-column:1/-1">📝 其他</button>
+      <button class="status-option" data-val="轉介其他分堂" onclick="selectConclude(this)"><i class="ti ti-arrows-shuffle"></i> 轉介其他分堂</button>
+      <button class="status-option" data-val="聯絡不上"     onclick="selectConclude(this)"><i class="ti ti-circle-filled" style="color:#c0392b"></i> 聯絡不上</button>
+      <button class="status-option" data-val="其他"         onclick="selectConclude(this)" style="grid-column:1/-1"><i class="ti ti-notes"></i> 其他</button>
     </div>
     <div id="conclude-note-section" class="hidden">
       <div class="section-label" id="conclude-note-label">補充說明</div>
@@ -1357,18 +1359,18 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
     <!-- A:指派小組長 -->
     <div class="assign-section">
       <div class="section-label">A. 指派小組長</div>
-      <div style="font-size:11px;color:#94a3b8;margin-bottom:6px">① 選擇區</div>
+      <div style="font-size:13px;color:#94a3b8;margin-bottom:6px">① 選擇區</div>
       <div class="assign-district-list" id="assign-district-list">
         <div class="assign-empty">載入中⋯</div>
       </div>
-      <div style="font-size:11px;color:#94a3b8;margin:10px 0 6px">② 選擇小組長</div>
+      <div style="font-size:13px;color:#94a3b8;margin:10px 0 6px">② 選擇小組長</div>
       <div class="assign-leader-list" id="assign-leader-list">
         <div class="assign-empty">請先選擇區</div>
       </div>
     </div>
 
     <!-- 中間分隔 -->
-    <div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:#94a3b8;font-size:12px;font-weight:700">
+    <div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:#94a3b8;font-size:13px;font-weight:700">
       <div style="flex:1;height:1px;background:#e2e8f0"></div>
       <span>或</span>
       <div style="flex:1;height:1px;background:#e2e8f0"></div>
@@ -1379,9 +1381,9 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
       <div class="section-label">B. 直接結案(不跟進)</div>
       <div class="status-grid" id="assign-conclude-grid">
         <button class="status-option" data-val="不跟進"       onclick="selectAssignConclude(this)">⬜ 不跟進</button>
-        <button class="status-option" data-val="聯絡不上"     onclick="selectAssignConclude(this)">🔴 聯絡不上</button>
-        <button class="status-option" data-val="轉介其他分堂" onclick="selectAssignConclude(this)" style="grid-column:1/-1">🔀 轉介其他分堂</button>
-        <button class="status-option" data-val="其他"         onclick="selectAssignConclude(this)" style="grid-column:1/-1">📝 其他</button>
+        <button class="status-option" data-val="聯絡不上"     onclick="selectAssignConclude(this)"><i class="ti ti-circle-filled" style="color:#c0392b"></i> 聯絡不上</button>
+        <button class="status-option" data-val="轉介其他分堂" onclick="selectAssignConclude(this)" style="grid-column:1/-1"><i class="ti ti-arrows-shuffle"></i> 轉介其他分堂</button>
+        <button class="status-option" data-val="其他"         onclick="selectAssignConclude(this)" style="grid-column:1/-1"><i class="ti ti-notes"></i> 其他</button>
       </div>
       <div id="assign-conclude-note-section" class="hidden">
         <div class="section-label" id="assign-conclude-note-label" style="margin-top:8px">補充說明</div>
@@ -1389,7 +1391,7 @@ body.large-font .pastor-total-stats .stat-chip .stat-num { font-size: 28px; }
       </div>
     </div>
 
-    <button class="btn-submit" onclick="submitAssign()">✅ 確認</button>
+    <button class="btn-submit" onclick="submitAssign()"><i class="ti ti-circle-check"></i> 確認</button>
     <button class="btn-cancel" onclick="closeModal('modal-assign')">取消</button>
   </div>
 </div>
@@ -1494,7 +1496,7 @@ function bootLogin() {
   callBackend('getMyDataForFrontend', [])
     .then(function(data){
       if (!data || data.success === false) {
-        PlatformModule.showGateError('新人跟進暫時無法開啟', (data && data.error) || '請稍後再試，或先回首頁。');
+        PlatformModule.showGateError('新人跟進暫時無法開啟', (data && data.error) || '請稍後再試，或先回平台。');
         return;
       }
       USER_EMAIL = data.email;
@@ -1505,7 +1507,7 @@ function bootLogin() {
     })
     .catch(function(err){
       if (err === 'AUTH_REDIRECT') return;
-      PlatformModule.showGateError('連線失敗', '目前連不到新人跟進系統，請稍後再試，或先回首頁。');
+      PlatformModule.showGateError('連線失敗', '目前連不到新人跟進系統，請稍後再試，或先回平台。');
     });
 }
 
@@ -1518,7 +1520,7 @@ function requireRelogin() {
   })) {
     PlatformModule.showGateError(
       '登入狀態無法驗證',
-      '已嘗試重新登入，但新人跟進系統仍無法確認身分。請先回首頁，稍後再試。'
+      '已嘗試重新登入，但新人跟進系統仍無法確認身分。請先回平台，稍後再試。'
     );
   }
 }
@@ -1528,7 +1530,7 @@ function requireRelogin() {
 // ================================================================
 function toggleFontSize() {
   const isLarge = document.body.classList.toggle('large-font');
-  document.getElementById('btn-font').textContent = isLarge ? '✓ 大字' : '🔍 大字';
+  document.getElementById('btn-font').innerHTML = isLarge ? '<i class="ti ti-check"></i> 大字' : '<i class="ti ti-text-size"></i> 大字';
   try { localStorage.setItem('largeFont', isLarge ? '1' : '0'); } catch(e) {}
 }
 (function() {
@@ -1538,7 +1540,7 @@ function toggleFontSize() {
       document.body.classList.add('large-font');
       document.addEventListener('DOMContentLoaded', function() {
         const btn = document.getElementById('btn-font');
-        if (btn) btn.textContent = '✓ 大字';
+        if (btn) btn.innerHTML = '<i class="ti ti-check"></i> 大字';
       });
     }
   } catch(e) {}
@@ -1603,7 +1605,7 @@ function bootWithData(data) {
 
 function showError(msg) {
   document.getElementById('screen-loading').innerHTML =
-    '<div style="text-align:center;padding:40px 24px;color:#c0392b;font-size:14px">❌ ' + msg + '</div>';
+    '<div style="text-align:center;padding:40px 24px;color:#c0392b;font-size:15px"><i class="ti ti-alert-circle"></i> ' + msg + '</div>';
 }
 
 // ================================================================
@@ -1835,12 +1837,12 @@ function renderPastorAllFlat() {
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = '<div class="empty-hint"><div class="icon">' + (anyPending ? '⏳' : '🎉') + '</div><p>' + (anyPending ? '資料載入中⋯' : '此分類目前沒有資料') + '</p></div>';
+    container.innerHTML = '<div class="empty-hint"><div class="icon">' + (anyPending ? '<i class="ti ti-hourglass"></i>' : '<i class="ti ti-confetti"></i>') + '</div><p>' + (anyPending ? '資料載入中⋯' : '此分類目前沒有資料') + '</p></div>';
     return;
   }
 
-  var topHint = anyPending ? '<div style="font-size:12px;color:#94a3b8;text-align:center;padding:6px 0 10px">⏳ 部分區資料仍在載入中⋯</div>' : '';
-  var headerInfo = '<div style="font-size:12px;color:#64748b;padding:4px 4px 10px;font-weight:600">共 ' + filtered.length + ' 人</div>';
+  var topHint = anyPending ? '<div style="font-size:13px;color:#94a3b8;text-align:center;padding:6px 0 10px"><i class="ti ti-hourglass"></i> 部分區資料仍在載入中⋯</div>' : '';
+  var headerInfo = '<div style="font-size:13px;color:#64748b;padding:4px 4px 10px;font-weight:700">共 ' + filtered.length + ' 人</div>';
 
   container.innerHTML = topHint + headerInfo + filtered.map(function(o) {
     return _renderFlatMemberCard(o.member, o.leaderName, o.district);
@@ -1910,12 +1912,12 @@ function renderDistrictAllFlat() {
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = '<div class="empty-hint"><div class="icon">' + (anyPending ? '⏳' : '🎉') + '</div><p>' + (anyPending ? '資料載入中⋯' : '此分類目前沒有資料') + '</p></div>';
+    container.innerHTML = '<div class="empty-hint"><div class="icon">' + (anyPending ? '<i class="ti ti-hourglass"></i>' : '<i class="ti ti-confetti"></i>') + '</div><p>' + (anyPending ? '資料載入中⋯' : '此分類目前沒有資料') + '</p></div>';
     return;
   }
 
-  var topHint = anyPending ? '<div style="font-size:12px;color:#94a3b8;text-align:center;padding:6px 0 10px">⏳ 部分小組資料仍在載入中⋯</div>' : '';
-  var headerInfo = '<div style="font-size:12px;color:#64748b;padding:4px 4px 10px;font-weight:600">共 ' + filtered.length + ' 人</div>';
+  var topHint = anyPending ? '<div style="font-size:13px;color:#94a3b8;text-align:center;padding:6px 0 10px"><i class="ti ti-hourglass"></i> 部分小組資料仍在載入中⋯</div>' : '';
+  var headerInfo = '<div style="font-size:13px;color:#64748b;padding:4px 4px 10px;font-weight:700">共 ' + filtered.length + ' 人</div>';
 
   container.innerHTML = topHint + headerInfo + filtered.map(function(o) {
     return _renderFlatMemberCard(o.member, o.leaderName);
@@ -1971,7 +1973,7 @@ function renderDistrictFlatList() {
   var container = document.getElementById('d-flat-list');
 
   if (leaderSummary.length === 0) {
-    container.innerHTML = '<div class="empty-hint"><div class="icon">📋</div><p>此區尚無小組長資料</p></div>';
+    container.innerHTML = '<div class="empty-hint"><div class="icon"><i class="ti ti-clipboard-list"></i></div><p>此區尚無小組長資料</p></div>';
     return;
   }
 
@@ -1981,8 +1983,8 @@ function renderDistrictFlatList() {
       // 載入中
       return '<div class="flat-group">' +
         '<div class="flat-group-header">' +
-          '<div class="flat-group-title">👤 ' + esc(l.leaderName) + '</div>' +
-          '<div style="font-size:12px;color:rgba(255,255,255,0.85);font-weight:600">載入中⋯</div>' +
+          '<div class="flat-group-title"><i class="ti ti-user"></i> ' + esc(l.leaderName) + '</div>' +
+          '<div style="font-size:13px;color:rgba(255,255,255,0.85);font-weight:700">載入中⋯</div>' +
         '</div>' +
       '</div>';
     }
@@ -1997,13 +1999,13 @@ function renderDistrictFlatList() {
     }).join('');
 
     var doneCnt = filtered.filter(function(m) { return m.conclusion; }).length;
-    var selfTag = l.isSelf ? '<span class="flat-group-self-tag">👑 我的</span>' : '';
+    var selfTag = l.isSelf ? '<span class="flat-group-self-tag"><i class="ti ti-crown"></i> 我的</span>' : '';
     return '<div class="flat-group">' +
       '<div class="flat-group-header" data-group-key="' + esc(groupKey) + '" onclick="toggleFlatGroup(this.dataset.groupKey)">' +
-        '<div class="flat-group-title">👤 ' + esc(l.leaderName) + selfTag + '</div>' +
+        '<div class="flat-group-title"><i class="ti ti-user"></i> ' + esc(l.leaderName) + selfTag + '</div>' +
         '<div class="flat-group-badges">' +
           '<span class="badge">' + filtered.length + ' 人</span>' +
-          (doneCnt > 0 ? '<span class="badge">✅ ' + doneCnt + '</span>' : '') +
+          (doneCnt > 0 ? '<span class="badge"><i class="ti ti-circle-check"></i> ' + doneCnt + '</span>' : '') +
           '<span class="flat-group-toggle">' + (collapsed ? '▼' : '▲') + '</span>' +
         '</div>' +
       '</div>' +
@@ -2014,7 +2016,7 @@ function renderDistrictFlatList() {
   // 全部都是空字串 → 顯示提示
   if (!groupsHtml.trim()) {
     var pending = leaderSummary.some(function(l) { return l.members === null; });
-    container.innerHTML = '<div class="empty-hint"><div class="icon">' + (pending ? '⏳' : '🎉') + '</div><p>' + (pending ? '載入中⋯' : '此分類目前沒有資料') + '</p></div>';
+    container.innerHTML = '<div class="empty-hint"><div class="icon">' + (pending ? '<i class="ti ti-hourglass"></i>' : '<i class="ti ti-confetti"></i>') + '</div><p>' + (pending ? '載入中⋯' : '此分類目前沒有資料') + '</p></div>';
   } else {
     container.innerHTML = groupsHtml;
   }
@@ -2026,7 +2028,7 @@ function renderPastorFlatList() {
   var anyPending = false;
 
   if (allDistricts.length === 0) {
-    container.innerHTML = '<div class="empty-hint"><div class="icon">📋</div><p>白名單中找不到任何區</p></div>';
+    container.innerHTML = '<div class="empty-hint"><div class="icon"><i class="ti ti-clipboard-list"></i></div><p>白名單中找不到任何區</p></div>';
     return;
   }
 
@@ -2038,8 +2040,8 @@ function renderPastorFlatList() {
       anyPending = true;
       return '<div class="district-group">' +
         '<div class="district-group-header" style="background:#f1f5f9;border-left-color:#94a3b8;color:#64748b">' +
-          '<div class="district-group-title" style="color:#64748b">🏘 ' + esc(d) + '</div>' +
-          '<div style="font-size:12px;color:#94a3b8">載入中⋯</div>' +
+          '<div class="district-group-title" style="color:#64748b"><i class="ti ti-building-community"></i> ' + esc(d) + '</div>' +
+          '<div style="font-size:13px;color:#94a3b8">載入中⋯</div>' +
         '</div>' +
       '</div>';
     }
@@ -2078,15 +2080,15 @@ function renderPastorFlatList() {
         innerHtml = visibleGroups.map(function(g) {
           if (g.loading) {
             return '<div class="district-leader-sub">' +
-              '<span>👤</span>' +
+              '<span><i class="ti ti-user"></i></span>' +
               '<span class="district-leader-sub-name">' + esc(g.leaderName) + '</span>' +
               '<span class="district-leader-sub-count">載入中⋯</span>' +
             '</div>';
           }
           var doneInGroup = g.members.filter(function(mm) { return mm.conclusion; }).length;
-          var countTxt = g.members.length + ' 人' + (doneInGroup > 0 ? '・✅ ' + doneInGroup : '');
+          var countTxt = g.members.length + ' 人' + (doneInGroup > 0 ? '・<i class="ti ti-circle-check"></i> ' + doneInGroup : '');
           return '<div class="district-leader-sub">' +
-            '<span>👤</span>' +
+            '<span><i class="ti ti-user"></i></span>' +
             '<span class="district-leader-sub-name">' + esc(g.leaderName) + '</span>' +
             '<span class="district-leader-sub-count">' + countTxt + '</span>' +
           '</div>' +
@@ -2095,12 +2097,12 @@ function renderPastorFlatList() {
       }
     }
 
-    var doneBadge = districtDone > 0 ? '<span class="badge">✅ ' + districtDone + '</span>' : '';
+    var doneBadge = districtDone > 0 ? '<span class="badge"><i class="ti ti-circle-check"></i> ' + districtDone + '</span>' : '';
     var diIdx = allDistricts.indexOf(d);
 
     return '<div class="district-group">' +
       '<div class="district-group-header" data-group-key="' + esc(districtKey) + '" onclick="toggleFlatGroup(this.dataset.groupKey)">' +
-        '<div class="district-group-title">🏘 ' + esc(d) + '</div>' +
+        '<div class="district-group-title"><i class="ti ti-building-community"></i> ' + esc(d) + '</div>' +
         '<div class="district-group-badges">' +
           '<span class="badge">' + districtMembers + ' 人</span>' +
           doneBadge +
@@ -2156,15 +2158,15 @@ function _renderFlatMemberCard(m, leaderName, districtName) {
   // 按鈕:結案的只有 🔍,未結案的有 ✍️ + 🔍
   var actionBtns = '';
   if (!isConcluded) {
-    actionBtns += '<button class="flat-row-icon-btn btn-write" onclick="openReportFromFlat(' + Number(m.rowIndex || 0) + ')" title="填寫跟進">✍️</button>';
+    actionBtns += '<button class="flat-row-icon-btn btn-write" onclick="openReportFromFlat(' + Number(m.rowIndex || 0) + ')" title="填寫跟進"><i class="ti ti-pencil"></i></button>';
   }
-  actionBtns += '<button class="flat-row-icon-btn" onclick="openDetailFromFlat(' + Number(m.rowIndex || 0) + ')" title="詳細資訊" aria-label="查看新人詳細資訊">🔍</button>';
+  actionBtns += '<button class="flat-row-icon-btn" onclick="openDetailFromFlat(' + Number(m.rowIndex || 0) + ')" title="詳細資訊" aria-label="查看新人詳細資訊"><i class="ti ti-search"></i></button>';
 
   // 屬於誰 + 日期 + 電話
   var subParts = [];
-  if (m.fillDate)   subParts.push('📅 ' + esc(m.fillDate));
-  if (m.phone)      subParts.push('<a href="tel:' + esc(m.phone) + '">📞 ' + esc(m.phone) + '</a>');
-  var belongsTag = '<span class="member-belongs">👤 ' + esc(leaderName) + (districtName ? '・' + esc(districtName) : '') + '</span>';
+  if (m.fillDate)   subParts.push('<i class="ti ti-calendar"></i> ' + esc(m.fillDate));
+  if (m.phone)      subParts.push('<a href="tel:' + esc(m.phone) + '"><i class="ti ti-phone"></i> ' + esc(m.phone) + '</a>');
+  var belongsTag = '<span class="member-belongs"><i class="ti ti-user"></i> ' + esc(leaderName) + (districtName ? '・' + esc(districtName) : '') + '</span>';
 
   // ─── 新增:最新一週備註預覽(只在未結案 + 有任何週紀錄時顯示) ───
   var latestHtml = '';
@@ -2340,7 +2342,7 @@ function openUnassignedList() {
       document.getElementById('btn-back').classList.remove('hidden');
 
       currentFilter = 'all';
-      document.getElementById('topbar-sub').textContent = '⚠️ 未分配新人';
+      document.getElementById('topbar-sub').textContent = '未分配新人';
       document.getElementById('screen-main').classList.remove('hidden');
 
       // 隱藏統計列、篩選列、排序列
@@ -2508,8 +2510,8 @@ function renderMembers() {
 
   if (members.length === 0) {
     var emptyMsg = '此分類目前沒有資料';
-    if (viewMode === 'unassigned') emptyMsg = '🎉 目前沒有未分配的新人';
-    list.innerHTML = '<div class="empty-hint"><div class="icon">' + (viewMode === 'unassigned' ? '✅' : '🎉') + '</div><p>' + emptyMsg + '</p></div>';
+    if (viewMode === 'unassigned') emptyMsg = '目前沒有未分配的新人';
+    list.innerHTML = '<div class="empty-hint"><div class="icon">' + (viewMode === 'unassigned' ? '<i class="ti ti-circle-check"></i>' : '<i class="ti ti-confetti"></i>') + '</div><p>' + emptyMsg + '</p></div>';
     return;
   }
 
@@ -2524,19 +2526,19 @@ function renderMembers() {
     }).join('');
 
     var noteHtml = m.interviewNote
-      ? '<div class="note-box"><div class="note-tag">📝 訪談備註</div>' + esc(m.interviewNote) + '</div>'
+      ? '<div class="note-box"><div class="note-tag"><i class="ti ti-notes"></i> 訪談備註</div>' + esc(m.interviewNote) + '</div>'
       : '';
 
     var latestNoteHtml = '';
     for (var w = 3; w >= 0; w--) {
       if (m.weeks[w].status && m.weeks[w].note) {
         var cls2 = m.weeks[w].status === '聯絡不上' ? 'note-box note-alert' : 'note-box note-warn';
-        latestNoteHtml = '<div class="' + cls2 + ' clickable" onclick="openDetailFromCard(' + idx + ')"><div class="note-tag">W' + Number(m.weeks[w].week || 0) + ' 備註 🔍</div>' + esc(m.weeks[w].note) + '</div>';
+        latestNoteHtml = '<div class="' + cls2 + ' clickable" onclick="openDetailFromCard(' + idx + ')"><div class="note-tag">W' + Number(m.weeks[w].week || 0) + ' 備註 <i class="ti ti-search"></i></div>' + esc(m.weeks[w].note) + '</div>';
         break;
       }
     }
 
-    var tel = m.phone ? '<a href="tel:' + esc(m.phone) + '" class="btn-contact btn-tel">📞 ' + esc(m.phone) + '</a>' : '';
+    var tel = m.phone ? '<a href="tel:' + esc(m.phone) + '" class="btn-contact btn-tel"><i class="ti ti-phone"></i> ' + esc(m.phone) + '</a>' : '';
     var idx = allMembers.indexOf(m);
     var newBadge = isThisWeek(m.fillDate) ? '<span class="badge-new">本週新人</span>' : '';
     var newClass = isThisWeek(m.fillDate) ? ' new-this-week' : '';
@@ -2548,43 +2550,43 @@ function renderMembers() {
 
     var infoGrid =
       '<div class="info-grid">' +
-        '<div class="info-item"><div class="lbl">🎂 年齡</div><div class="val">' + esc(age) + '</div></div>' +
-        '<div class="info-item"><div class="lbl">⚧ 性別</div><div class="val">' + esc(m.gender || '—') + '</div></div>' +
-        '<div class="info-item"><div class="lbl">🪪 身分</div><div class="val">' + esc(m.identity || '—') + '</div></div>' +
-        '<div class="info-item"><div class="lbl">💼 職業</div><div class="val">' + esc(occ) + '</div></div>' +
-        '<div class="info-item"><div class="lbl">🤝 邀請人</div><div class="val">' + esc(inviter) + '</div></div>' +
-        '<div class="info-item"><div class="lbl">🕐 聯絡時間</div><div class="val">' + esc(ctDisplay) + '</div></div>' +
+        '<div class="info-item"><div class="lbl"><i class="ti ti-cake"></i> 年齡</div><div class="val">' + esc(age) + '</div></div>' +
+        '<div class="info-item"><div class="lbl"><i class="ti ti-gender-bigender"></i> 性別</div><div class="val">' + esc(m.gender || '—') + '</div></div>' +
+        '<div class="info-item"><div class="lbl"><i class="ti ti-id"></i> 身分</div><div class="val">' + esc(m.identity || '—') + '</div></div>' +
+        '<div class="info-item"><div class="lbl"><i class="ti ti-briefcase"></i> 職業</div><div class="val">' + esc(occ) + '</div></div>' +
+        '<div class="info-item"><div class="lbl"><i class="ti ti-heart-handshake"></i> 邀請人</div><div class="val">' + esc(inviter) + '</div></div>' +
+        '<div class="info-item"><div class="lbl"><i class="ti ti-clock"></i> 聯絡時間</div><div class="val">' + esc(ctDisplay) + '</div></div>' +
       '</div>';
 
     var actionBtns = '';
     if (readOnly) {
       if (viewMode === 'unassigned') {
         actionBtns =
-          '<div class="note-box" style="background:#fff7ed;border-left:3px solid #f97316;text-align:center;color:#9a3412;font-weight:700;margin-top:10px">⚠️ 尚未指派跟進小組長</div>' +
-          '<button class="btn-assign" onclick="openAssign(' + idx + ')">👤 指派小組長</button>';
+          '<div class="note-box" style="background:#fff7ed;border-left:3px solid #f97316;text-align:center;color:#9a3412;font-weight:700;margin-top:10px"><i class="ti ti-alert-triangle"></i> 尚未指派跟進小組長</div>' +
+          '<button class="btn-assign" onclick="openAssign(' + idx + ')"><i class="ti ti-user"></i> 指派小組長</button>';
       } else if (isConcluded) {
-        actionBtns = '<div class="note-box" style="background:#f0fdf4;text-align:center;color:#15803d;font-weight:700;margin-top:10px">✅ 已結案：' + esc(m.conclusion) + (m.groupJoined ? '（' + esc(m.groupJoined) + '）' : '') + '</div>';
+        actionBtns = '<div class="note-box" style="background:#f0fdf4;text-align:center;color:#15803d;font-weight:700;margin-top:10px"><i class="ti ti-circle-check"></i> 已結案：' + esc(m.conclusion) + (m.groupJoined ? '（' + esc(m.groupJoined) + '）' : '') + '</div>';
       }
     } else {
       if (!isConcluded) {
         actionBtns =
           '<div style="display:flex;gap:8px;margin-top:10px">' +
             (nextW !== null
-              ? '<button class="btn-report" style="flex:1" onclick="openReport(' + idx + ')">✍️ 填入第 ' + (nextW+1) + ' 週狀況</button>'
-              : '<button class="btn-report" style="flex:1" onclick="openReport(' + idx + ')">✍️ 修改週狀況</button>') +
-            '<button class="btn-conclude" style="flex:1;margin-top:0" onclick="openConclude(' + idx + ')">📋 填寫結案</button>' +
+              ? '<button class="btn-report" style="flex:1" onclick="openReport(' + idx + ')"><i class="ti ti-pencil"></i> 填入第 ' + (nextW+1) + ' 週狀況</button>'
+              : '<button class="btn-report" style="flex:1" onclick="openReport(' + idx + ')"><i class="ti ti-pencil"></i> 修改週狀況</button>') +
+            '<button class="btn-conclude" style="flex:1;margin-top:0" onclick="openConclude(' + idx + ')"><i class="ti ti-clipboard-list"></i> 填寫結案</button>' +
           '</div>';
       } else {
-        actionBtns = '<div class="note-box" style="background:#f0fdf4;text-align:center;color:#15803d;font-weight:700;margin-top:10px">✅ 已結案：' + esc(m.conclusion) + (m.groupJoined ? '（' + esc(m.groupJoined) + '）' : '') + '</div>';
+        actionBtns = '<div class="note-box" style="background:#f0fdf4;text-align:center;color:#15803d;font-weight:700;margin-top:10px"><i class="ti ti-circle-check"></i> 已結案：' + esc(m.conclusion) + (m.groupJoined ? '（' + esc(m.groupJoined) + '）' : '') + '</div>';
       }
     }
 
-    var detailBtn = '<button class="detail-trigger" onclick="openDetail(' + idx + ')" aria-label="查看 ' + esc(m.name) + ' 的詳細資訊">🔍</button>';
+    var detailBtn = '<button class="detail-trigger" onclick="openDetail(' + idx + ')" aria-label="查看 ' + esc(m.name) + ' 的詳細資訊"><i class="ti ti-search"></i></button>';
 
     return '<div class="member-card' + (isConcluded ? ' concluded' : '') + newClass + '" data-last="' + esc(ls) + '">' +
       '<div class="card-top">' +
         '<div><div class="card-name">' + esc(m.name) + newBadge + detailBtn + '</div>' +
-        '<div class="card-sub">' + (m.fillDate ? '📅 ' + esc(m.fillDate) + (m.service ? '・' + esc(m.service) : '') : '') + '</div></div>' +
+        '<div class="card-sub">' + (m.fillDate ? '<i class="ti ti-calendar"></i> ' + esc(m.fillDate) + (m.service ? '・' + esc(m.service) : '') : '') + '</div></div>' +
         '<span class="status-pill pill-' + esc(ls) + '">' + esc(ls) + '</span>' +
       '</div>' +
       infoGrid +
@@ -2611,7 +2613,7 @@ function openReportForMember(m) {
   document.querySelectorAll('.status-option').forEach(function(b) { b.classList.remove('selected'); });
 
   var submitBtn = document.querySelector('#modal-report .btn-submit');
-  submitBtn.innerHTML = '✍️ 送出本週回報';
+  submitBtn.innerHTML = '<i class="ti ti-pencil"></i> 送出本週回報';
   submitBtn.disabled = false;
 
   var pills = document.getElementById('week-pills');
@@ -2677,16 +2679,16 @@ function submitReport() {
         m.weeks[reportTarget.weekIndex].note   = note;
         closeModal('modal-report');
         _refreshAllViews();
-        showToast('✅ 第 ' + week + ' 週狀況已儲存!');
+        showToast('第 ' + week + ' 週狀況已儲存!');
       } else {
         showToast('儲存失敗：' + res.error);
-        submitBtn.innerHTML = '✍️ 送出本週回報';
+        submitBtn.innerHTML = '<i class="ti ti-pencil"></i> 送出本週回報';
         submitBtn.disabled = false;
       }
     })
     .withFailureHandler(function() {
       showToast('網路錯誤,請重試');
-      submitBtn.innerHTML = '✍️ 送出本週回報';
+      submitBtn.innerHTML = '<i class="ti ti-pencil"></i> 送出本週回報';
       submitBtn.disabled = false;
     })
     .updateWeekStatusForFrontend(m.rowIndex, week, status, note);
@@ -2785,7 +2787,7 @@ function submitConclusion() {
         concludeTarget.groupJoined = note;
         closeModal('modal-conclude');
         _refreshAllViews();
-        showToast('✅ 結案資料已儲存!');
+        showToast('結案資料已儲存');
       } else {
         showToast('儲存失敗：' + res.error);
         submitBtn.innerHTML = '確認結案';
@@ -2877,8 +2879,8 @@ function openDetailDirect(m, scrollTo) {
   } else {
     actionsEl.style.display = 'flex';
     actionsEl.innerHTML =
-      '<button class="btn-report" style="flex:1" onclick="_detailJumpReport(' + Number(m.rowIndex || 0) + ')">✍️ 填寫跟進</button>' +
-      '<button class="btn-conclude" style="flex:1;margin-top:0" onclick="_detailJumpConclude(' + Number(m.rowIndex || 0) + ')">📋 填寫結案</button>';
+      '<button class="btn-report" style="flex:1" onclick="_detailJumpReport(' + Number(m.rowIndex || 0) + ')"><i class="ti ti-pencil"></i> 填寫跟進</button>' +
+      '<button class="btn-conclude" style="flex:1;margin-top:0" onclick="_detailJumpConclude(' + Number(m.rowIndex || 0) + ')"><i class="ti ti-clipboard-list"></i> 填寫結案</button>';
   }
 
   var detailModal = document.querySelector('#modal-detail .modal');
@@ -2935,7 +2937,7 @@ function openAssign(idx) {
   document.getElementById('assign-conclude-note-input').value = '';
 
   var submitBtn = document.querySelector('#modal-assign .btn-submit');
-  submitBtn.innerHTML = '✅ 確認';
+  submitBtn.innerHTML = '<i class="ti ti-circle-check"></i> 確認';
   submitBtn.disabled = false;
 
   document.getElementById('modal-assign').classList.remove('hidden');
@@ -3001,7 +3003,7 @@ function selectAssignDistrict(btn) {
   }
   leaderListEl.innerHTML = district.leaders.map(function(l, li) {
     return '<div class="assign-leader-row" data-li="' + li + '" onclick="selectAssignLeader(this)">' +
-      '<div class="lname">👤 ' + esc(l.name) + '</div>' +
+      '<div class="lname"><i class="ti ti-user"></i> ' + esc(l.name) + '</div>' +
       (l.group ? '<div class="lgroup">小組:' + esc(l.group) + '</div>' : '<div class="lgroup">(未設定小組)</div>') +
     '</div>';
   }).join('');
@@ -3095,7 +3097,7 @@ function submitAssign() {
       .withSuccessHandler(function(res) {
         if (!res.success) {
           showToast('指派失敗:' + (res.error || ''));
-          submitBtn.innerHTML = '✅ 確認';
+          submitBtn.innerHTML = '<i class="ti ti-circle-check"></i> 確認';
           submitBtn.disabled = false;
           return;
         }
@@ -3106,7 +3108,7 @@ function submitAssign() {
       })
       .withFailureHandler(function() {
         showToast('網路錯誤,請重試');
-        submitBtn.innerHTML = '✅ 確認';
+        submitBtn.innerHTML = '<i class="ti ti-circle-check"></i> 確認';
         submitBtn.disabled = false;
       })
       .assignMemberForFrontend(target.rowIndex, assignSelected.leader, assignSelected.group);
@@ -3118,7 +3120,7 @@ function submitAssign() {
     .withSuccessHandler(function(res) {
       if (!res.success) {
         showToast('結案失敗:' + (res.error || ''));
-        submitBtn.innerHTML = '✅ 確認';
+        submitBtn.innerHTML = '<i class="ti ti-circle-check"></i> 確認';
         submitBtn.disabled = false;
         return;
       }
@@ -3129,7 +3131,7 @@ function submitAssign() {
     })
     .withFailureHandler(function() {
       showToast('網路錯誤,請重試');
-      submitBtn.innerHTML = '✅ 確認';
+      submitBtn.innerHTML = '<i class="ti ti-circle-check"></i> 確認';
       submitBtn.disabled = false;
     })
     .concludeUnassignedForFrontend(target.rowIndex, assignSelected.conclusion, assignSelected.concludeNote);
@@ -3144,14 +3146,14 @@ function _afterAssignSuccess(target, toastMsg, updateFn) {
   if (idx !== -1) allMembers.splice(idx, 1);
 
   closeModal('modal-assign');
-  showToast('✅ ' + toastMsg);
+  showToast(toastMsg);
 
   // 更新警示橫條的數字
   var bannerCount = document.getElementById('unassigned-banner-count');
   if (bannerCount) bannerCount.textContent = allMembers.length;
   if (allMembers.length === 0) {
     var subEl = document.getElementById('unassigned-banner-sub');
-    if (subEl) subEl.textContent = '🎉 目前沒有未分配的新人';
+    if (subEl) subEl.textContent = '目前沒有未分配的新人';
   }
   // 同步區牧首頁的未分配卡片數字
   var topCard = document.getElementById('unassigned-count');
