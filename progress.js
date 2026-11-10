@@ -6,19 +6,16 @@
  */
 (function (root) {
   'use strict';
-  var css = '' +
-    '.cp-bar{position:fixed;left:0;top:env(safe-area-inset-top,0px);height:3px;width:0;background:#0F6E56;box-shadow:0 0 6px rgba(15,110,86,.5);z-index:9999;opacity:0;transition:width .3s ease-out,opacity .25s;pointer-events:none}' +
-    '.cp-bar.on{opacity:1}' +
-    '.cp-slow{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:#04342C;color:#fff;font-size:14px;line-height:1.5;padding:8px 14px;border-radius:999px;z-index:9999;box-shadow:0 4px 16px rgba(4,52,44,.25);max-width:calc(100% - 32px);text-align:center;pointer-events:none}' +
-    '.cp-busy{position:relative;pointer-events:none;opacity:.75}' +
-    '.cp-busy::after{content:"";display:inline-block;width:14px;height:14px;margin-left:8px;vertical-align:-2px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:cp-spin .8s linear infinite}' +
-    '@keyframes cp-spin{to{transform:rotate(360deg)}}' +
-    '@media (prefers-reduced-motion:reduce){.cp-bar{transition:none}.cp-busy::after{animation-duration:2.4s}}';
+  // 樣式放在 progress.css：有些頁面（兒童檔案）的安全設定不允許程式臨時加 <style>，外部樣式檔則都允許
+  (function loadCss() {
+    if (typeof document === 'undefined' || document.querySelector('link[data-cp]')) return;
+    var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'progress.css?v=1'; link.setAttribute('data-cp', '');
+    (document.head || document.documentElement).appendChild(link);
+  })();
   var bar = null, slowEl = null, active = [], timer = null, shownAt = 0;
 
   function ensure() {
     if (bar || !document.body) return;
-    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
     bar = document.createElement('div'); bar.className = 'cp-bar'; bar.setAttribute('aria-hidden', 'true');
     document.body.appendChild(bar);
   }

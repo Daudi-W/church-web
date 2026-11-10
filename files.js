@@ -50,12 +50,11 @@
     clearTimeout(toastTimer); $('toast').textContent = message; $('toast').hidden = false;
     toastTimer = setTimeout(function () { $('toast').hidden = true; }, 4500);
   }
-  var pending = 0, toplineTimer;
-  // 讀取中顯示頂端旌旗綠細條；150ms 內完成的請求不閃。上傳另有自己的進度，不計入。
-  function loading(delta) {
-    pending = Math.max(0, pending + delta); clearTimeout(toplineTimer);
-    if (pending) toplineTimer = setTimeout(function () { $('topline').classList.add('on'); }, 150);
-    else $('topline').classList.remove('on');
+  // 讀取中進度：與服事平台共用 progress.js（頂端細條依平常時間推算、按下的按鈕轉圈、等太久提示）。上傳另有自己的進度，不計入。
+  function beginProgress(options) {
+    if (!window.ChurchProgress) return null;
+    var write = !!(options && options.method && options.method !== 'GET');
+    return ChurchProgress.begin({ write: write, expected: write ? 4000 : 2500, button: ChurchProgress.pressedButton() });
   }
   function skeleton() {
     var box = el('div', 'skeleton-list'); box.append(el('span', 'sr-only', '正在讀取檔案…'));
@@ -67,14 +66,14 @@
     return box;
   }
   function gate(title, message, login) {
-    $('gateProgress').hidden = true;
+    $('gateProgress').hidden = true; $('gate').classList.add('is-error');
     $('gate').hidden = false; $('workspace').hidden = true; $('gateTitle').textContent = title; $('gateMessage').textContent = message;
     $('gateLogin').hidden = !login; $('gateRetry').hidden = !!login;
     $('gateLogin').href = PlatformModule.loginHref('files');
   }
   async function request(path, options) {
-    var tracked = path.indexOf('/api/uploads/') !== 0; if (tracked) loading(1);
-    try { return await sendRequest(path, options); } finally { if (tracked) loading(-1); }
+    var progress = path.indexOf('/api/uploads/') !== 0 ? beginProgress(options) : null;
+    try { return await sendRequest(path, options); } finally { if (progress) progress.end(); }
   }
   async function sendRequest(path, options) {
     options = options || {};

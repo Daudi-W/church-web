@@ -1,0 +1,9 @@
+/* 共用進度提示樣式（progress.js 自動載入；獨立成檔是因為兒童檔案頁的安全設定不允許程式臨時加樣式） */
+.cp-bar{position:fixed;left:0;top:env(safe-area-inset-top,0px);height:3px;width:0;background:#0F6E56;box-shadow:0 0 6px rgba(15,110,86,.5);z-index:9999;opacity:0;transition:width .3s ease-out,opacity .25s;pointer-events:none}
+.cp-bar.on{opacity:1}
+.cp-slow{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:#04342C;color:#fff;font-size:15px;line-height:1.5;padding:8px 14px;border-radius:999px;z-index:9999;box-shadow:0 4px 16px rgba(4,52,44,.25);max-width:calc(100% - 32px);text-align:center;pointer-events:none}
+.cp-busy{position:relative;pointer-events:none;opacity:.75}
+.cp-busy::after{content:"";display:inline-block;width:14px;height:14px;margin-left:8px;vertical-align:-2px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:cp-spin .8s linear infinite}
+@keyframes cp-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.cp-bar{transition:none}
+.cp-busy::after{animation-duration:2.4s}}

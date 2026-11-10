@@ -11,10 +11,10 @@
   <link rel="stylesheet" href="files.css?v=5">
   <script src="platform-module.js?v=3" defer></script>
   <script src="files-runtime-config.js" defer></script>
-  <script src="files.js?v=4" defer></script>
+  <script src="progress.js?v=2" defer></script>
+  <script src="files.js?v=5" defer></script>
 </head>
 <body>
-  <div id="topline" class="topline" aria-hidden="true"></div>
   <header class="platform-module-bar">
     <a class="platform-module-home" href="service.html" aria-label="回平台">← 回平台</a>
     <p class="platform-module-title">兒童幼幼檔案</p>
@@ -23,10 +23,9 @@
   <div id="previewBanner" class="preview-banner" hidden>畫面預覽・這裡使用示範檔案，上傳、下載與管理尚未接通。</div>
   <main class="shell">
     <section id="gate" class="gate" role="status">
-      <span class="gate-icon" aria-hidden="true">▤</span>
-      <h1 id="gateTitle">正在開啟事工檔案</h1>
+      <div id="gateProgress" class="platform-module-spinner" aria-hidden="true"></div>
+      <h1 id="gateTitle">載入中…</h1>
       <p id="gateMessage">正在確認你的平台登入與事工權限。</p>
-      <div id="gateProgress" class="gate-progress" aria-hidden="true"></div>
       <a id="gateLogin" class="button primary" href="service.html?next=files" hidden>回平台登入</a>
       <button id="gateRetry" class="button" hidden>重新嘗試</button>
     </section>
